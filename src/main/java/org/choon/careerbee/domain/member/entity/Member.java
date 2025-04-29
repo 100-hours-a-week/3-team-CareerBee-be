@@ -13,7 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
-import org.choon.careerbee.domain.auth.enums.OAuthProvider;
+import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.member.entity.enums.CompanyType;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;

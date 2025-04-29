@@ -1,7 +1,7 @@
 package org.choon.careerbee.domain.auth.service.oauth;
 
 
-import org.choon.careerbee.domain.auth.enums.OAuthProvider;
+import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 
 public interface OAuthInfoResponse {
     /***
