@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
@@ -36,5 +37,12 @@ public class Token {
   private TokenStatus status;
 
   @Column(length = 255, nullable = false)
-  private String token;
+  private String tokenValue;
+
+  @Builder
+  public Token(Member member, TokenStatus status, String tokenValue) {
+    this.member = member;
+    this.status = status;
+    this.tokenValue = tokenValue;
+  }
 }

@@ -8,6 +8,8 @@ public enum CustomResponseStatus {
     SUCCESS(HttpStatus.OK.value(), "요청에 성공하였습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN.value(), "권한이 없습니다."),
 
+    MEMBER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 회원입니다."),
+
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
 
     BAD_JWT(HttpStatus.BAD_REQUEST.value(), "잘못된 토큰입니다."),

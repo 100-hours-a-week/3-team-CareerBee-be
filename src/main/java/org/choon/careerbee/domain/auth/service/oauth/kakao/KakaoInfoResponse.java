@@ -9,6 +9,7 @@ import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KakaoInfoResponse implements OAuthInfoResponse {
+    private Long id;
 
     @JsonProperty("kakao_account")
     private KakaoAccount kakaoAccount;
@@ -16,13 +17,7 @@ public class KakaoInfoResponse implements OAuthInfoResponse {
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class KakaoAccount {
-        private KakaoProfile profile;
         private String email;
-    }
-    @Getter
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    static class KakaoProfile {
-        private String nickname;
     }
 
     @Override
@@ -31,12 +26,12 @@ public class KakaoInfoResponse implements OAuthInfoResponse {
     }
 
     @Override
-    public String getNickname() {
-        return kakaoAccount.profile.nickname;
+    public OAuthProvider getOauthProvider() {
+        return OAuthProvider.KAKAO;
     }
 
     @Override
-    public OAuthProvider getOauthProvider() {
-        return OAuthProvider.KAKAO;
+    public Long getProviderId() {
+        return id;
     }
 }

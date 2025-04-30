@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
@@ -17,14 +18,14 @@ import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.member.entity.enums.CompanyType;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
-import org.choon.careerbee.domain.member.entity.enums.Role;
+import org.choon.careerbee.domain.member.entity.enums.RoleType;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@SQLRestriction("withdrawnAt is NULL")
+@SQLRestriction("withdrawn_at is NULL")
 public class Member extends BaseEntity {
 
   @Id
@@ -33,8 +34,9 @@ public class Member extends BaseEntity {
 
   @Column(length = 6)
   @Enumerated(EnumType.STRING)
-  private OAuthProvider oauthProvider;
+  private OAuthProvider provider;
 
+  @Column(nullable = false)
   private Long providerId;
 
   @Column(length = 20, nullable = false)
@@ -77,11 +79,25 @@ public class Member extends BaseEntity {
   private Integer points;
 
   @Column(length = 11, nullable = false)
-  private Role role;
+  @Enumerated(EnumType.STRING)
+  private RoleType role;
 
   @Column(length = 500)
   private String imgUrl;
 
   @Column(nullable = false)
   private Integer progress;
+
+  @Builder
+  public Member(String nickname, String email, OAuthProvider oAuthProvider, Long providerId) {
+    this.nickname = nickname;
+    this.email = email;
+    this.provider = oAuthProvider;
+    this.providerId = providerId;
+    this.certificationCount = 0;
+    this.role = RoleType.ROLE_MEMBER;
+    this.points = 0;
+    this.progress = 0;
+    this.workPeriod = 0;
+  }
 }

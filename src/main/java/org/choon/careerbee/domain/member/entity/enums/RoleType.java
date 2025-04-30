@@ -1,6 +1,6 @@
 package org.choon.careerbee.domain.member.entity.enums;
 
-public enum Role {
+public enum RoleType {
   ROLE_MEMBER,
   ROLE_ADMIN
 }
