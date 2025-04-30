@@ -32,6 +32,8 @@ dependencies {
 
     // MySQL
     runtimeOnly 'com.mysql:mysql-connector-j:8.4.0'
+    implementation 'org.hibernate.orm:hibernate-spatial:6.6.13.Final'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.9'
 
     // jwt
     implementation 'io.jsonwebtoken:jjwt:0.12.6'
