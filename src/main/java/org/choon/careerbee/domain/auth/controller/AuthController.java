@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.ApiResponse;
+import org.choon.careerbee.common.dto.ApiResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
@@ -36,9 +37,9 @@ public class AuthController {
   ) {
     OAuthLoginUrlResp response = authService.getOAuthLoginUrl(type);
 
-    return ResponseEntity.ok().body(ApiResponse.createSuccess(
+    return ApiResponseEntity.ok(
         response,
-        CustomResponseStatus.SUCCESS.withMessage("소셜 로그인 url 조회에 성공하였습니다."))
+        CustomResponseStatus.SUCCESS.withMessage("소셜 로그인 url 조회에 성공하였습니다.")
     );
   }
 
@@ -50,9 +51,9 @@ public class AuthController {
     TokenAndUserInfo tokenAndUserInfo = authService.login(kakaoParams);
     setTokenInCookie(response, tokenAndUserInfo.authTokens());
 
-    return ResponseEntity.ok().body(ApiResponse.createSuccess(
+    return ApiResponseEntity.ok(
         new LoginResp(tokenAndUserInfo.authTokens().accessToken(), tokenAndUserInfo.userInfo()),
-        CustomResponseStatus.SUCCESS.withMessage("로그인에 성공하였습니다."))
+        CustomResponseStatus.SUCCESS.withMessage("로그인에 성공하였습니다.")
     );
   }
 
@@ -62,8 +63,8 @@ public class AuthController {
   ) {
     authService.logout(accessToken);
 
-    return ResponseEntity.ok().body(ApiResponse.createSuccessWithNoContent(
-        CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.withMessage("로그아웃에 성공하였습니다."))
+    return ApiResponseEntity.ok(
+        CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.withMessage("로그아웃에 성공하였습니다.")
     );
   }
 
@@ -75,12 +76,11 @@ public class AuthController {
     AuthTokens authTokens = authService.reissue(refreshToken);
     setTokenInCookie(response, authTokens);
 
-    return ResponseEntity.ok().body(ApiResponse.createSuccess(
+    return ApiResponseEntity.ok(
         new ReissueResp(authTokens.accessToken()),
-        CustomResponseStatus.SUCCESS.withMessage("토큰 재발급에 성공하였습니다."))
+        CustomResponseStatus.SUCCESS.withMessage("토큰 재발급에 성공하였습니다.")
     );
   }
-
 
   private void setTokenInCookie(HttpServletResponse response, AuthTokens tokens) {
     response.addCookie(createCookie(tokens.refreshToken()));
