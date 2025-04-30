@@ -3,7 +3,10 @@ package org.choon.careerbee.domain.auth.service.auth;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
+import org.choon.careerbee.domain.auth.dto.jwt.TokenClaimInfo;
 import org.choon.careerbee.domain.auth.dto.response.LoginResp.UserInfo;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
 import org.choon.careerbee.domain.auth.dto.response.TokenAndUserInfo;
@@ -19,12 +22,13 @@ import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
-import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
+@Transactional
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
   private final JwtUtil jwtUtil;
@@ -67,6 +71,20 @@ public class AuthServiceImpl implements AuthService {
     });
 
     return new TokenAndUserInfo(new AuthTokens(accessToken, refreshToken), new UserInfo(member.getPoints(), true));
+  }
+
+  @Override
+  public void logout(String accessToken) {
+    String resolveAccessToken = jwtUtil.resolveToken(accessToken);
+    TokenClaimInfo tokenClaims = jwtUtil.getTokenClaims(resolveAccessToken);
+
+    Member member = memberRepository.findById(tokenClaims.id())
+        .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+    Token refreshTokenInRDB = tokenRepository.findByMemberIdAndStatus(tokenClaims.id(), TokenStatus.LIVE)
+        .orElseThrow(() -> new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND));
+
+    refreshTokenInRDB.logout();
+    tokenRepository.save(new Token(member, TokenStatus.BLACK, resolveAccessToken));
   }
 
 

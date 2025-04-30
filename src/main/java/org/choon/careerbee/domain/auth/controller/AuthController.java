@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,6 +51,17 @@ public class AuthController {
     return ResponseEntity.ok().body(ApiResponse.createSuccess(
         new LoginResp(tokenAndUserInfo.authTokens().accessToken(), tokenAndUserInfo.userInfo()),
         CustomResponseStatus.SUCCESS.withMessage("로그인에 성공하였습니다."))
+    );
+  }
+
+  @PostMapping("/logout")
+  public ResponseEntity<ApiResponse<Void>> logout(
+      @RequestHeader("Authorization") String accessToken
+  ) {
+    authService.logout(accessToken);
+
+    return ResponseEntity.ok().body(ApiResponse.createSuccessWithNoContent(
+        CustomResponseStatus.SUCCESS.withMessage("로그아웃에 성공하였습니다."))
     );
   }
 
