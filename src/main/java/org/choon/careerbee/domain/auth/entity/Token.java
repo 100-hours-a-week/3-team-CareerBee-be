@@ -49,4 +49,7 @@ public class Token {
   public void logout() {
     this.status = TokenStatus.BLACK;
   }
+  public void revoke() {
+    this.status = TokenStatus.REVOKED;
+  }
 }

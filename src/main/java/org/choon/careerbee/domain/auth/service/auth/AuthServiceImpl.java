@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.auth.service.auth;
 
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.util.jwt.JwtUtil;
+import org.choon.careerbee.util.jwt.TokenGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
   private final JwtUtil jwtUtil;
+  private final TokenGenerator tokenGenerator;
   private final OAuthLoginUrlProviderFactory providerFactory;
   private final RequestOAuthInfoService requestOAuthInfoService;
 
@@ -85,6 +88,27 @@ public class AuthServiceImpl implements AuthService {
 
     refreshTokenInRDB.logout();
     tokenRepository.save(new Token(member, TokenStatus.BLACK, resolveAccessToken));
+  }
+
+  @Override
+  public AuthTokens reissue(String refreshToken) {
+    TokenClaimInfo tokenClaims = jwtUtil.getTokenClaims(refreshToken);
+
+    Member findMember = memberRepository.findById(tokenClaims.id()).orElseThrow(
+        () -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST)
+    );
+
+    Token refreshTokenInRDB = tokenRepository.findByMemberIdAndStatus(findMember.getId(), TokenStatus.LIVE)
+        .orElseThrow(() -> new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND));
+
+    if (!Objects.equals(refreshToken, refreshTokenInRDB.getTokenValue())) {
+      throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH);
+    }
+
+    AuthTokens generateTokens = tokenGenerator.generateToken(findMember.getId());
+    refreshTokenInRDB.revoke();
+    tokenRepository.save(new Token(findMember, TokenStatus.LIVE, generateTokens.refreshToken()));
+    return generateTokens;
   }
 
 
