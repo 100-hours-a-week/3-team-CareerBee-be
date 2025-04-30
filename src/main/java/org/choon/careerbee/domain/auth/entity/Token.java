@@ -45,4 +45,8 @@ public class Token {
     this.status = status;
     this.tokenValue = tokenValue;
   }
+
+  public void logout() {
+    this.status = TokenStatus.BLACK;
+  }
 }

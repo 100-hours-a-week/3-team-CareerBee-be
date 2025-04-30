@@ -77,14 +77,8 @@ public class JwtUtil {
    * @return : 토큰을 이용하여 로그인 된 UPA 객체를 가져옴 -> UPA 객체 안에 유저의 권한들이 담겨 있음
    */
   public Authentication getAuthentication(String token) {
-    UserDetails userDetails = loadUserDetailsByToken(token);
+    UserDetails userDetails = userDetailsService.loadUserByUsername(String.valueOf(getIdInToken(token)));
     return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
-  }
-
-  private UserDetails loadUserDetailsByToken(String token) {
-    Long authInfo = getIdInToken(token);
-
-    return userDetailsService.loadUserByUsername(String.valueOf(authInfo));
   }
 
   /***
@@ -93,31 +87,15 @@ public class JwtUtil {
    * @return : 암호화된 JWT
    */
   public String createToken(Long subject, TokenType tokenType) {
-    Claims claims = createClaims(subject);
     long expirationTime = getExpirationTime(tokenType);
 
     return Jwts.builder()
-        .claims(claims)
+        .subject(String.valueOf(subject))
+        .claim(ID, subject)
         .issuedAt(new Date(System.currentTimeMillis()))
         .expiration(new Date(System.currentTimeMillis() + expirationTime))
         .signWith(getSigningKey(SECRET_KEY), SIG.HS256)
         .compact();
-  }
-
-  private Claims createClaims(Long subject) {
-    Claims claims = Jwts.claims()
-        .subject(String.valueOf(subject))
-        .build();
-
-//    claims.put(ID, subject);
-
-    return claims;
-  }
-
-  private long getExpirationTime(TokenType tokenType) {
-    return tokenType == TokenType.ACCESS_TOKEN
-        ? ACCESS_TOKEN_EXPIRATION_TIME
-        : REFRESH_TOKEN_EXPIRATION_TIME;
   }
 
   /***
@@ -151,7 +129,9 @@ public class JwtUtil {
     return expiration.getTime() - now;
   }
 
-  public Long getExpiration(TokenType tokenType) {
-    return tokenType.equals(TokenType.ACCESS_TOKEN) ? ACCESS_TOKEN_EXPIRATION_TIME : REFRESH_TOKEN_EXPIRATION_TIME;
+  private long getExpirationTime(TokenType tokenType) {
+    return tokenType == TokenType.ACCESS_TOKEN
+        ? ACCESS_TOKEN_EXPIRATION_TIME
+        : REFRESH_TOKEN_EXPIRATION_TIME;
   }
 }
