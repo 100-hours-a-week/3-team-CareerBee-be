@@ -12,9 +12,11 @@ import org.choon.careerbee.domain.member.entity.Member;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"member_id", "company_id"})
-})
+@Table(
+    name = "wish_company",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"member_id", "company_id"})
+    })
 public class WishCompany {
 
   @Id

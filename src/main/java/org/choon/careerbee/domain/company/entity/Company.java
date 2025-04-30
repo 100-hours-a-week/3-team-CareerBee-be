@@ -22,8 +22,8 @@ import org.locationtech.jts.geom.Point;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @SQLRestriction("deleted_at is NULL")
+@Table(name = "company")
 public class Company {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

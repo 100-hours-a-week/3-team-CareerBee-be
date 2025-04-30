@@ -1,18 +1,21 @@
 package org.choon.careerbee.domain.company.entity.techStack;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.company.entity.enums.StackType;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@SQLRestriction("deleted_at is NULL")
+@Table(name = "tech_stack")
 public class TechStack {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -26,4 +29,7 @@ public class TechStack {
 
   @Column(length = 500, nullable = false)
   private String imgUrl;
+
+  @Column(columnDefinition = "TIMESTAMP")
+  private LocalDateTime deletedAt;
 }

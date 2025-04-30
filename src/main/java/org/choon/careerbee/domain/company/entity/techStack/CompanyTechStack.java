@@ -11,11 +11,12 @@ import org.choon.careerbee.domain.company.entity.Company;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(uniqueConstraints = {
+@Table(
+    name = "company_tech_stack",
+    uniqueConstraints = {
     @UniqueConstraint(name = "uq_company_stack", columnNames = {"company_id", "stack_id"})
 })
 public class CompanyTechStack {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

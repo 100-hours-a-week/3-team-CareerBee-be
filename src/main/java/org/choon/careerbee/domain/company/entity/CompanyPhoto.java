@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Table(name = "company_photo")
 public class CompanyPhoto {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

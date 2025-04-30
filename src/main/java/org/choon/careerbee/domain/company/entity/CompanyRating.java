@@ -12,8 +12,8 @@ import org.choon.careerbee.domain.company.entity.enums.Source;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Table(name = "company_rating")
 public class CompanyRating {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
