@@ -22,9 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/api/v1/companies")
-public class CompanyController {
+public class CompanyQueryController {
   private final CompanyQueryService queryService;
-  private final CompanyCommandService commandService;
 
   @GetMapping
   public ResponseEntity<ApiResponse<CompanyRangeSearchResp>> fetchCompaniesByDistance(
