@@ -1,11 +1,19 @@
 package org.choon.careerbee.domain.company.service;
 
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
+import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
+import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.member.entity.Member;
+import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CompanyQueryServiceImpl implements CompanyQueryService {
   private final CompanyRepository companyRepository;
+  private final WishCompanyRepository wishCompanyRepository;
+  private final MemberRepository memberRepository;
 
   @Override
   public CompanyRangeSearchResp fetchCompaniesByDistance(
@@ -25,5 +35,16 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
   @Override
   public CompanySummaryInfo fetchCompanySummary(Long companyId) {
     return companyRepository.fetchCompanySummaryInfoById(companyId);
+  }
+
+  @Override
+  public CheckWishCompanyResp checkWishCompany(Long accessMemberId, Long companyId) {
+    Member validMember = memberRepository.findById(accessMemberId)
+        .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+
+    Company validCompany = companyRepository.findById(companyId)
+        .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+
+    return new CheckWishCompanyResp(wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany));
   }
 }
