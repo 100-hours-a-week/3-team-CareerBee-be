@@ -9,6 +9,7 @@ import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.company.service.CompanyCommandService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +31,18 @@ public class CompanyCommandController {
 
     return ApiResponseEntity.ok(
         CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.withMessage("관심기업 등록에 성공하였습니다.")
+    );
+  }
+
+  @DeleteMapping("/{companyId}")
+  public ResponseEntity<ApiResponse<Void>> deleteWishCompany(
+      @PathVariable Long companyId,
+      @AuthenticationPrincipal PrincipalDetails principalDetails
+  ) {
+    commandService.deleteWishCompany(principalDetails.getId(), companyId);
+
+    return ApiResponseEntity.ok(
+        CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.withMessage("관심기업 삭제에 성공하였습니다.")
     );
   }
 }
