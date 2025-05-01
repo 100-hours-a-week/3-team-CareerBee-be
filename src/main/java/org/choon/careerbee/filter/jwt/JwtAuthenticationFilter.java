@@ -70,8 +70,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         "/api/v1/companies"
     };
     String path = request.getRequestURI();
-    log.info("path : {}", path);
+    if (path.equals("/")) return true;
 
-    return Arrays.asList(excludePath).contains(path);
+    return Arrays.stream(excludePath).anyMatch(path::startsWith);
   }
 }

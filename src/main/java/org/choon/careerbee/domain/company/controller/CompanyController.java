@@ -8,11 +8,13 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.service.CompanyCommandService;
 import org.choon.careerbee.domain.company.service.CompanyQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,6 +36,18 @@ public class CompanyController {
     return ApiResponseEntity.ok(
         response,
         CustomResponseStatus.SUCCESS.withMessage("기업 조회에 성공하였습니다.")
+    );
+  }
+
+  @GetMapping("/{companyId}/summary")
+  public ResponseEntity<ApiResponse<CompanySummaryInfo>> fetchCompaniesSummary(
+      @PathVariable Long companyId
+  ) {
+    CompanySummaryInfo response = queryService.fetchCompanySummary(companyId);
+
+    return ApiResponseEntity.ok(
+        response,
+        CustomResponseStatus.SUCCESS.withMessage("기업 간단 정보 조회에 성공하였습니다.")
     );
   }
 }
