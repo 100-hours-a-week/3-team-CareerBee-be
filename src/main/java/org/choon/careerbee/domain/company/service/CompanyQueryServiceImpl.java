@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,5 +20,10 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
       CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond
   ) {
     return companyRepository.fetchByDistanceAndCondition(companyQueryAddressInfo, companyQueryCond);
+  }
+
+  @Override
+  public CompanySummaryInfo fetchCompanySummary(Long companyId) {
+    return companyRepository.fetchCompanySummaryInfoById(companyId);
   }
 }
