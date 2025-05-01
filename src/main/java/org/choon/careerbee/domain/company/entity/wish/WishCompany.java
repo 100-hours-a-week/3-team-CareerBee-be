@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.company.entity.wish;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.company.entity.Company;
@@ -30,4 +31,13 @@ public class WishCompany {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
+
+  private WishCompany(Member member, Company company) {
+    this.member = member;
+    this.company = company;
+  }
+
+  public static WishCompany of(Member member, Company company) {
+    return new WishCompany(member, company);
+  }
 }
