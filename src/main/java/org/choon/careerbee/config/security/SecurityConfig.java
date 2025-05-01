@@ -57,7 +57,8 @@ public class SecurityConfig {
         .authorizeHttpRequests((requests) -> requests
             .requestMatchers(
                 "/",
-                "/auth/v1/auth/oauth"
+                "/api/v1/companies",
+                "/api/v1/auth/oauth"
             )
             .permitAll()  // 인증 없이 접근 가능한 URI 추가
             .requestMatchers("/users/**").hasRole("MEMBER")

@@ -66,9 +66,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         "/auth/oauth",
         "/auth/tokens",
         "/auth/reissue",
-        "/favicon.ico"
+        "/favicon.ico",
+        "/api/v1/companies"
     };
     String path = request.getRequestURI();
+    log.info("path : {}", path);
 
     return Arrays.asList(excludePath).contains(path);
   }
