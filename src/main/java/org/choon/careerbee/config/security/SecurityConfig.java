@@ -56,6 +56,7 @@ public class SecurityConfig {
         // 권한 규칙 설정 (API 명세에 맞게 수정 필요)
         .authorizeHttpRequests((requests) -> requests
             .requestMatchers(
+                "/",
                 "/auth/v1/auth/oauth"
             )
             .permitAll()  // 인증 없이 접근 가능한 URI 추가

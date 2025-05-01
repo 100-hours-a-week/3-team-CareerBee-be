@@ -62,6 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String[] excludePath = {
+        "/",
         "/auth/oauth",
         "/auth/tokens",
         "/auth/reissue",
@@ -69,6 +70,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     };
     String path = request.getRequestURI();
 
-    return Arrays.stream(excludePath).anyMatch(path::startsWith);
+    return Arrays.asList(excludePath).contains(path);
   }
 }
