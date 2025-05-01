@@ -23,11 +23,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
   private static final String AUTHORIZATION = "Authorization";
 
   private final JwtUtil jwtUtil;
-
   private final TokenRepository tokenRepository;
 
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
