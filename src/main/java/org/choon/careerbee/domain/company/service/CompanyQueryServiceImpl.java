@@ -16,7 +16,8 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
   @Override
   public CompanyRangeSearchResp fetchCompaniesByDistance(
-      CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond) {
-    return null;
+      CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond
+  ) {
+    return companyRepository.fetchByDistanceAndCondition(companyQueryAddressInfo, companyQueryCond);
   }
 }
