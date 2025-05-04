@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.choon.careerbee.domain.company.entity.QCompany.*;
 import static org.choon.careerbee.domain.company.entity.QCompanyKeyword.companyKeyword;
+import static org.choon.careerbee.domain.company.entity.wish.QWishCompany.wishCompany;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -10,15 +11,18 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanySummary;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.QCompany;
+import org.choon.careerbee.domain.company.entity.wish.QWishCompany;
 import org.springframework.stereotype.Repository;
 
 @Repository
+@Slf4j
 @RequiredArgsConstructor
 public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
 
@@ -27,7 +31,6 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
   @Override
   public CompanyRangeSearchResp fetchByDistanceAndCondition(
       CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond) {
-
     List<CompanySummary> results = queryFactory
         .select(Projections.constructor(
             CompanyRangeSearchResp.CompanySummary.class,
@@ -56,10 +59,14 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             company.id,
             company.name,
             company.logoUrl,
+            wishCompany.id.count(),
             Expressions.constant(Collections.emptyList())
         ))
         .from(company)
+        .leftJoin(wishCompany)
+        .on(wishCompany.company.id.eq(company.id))
         .where(company.id.eq(companyId))
+        .groupBy(company.id, company.name, company.logoUrl)
         .fetchOne();
 
     List<CompanySummaryInfo.Keyword> keywords = queryFactory
@@ -75,6 +82,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         baseInfo.id(),
         baseInfo.name(),
         baseInfo.logoUrl(),
+        baseInfo.wishCount(),
         keywords
     );
   }

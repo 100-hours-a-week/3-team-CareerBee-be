@@ -6,6 +6,7 @@ public record CompanySummaryInfo(
     Long id,
     String name,
     String logoUrl,
+    Long wishCount,
     List<Keyword> keywords
 ) {
   public record Keyword(
