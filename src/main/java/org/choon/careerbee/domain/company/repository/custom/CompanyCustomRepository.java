@@ -4,6 +4,7 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 
 public interface CompanyCustomRepository {
@@ -13,4 +14,6 @@ public interface CompanyCustomRepository {
   CompanySummaryInfo fetchCompanySummaryInfoById(Long companyId);
 
   CompanyDetailResp fetchCompanyDetailById(Long companyId);
+
+  CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword);
 }
