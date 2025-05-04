@@ -7,6 +7,7 @@ import org.choon.careerbee.common.dto.ApiResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
+import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.service.CompanyCommandService;
@@ -47,6 +48,18 @@ public class CompanyQueryController {
     return ApiResponseEntity.ok(
         response,
         CustomResponseStatus.SUCCESS.withMessage("기업 간단 정보 조회에 성공하였습니다.")
+    );
+  }
+
+  @GetMapping("/{companyId}")
+  public ResponseEntity<ApiResponse<CompanyDetailResp>> fetchCompanyDetail(
+      @PathVariable Long companyId
+  ) {
+    CompanyDetailResp response = queryService.fetchCompanyDetail(companyId);
+
+    return ApiResponseEntity.ok(
+        response,
+        CustomResponseStatus.SUCCESS.withMessage("기업 상세 정보 조회에 성공하였습니다.")
     );
   }
 }

@@ -34,16 +34,16 @@ public class Company {
   @Column(columnDefinition = "POINT SRID 4326")
   private Point geoPoint;
 
-  @Column(length = 200, unique = true)
+  @Column(length = 200)
   private String address;
 
   @Column(length = 500, unique = true)
   private String homeUrl;
 
-  @Column(length = 50)
+  @Column(length = 250)
   private String description;
 
-  @Column(length = 30)
+  @Column(length = 50)
   private String title;
 
   @Column(columnDefinition = "LONGTEXT")
@@ -87,6 +87,8 @@ public class Company {
 
   @Column(columnDefinition = "LONGTEXT")
   private String ir;
+
+  private Double rating;
 
   @Type(JsonType.class)
   @Column(name = "benefits", columnDefinition = "longtext")

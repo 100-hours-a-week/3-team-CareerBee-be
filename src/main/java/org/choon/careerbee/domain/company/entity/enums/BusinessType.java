@@ -5,5 +5,7 @@ public enum BusinessType {
   SI,
   COMMERCE,
   GAME,
-  TELECOM
+  TELECOM,
+  SECURITY,
+  FINANCE
 }

@@ -5,6 +5,8 @@ public enum StackType {
   FRONTEND,
   AI,
   DEVOPS,
-  COMMUNICATION
+  COMMUNICATION,
+  TESTING,
+  LANGUAGE
 
 }
