@@ -2,6 +2,11 @@ package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.choon.careerbee.domain.company.entity.QCompany.*;
 import static org.choon.careerbee.domain.company.entity.QCompanyKeyword.companyKeyword;
+import static org.choon.careerbee.domain.company.entity.QCompanyPhoto.companyPhoto;
+import static org.choon.careerbee.domain.company.entity.QCompanyRating.companyRating;
+import static org.choon.careerbee.domain.company.entity.recruitment.QRecruitment.recruitment;
+import static org.choon.careerbee.domain.company.entity.techStack.QCompanyTechStack.companyTechStack;
+import static org.choon.careerbee.domain.company.entity.techStack.QTechStack.techStack;
 import static org.choon.careerbee.domain.company.entity.wish.QWishCompany.wishCompany;
 
 import com.querydsl.core.types.Projections;
@@ -14,9 +19,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
+import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanySummary;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.QCompany;
 import org.choon.careerbee.domain.company.entity.wish.QWishCompany;
 import org.springframework.stereotype.Repository;
@@ -53,39 +60,9 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
 
   @Override
   public CompanySummaryInfo fetchCompanySummaryInfoById(Long companyId) {
-    CompanySummaryInfo baseInfo = queryFactory
-        .select(Projections.constructor(
-            CompanySummaryInfo.class,
-            company.id,
-            company.name,
-            company.logoUrl,
-            wishCompany.id.count(),
-            Expressions.constant(Collections.emptyList())
-        ))
-        .from(company)
-        .leftJoin(wishCompany)
-        .on(wishCompany.company.id.eq(company.id))
-        .where(company.id.eq(companyId))
-        .groupBy(company.id, company.name, company.logoUrl)
-        .fetchOne();
-
-    List<CompanySummaryInfo.Keyword> keywords = queryFactory
-        .select(Projections.constructor(
-            CompanySummaryInfo.Keyword.class,
-            companyKeyword.content
-        ))
-        .from(companyKeyword)
-        .where(companyKeyword.company.id.eq(companyId))
-        .fetch();
-
-    return new CompanySummaryInfo(
-        baseInfo.id(),
-        baseInfo.name(),
-        baseInfo.logoUrl(),
-        baseInfo.wishCount(),
-        keywords
-    );
+    return null;
   }
+
 
   private BooleanExpression inDistance(String point, Integer radius) {
     return radius != null

@@ -6,6 +6,7 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
@@ -46,5 +47,10 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
         .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
 
     return new CheckWishCompanyResp(wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany));
+  }
+
+  @Override
+  public CompanyDetailResp fetchCompanyDetail(Long companyId) {
+    return companyRepository.fetchCompanyDetailById(companyId);
   }
 }

@@ -88,6 +88,8 @@ public class Company {
   @Column(columnDefinition = "LONGTEXT")
   private String ir;
 
+  private Double rating;
+
   @Type(JsonType.class)
   @Column(name = "benefits", columnDefinition = "longtext")
   private Map<String, List<String>> benefits = new HashMap<>();
