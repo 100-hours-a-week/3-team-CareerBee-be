@@ -75,6 +75,10 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         .groupBy(company.id, company.name, company.logoUrl)
         .fetchOne();
 
+    if (baseInfo == null) {
+      throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
+    }
+
     List<CompanySummaryInfo.Keyword> keywords = queryFactory
         .select(Projections.constructor(
             CompanySummaryInfo.Keyword.class,
