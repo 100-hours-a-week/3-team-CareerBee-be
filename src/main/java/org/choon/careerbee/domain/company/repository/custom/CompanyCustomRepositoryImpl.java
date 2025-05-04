@@ -3,7 +3,6 @@ package org.choon.careerbee.domain.company.repository.custom;
 import static org.choon.careerbee.domain.company.entity.QCompany.*;
 import static org.choon.careerbee.domain.company.entity.QCompanyKeyword.companyKeyword;
 import static org.choon.careerbee.domain.company.entity.QCompanyPhoto.companyPhoto;
-import static org.choon.careerbee.domain.company.entity.QCompanyRating.companyRating;
 import static org.choon.careerbee.domain.company.entity.recruitment.QRecruitment.recruitment;
 import static org.choon.careerbee.domain.company.entity.techStack.QCompanyTechStack.companyTechStack;
 import static org.choon.careerbee.domain.company.entity.techStack.QTechStack.techStack;
@@ -24,8 +23,6 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanySummary;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.choon.careerbee.domain.company.entity.QCompany;
-import org.choon.careerbee.domain.company.entity.wish.QWishCompany;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -60,9 +57,119 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
 
   @Override
   public CompanySummaryInfo fetchCompanySummaryInfoById(Long companyId) {
-    return null;
+    CompanySummaryInfo baseInfo = queryFactory
+        .select(Projections.constructor(
+            CompanySummaryInfo.class,
+            company.id,
+            company.name,
+            company.logoUrl,
+            wishCompany.id.count(),
+            Expressions.constant(Collections.emptyList())
+        ))
+        .from(company)
+        .leftJoin(wishCompany)
+        .on(wishCompany.company.id.eq(company.id))
+        .where(company.id.eq(companyId))
+        .groupBy(company.id, company.name, company.logoUrl)
+        .fetchOne();
+
+    List<CompanySummaryInfo.Keyword> keywords = queryFactory
+        .select(Projections.constructor(
+            CompanySummaryInfo.Keyword.class,
+            companyKeyword.content
+        ))
+        .from(companyKeyword)
+        .where(companyKeyword.company.id.eq(companyId))
+        .fetch();
+
+    return new CompanySummaryInfo(
+        baseInfo.id(),
+        baseInfo.name(),
+        baseInfo.logoUrl(),
+        baseInfo.wishCount(),
+        keywords
+    );
   }
 
+  @Override
+  public CompanyDetailResp fetchCompanyDetailById(Long companyId) {
+    Company companyEntity = queryFactory
+        .selectFrom(company)
+        .where(company.id.eq(companyId))
+        .fetchOne();
+
+    if (companyEntity == null) return null;
+
+    Integer wishCount = queryFactory
+        .select(wishCompany.count().intValue())
+        .from(wishCompany)
+        .where(wishCompany.company.id.eq(companyId))
+        .fetchOne();
+
+    List<CompanyDetailResp.Photo> photos = queryFactory
+        .select(Projections.constructor(
+            CompanyDetailResp.Photo.class,
+            companyPhoto.displayOrder,
+            companyPhoto.imgUrl
+        ))
+        .from(companyPhoto)
+        .where(companyPhoto.company.id.eq(companyId))
+        .orderBy(companyPhoto.displayOrder.asc())
+        .fetch();
+
+    List<CompanyDetailResp.TechStack> techStacks = queryFactory
+        .select(Projections.constructor(
+            CompanyDetailResp.TechStack.class,
+            techStack.id,
+            techStack.name,
+            techStack.stackType.stringValue(),
+            techStack.imgUrl
+        ))
+        .from(companyTechStack)
+        .join(companyTechStack.techStack, techStack)
+        .where(companyTechStack.company.id.eq(companyId))
+        .fetch();
+
+    List<CompanyDetailResp.Recruitment> recruitments = queryFactory
+        .select(Projections.constructor(
+            CompanyDetailResp.Recruitment.class,
+            recruitment.recruitingId,
+            recruitment.url,
+            recruitment.title,
+            recruitment.startDate.stringValue(),
+            recruitment.endDate.stringValue()
+        ))
+        .from(recruitment)
+        .where(recruitment.company.id.eq(companyId))
+        .orderBy(recruitment.startDate.desc())
+        .fetch();
+
+    return new CompanyDetailResp(
+        companyEntity.getId(),
+        companyEntity.getName(),
+        companyEntity.getTitle(),
+        companyEntity.getLogoUrl(),
+        companyEntity.getRecentIssue(),
+        companyEntity.getCompanyType().name(),
+        companyEntity.getRecruitingStatus().name(),
+        companyEntity.getAddress(),
+        companyEntity.getEmployeeCount(),
+        companyEntity.getHomeUrl(),
+        companyEntity.getDescription(),
+        wishCount != null ? wishCount : 0,
+        companyEntity.getRating() != null ? companyEntity.getRating() : 0.0,
+        new CompanyDetailResp.Financials(
+            companyEntity.getAnnualSalary(),
+            companyEntity.getStartingSalary(),
+            companyEntity.getRevenue(),
+            companyEntity.getOperatingProfit()
+        ),
+        photos,
+        CompanyDetailResp.convertBenefitMap(companyEntity.getBenefits()),
+        techStacks,
+        recruitments
+    );
+  }
 
   private BooleanExpression inDistance(String point, Integer radius) {
     return radius != null
