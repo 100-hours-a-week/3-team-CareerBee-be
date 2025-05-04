@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
@@ -98,7 +100,9 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         .where(company.id.eq(companyId))
         .fetchOne();
 
-    if (companyEntity == null) return null;
+    if (companyEntity == null) {
+      throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
+    }
 
     Integer wishCount = queryFactory
         .select(wishCompany.count().intValue())
