@@ -8,9 +8,9 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -52,5 +52,10 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
   @Override
   public CompanyDetailResp fetchCompanyDetail(Long companyId) {
     return companyRepository.fetchCompanyDetailById(companyId);
+  }
+
+  @Override
+  public CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword) {
+    return companyRepository.fetchMatchingCompaniesByKeyword(keyword);
   }
 }

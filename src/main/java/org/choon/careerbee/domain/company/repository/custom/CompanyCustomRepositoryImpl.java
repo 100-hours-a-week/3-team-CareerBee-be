@@ -23,6 +23,8 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanySummary;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.springframework.stereotype.Repository;
@@ -177,6 +179,24 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         techStacks,
         recruitments
     );
+  }
+
+  @Override
+  public CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword) {
+    List<CompanySearchInfo> result = queryFactory
+        .select(
+            Projections.constructor(
+                CompanySearchInfo.class,
+                company.id,
+                company.name
+            )
+        )
+        .from(company)
+        .where(company.name.like("%" + keyword + "%"))
+        .limit(8)
+        .fetch();
+
+    return new CompanySearchResp(result);
   }
 
   private BooleanExpression inDistance(String point, Integer radius) {
