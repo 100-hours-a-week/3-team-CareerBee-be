@@ -93,4 +93,8 @@ public class Company {
   @Type(JsonType.class)
   @Column(name = "benefits", columnDefinition = "longtext")
   private Map<String, List<String>> benefits = new HashMap<>();
+
+  public void changeRecruitingStatus(RecruitingStatus status) {
+    this.recruitingStatus = status;
+  }
 }

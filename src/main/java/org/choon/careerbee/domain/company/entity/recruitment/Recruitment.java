@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.company.entity.Company;
@@ -45,4 +46,25 @@ public class Recruitment {
 
   @Column(nullable = false)
   private LocalDateTime endDate;
+
+  @Builder
+  private Recruitment(Company company, Long recruitingId, String url, String title, LocalDateTime startDate, LocalDateTime endDate) {
+    this.company = company;
+    this.recruitingId = recruitingId;
+    this.url = url;
+    this.title = title;
+    this.startDate = startDate;
+    this.endDate = endDate;
+  }
+
+  public static Recruitment from(Company company, Long recruitingId, String url, String title, LocalDateTime startDate, LocalDateTime endDate) {
+    return Recruitment.builder()
+        .company(company)
+        .recruitingId(recruitingId)
+        .url(url)
+        .title(title)
+        .startDate(startDate)
+        .endDate(endDate)
+        .build();
+  }
 }

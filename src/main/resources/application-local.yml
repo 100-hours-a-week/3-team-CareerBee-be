@@ -25,3 +25,8 @@ oauth:
     redirect-uri: ${KAKAO_REDIRECT_URI}
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
+
+saramin:
+  api:
+    base-url: https://oapi.saramin.co.kr
+    access-key: ${SARAMIN_SECRET_KEY}
