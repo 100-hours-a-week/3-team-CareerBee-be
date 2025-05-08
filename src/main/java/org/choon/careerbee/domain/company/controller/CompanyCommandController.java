@@ -64,7 +64,7 @@ public class CompanyCommandController {
     );
   }
 
-  @GetMapping("/ids")
+  @GetMapping("/id-list")
   public ResponseEntity<ApiResponse<WishCompanyIdResp>> fetchCompanyDetail(
       @AuthenticationPrincipal PrincipalDetails principalDetails
   ) {
