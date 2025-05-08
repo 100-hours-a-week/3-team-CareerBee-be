@@ -7,6 +7,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 
 public interface CompanyQueryService {
 
@@ -19,4 +20,6 @@ public interface CompanyQueryService {
   CompanyDetailResp fetchCompanyDetail(Long companyId);
 
   CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword);
+
+  WishCompanyIdResp fetchWishCompanyIds(Long accessMemberId);
 }
