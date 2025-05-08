@@ -44,6 +44,8 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             CompanyRangeSearchResp.CompanySummary.class,
             company.id,
             company.markerUrl,
+            company.businessType,
+            company.recruitingStatus,
             Projections.constructor(
                 CompanyRangeSearchResp.LocationInfo.class,
                 Expressions.numberTemplate(Double.class, "ST_X({0})", company.geoPoint),
