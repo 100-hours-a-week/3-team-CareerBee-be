@@ -40,6 +40,9 @@ public class Company {
   @Column(length = 500, unique = true)
   private String homeUrl;
 
+  @Column(length = 500)
+  private String markerUrl;
+
   @Column(length = 250)
   private String description;
 
