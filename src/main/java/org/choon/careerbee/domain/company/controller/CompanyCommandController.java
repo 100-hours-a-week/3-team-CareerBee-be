@@ -7,6 +7,7 @@ import org.choon.careerbee.common.dto.ApiResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.service.CompanyCommandService;
 import org.choon.careerbee.domain.company.service.CompanyQueryService;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +61,18 @@ public class CompanyCommandController {
     return ApiResponseEntity.ok(
         response,
         CustomResponseStatus.SUCCESS.withMessage("관심기업 여부 조회에 성공하였습니다.")
+    );
+  }
+
+  @GetMapping("/ids")
+  public ResponseEntity<ApiResponse<WishCompanyIdResp>> fetchCompanyDetail(
+      @AuthenticationPrincipal PrincipalDetails principalDetails
+  ) {
+    WishCompanyIdResp response = queryService.fetchWishCompanyIds(principalDetails.getId());
+
+    return ApiResponseEntity.ok(
+        response,
+        CustomResponseStatus.SUCCESS.withMessage("관심 기업 아이디 조회에 성공하였습니다.")
     );
   }
 }
