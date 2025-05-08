@@ -1,6 +1,8 @@
 package org.choon.careerbee.domain.company.dto.response;
 
 import java.util.List;
+import org.choon.careerbee.domain.company.entity.enums.BusinessType;
+import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 
 public record CompanyRangeSearchResp(
     List<CompanySummary> companies
@@ -9,6 +11,8 @@ public record CompanyRangeSearchResp(
   public record CompanySummary(
       Long id,
       String markerUrl,
+      BusinessType businessType,
+      RecruitingStatus recruitingStatus,
       LocationInfo locationInfo
   ) {}
 
