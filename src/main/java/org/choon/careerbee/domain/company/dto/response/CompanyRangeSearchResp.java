@@ -8,7 +8,7 @@ public record CompanyRangeSearchResp(
 
   public record CompanySummary(
       Long id,
-      String logoUrl,
+      String markerUrl,
       LocationInfo locationInfo
   ) {}
 

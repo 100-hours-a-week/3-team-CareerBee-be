@@ -43,7 +43,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         .select(Projections.constructor(
             CompanyRangeSearchResp.CompanySummary.class,
             company.id,
-            company.logoUrl,
+            company.markerUrl,
             Projections.constructor(
                 CompanyRangeSearchResp.LocationInfo.class,
                 Expressions.numberTemplate(Double.class, "ST_X({0})", company.geoPoint),
