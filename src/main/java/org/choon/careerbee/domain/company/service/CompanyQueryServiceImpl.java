@@ -8,6 +8,7 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
@@ -23,48 +24,56 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class CompanyQueryServiceImpl implements CompanyQueryService {
-  private final CompanyRepository companyRepository;
-  private final WishCompanyRepository wishCompanyRepository;
-  private final MemberRepository memberRepository;
 
-  @Override
-  public CompanyRangeSearchResp fetchCompaniesByDistance(
-      CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond
-  ) {
-    return companyRepository.fetchByDistanceAndCondition(companyQueryAddressInfo, companyQueryCond);
-  }
+    private final CompanyRepository companyRepository;
+    private final WishCompanyRepository wishCompanyRepository;
+    private final MemberRepository memberRepository;
 
-  @Override
-  public CompanySummaryInfo fetchCompanySummary(Long companyId) {
-    return companyRepository.fetchCompanySummaryInfoById(companyId);
-  }
+    @Override
+    public CompanyRangeSearchResp fetchCompaniesByDistance(
+        CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond
+    ) {
+        return companyRepository.fetchByDistanceAndCondition(companyQueryAddressInfo,
+            companyQueryCond);
+    }
 
-  @Override
-  public CheckWishCompanyResp checkWishCompany(Long accessMemberId, Long companyId) {
-    Member validMember = memberRepository.findById(accessMemberId)
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+    @Override
+    public CompanySummaryInfo fetchCompanySummary(Long companyId) {
+        return companyRepository.fetchCompanySummaryInfoById(companyId);
+    }
 
-    Company validCompany = companyRepository.findById(companyId)
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+    @Override
+    public CheckWishCompanyResp checkWishCompany(Long accessMemberId, Long companyId) {
+        Member validMember = memberRepository.findById(accessMemberId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
 
-    return new CheckWishCompanyResp(wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany));
-  }
+        Company validCompany = companyRepository.findById(companyId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
 
-  @Override
-  public CompanyDetailResp fetchCompanyDetail(Long companyId) {
-    return companyRepository.fetchCompanyDetailById(companyId);
-  }
+        return new CheckWishCompanyResp(
+            wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany));
+    }
 
-  @Override
-  public CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword) {
-    return companyRepository.fetchMatchingCompaniesByKeyword(keyword);
-  }
+    @Override
+    public CompanyDetailResp fetchCompanyDetail(Long companyId) {
+        return companyRepository.fetchCompanyDetailById(companyId);
+    }
 
-  @Override
-  public WishCompanyIdResp fetchWishCompanyIds(Long accessMemberId) {
-    Member validMember = memberRepository.findById(accessMemberId)
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+    @Override
+    public CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword) {
+        return companyRepository.fetchMatchingCompaniesByKeyword(keyword);
+    }
 
-    return wishCompanyRepository.fetchWishCompanyIdsByMember(validMember);
-  }
+    @Override
+    public WishCompanyIdResp fetchWishCompanyIds(Long accessMemberId) {
+        Member validMember = memberRepository.findById(accessMemberId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+
+        return wishCompanyRepository.fetchWishCompanyIdsByMember(validMember);
+    }
+
+    @Override
+    public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
+        return companyRepository.fetchCompanyMarkerInfo(companyId);
+    }
 }
