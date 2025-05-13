@@ -24,55 +24,61 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequestMapping("/api/v1/members/wish-companies")
 public class CompanyCommandController {
-  private final CompanyCommandService commandService;
-  private final CompanyQueryService queryService;
 
-  @PostMapping("/{companyId}")
-  public ResponseEntity<ApiResponse<Void>> registWishCompany(
-      @PathVariable Long companyId,
-      @AuthenticationPrincipal PrincipalDetails principalDetails
-  ) {
-    commandService.registWishCompany(principalDetails.getId(), companyId);
+    private final CompanyCommandService commandService;
+    private final CompanyQueryService queryService;
 
-    return ApiResponseEntity.ok(
-        CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.withMessage("관심기업 등록에 성공하였습니다.")
-    );
-  }
+    @PostMapping("/{companyId}")
+    public ResponseEntity<ApiResponse<Void>> registWishCompany(
+        @PathVariable Long companyId,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.registWishCompany(principalDetails.getId(), companyId);
 
-  @DeleteMapping("/{companyId}")
-  public ResponseEntity<ApiResponse<Void>> deleteWishCompany(
-      @PathVariable Long companyId,
-      @AuthenticationPrincipal PrincipalDetails principalDetails
-  ) {
-    commandService.deleteWishCompany(principalDetails.getId(), companyId);
+        return ApiResponseEntity.ok(
+            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            "관심기업 등록에 성공하였습니다."
+        );
+    }
 
-    return ApiResponseEntity.ok(
-        CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.withMessage("관심기업 삭제에 성공하였습니다.")
-    );
-  }
+    @DeleteMapping("/{companyId}")
+    public ResponseEntity<ApiResponse<Void>> deleteWishCompany(
+        @PathVariable Long companyId,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.deleteWishCompany(principalDetails.getId(), companyId);
 
-  @GetMapping("/{companyId}")
-  public ResponseEntity<ApiResponse<CheckWishCompanyResp>> checkWishCompany(
-      @PathVariable Long companyId,
-      @AuthenticationPrincipal PrincipalDetails principalDetails
-  ) {
-    CheckWishCompanyResp response = queryService.checkWishCompany(principalDetails.getId(), companyId);
+        return ApiResponseEntity.ok(
+            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            "관심기업 삭제에 성공하였습니다."
+        );
+    }
 
-    return ApiResponseEntity.ok(
-        response,
-        CustomResponseStatus.SUCCESS.withMessage("관심기업 여부 조회에 성공하였습니다.")
-    );
-  }
+    @GetMapping("/{companyId}")
+    public ResponseEntity<ApiResponse<CheckWishCompanyResp>> checkWishCompany(
+        @PathVariable Long companyId,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        CheckWishCompanyResp response = queryService.checkWishCompany(principalDetails.getId(),
+            companyId);
 
-  @GetMapping("/id-list")
-  public ResponseEntity<ApiResponse<WishCompanyIdResp>> fetchCompanyDetail(
-      @AuthenticationPrincipal PrincipalDetails principalDetails
-  ) {
-    WishCompanyIdResp response = queryService.fetchWishCompanyIds(principalDetails.getId());
+        return ApiResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "관심기업 여부 조회에 성공하였습니다."
+        );
+    }
 
-    return ApiResponseEntity.ok(
-        response,
-        CustomResponseStatus.SUCCESS.withMessage("관심 기업 아이디 조회에 성공하였습니다.")
-    );
-  }
+    @GetMapping("/id-list")
+    public ResponseEntity<ApiResponse<WishCompanyIdResp>> fetchCompanyDetail(
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        WishCompanyIdResp response = queryService.fetchWishCompanyIds(principalDetails.getId());
+
+        return ApiResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "관심 기업 아이디 조회에 성공하였습니다."
+        );
+    }
 }

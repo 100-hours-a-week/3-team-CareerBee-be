@@ -10,11 +10,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class SystemController {
 
-  @GetMapping("/")
-  public ResponseEntity<ApiResponse<String>> healthCheck() {
-    return ApiResponseEntity.ok(
-        "Healthy",
-        CustomResponseStatus.SUCCESS
-    );
-  }
+    @GetMapping("/health-check")
+    public ResponseEntity<ApiResponse<String>> healthCheck() {
+        return ApiResponseEntity.ok(
+            "Healthy",
+            CustomResponseStatus.SUCCESS,
+            "헬스체크에 성공하였습니다."
+        );
+    }
 }

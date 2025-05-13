@@ -39,7 +39,8 @@ public class CompanyQueryController {
 
         return ApiResponseEntity.ok(
             response,
-            CustomResponseStatus.SUCCESS.withMessage("기업 조회에 성공하였습니다.")
+            CustomResponseStatus.SUCCESS,
+            "기업 조회에 성공하였습니다."
         );
     }
 
@@ -51,7 +52,8 @@ public class CompanyQueryController {
 
         return ApiResponseEntity.ok(
             response,
-            CustomResponseStatus.SUCCESS.withMessage("기업 간단 정보 조회에 성공하였습니다.")
+            CustomResponseStatus.SUCCESS,
+            "기업 간단 정보 조회에 성공하였습니다."
         );
     }
 
@@ -63,7 +65,8 @@ public class CompanyQueryController {
 
         return ApiResponseEntity.ok(
             response,
-            CustomResponseStatus.SUCCESS.withMessage("기업 상세 정보 조회에 성공하였습니다.")
+            CustomResponseStatus.SUCCESS,
+            "기업 상세 정보 조회에 성공하였습니다."
         );
     }
 
@@ -75,19 +78,21 @@ public class CompanyQueryController {
 
         return ApiResponseEntity.ok(
             response,
-            CustomResponseStatus.SUCCESS.withMessage("매칭 데이터 조회에 성공하였습니다.")
+            CustomResponseStatus.SUCCESS,
+            "매칭 데이터 조회에 성공하였습니다."
         );
     }
 
     @GetMapping("/{companyId}/locations")
-    public ResponseEntity<ApiResponse<CompanyMarkerInfo>> fetchcCompanyLocationInfo(
+    public ResponseEntity<ApiResponse<CompanyMarkerInfo>> fetchCompanyLocationInfo(
         @PathVariable Long companyId
     ) {
         CompanyMarkerInfo response = queryService.fetchCompanyLocation(companyId);
 
         return ApiResponseEntity.ok(
             response,
-            CustomResponseStatus.SUCCESS.withMessage("기업 위치 정보 조회에 성공하였습니다.")
+            CustomResponseStatus.SUCCESS,
+            "기업 위치 정보 조회에 성공하였습니다."
         );
     }
 }

@@ -16,23 +16,31 @@ import org.springframework.validation.ObjectError;
 @NoArgsConstructor
 @Getter
 public class ApiResponse<T> {
+
     private int httpStatusCode;
     private String message;
     private T data;
 
-    public static <T> ApiResponse<T> createSuccess(T data, CustomResponseStatus customResponseStatus) {
+    public static <T> ApiResponse<T> createSuccessWithMessage(
+        T data,
+        CustomResponseStatus customResponseStatus,
+        String message
+    ) {
         return new ApiResponse<>(
-                customResponseStatus.getHttpStatusCode(),
-                customResponseStatus.getMessage(),
-                data
+            customResponseStatus.getHttpStatusCode(),
+            message,
+            data
         );
     }
 
-    public static <T> ApiResponse<T> createSuccessWithNoContent(CustomResponseStatus customResponseStatus) {
+    public static <T> ApiResponse<T> createSuccessWithNoContent(
+        CustomResponseStatus customResponseStatus,
+        String message
+    ) {
         return new ApiResponse<>(
-                customResponseStatus.getHttpStatusCode(),
-                customResponseStatus.getMessage(),
-                null
+            customResponseStatus.getHttpStatusCode(),
+            message,
+            null
         );
     }
 
@@ -53,9 +61,9 @@ public class ApiResponse<T> {
         }
 
         return new ApiResponse<>(
-                HttpStatus.BAD_REQUEST.value(),
-                "유효하지 않은 데이터입니다.",
-                errors
+            HttpStatus.BAD_REQUEST.value(),
+            "유효하지 않은 데이터입니다.",
+            errors
         );
     }
 
@@ -66,9 +74,9 @@ public class ApiResponse<T> {
      */
     public static ApiResponse<String> createError(CustomResponseStatus status) {
         return new ApiResponse<>(
-                status.getHttpStatusCode(),
-                status.getMessage(),
-                null
+            status.getHttpStatusCode(),
+            status.getMessage(),
+            null
         );
     }
 }
