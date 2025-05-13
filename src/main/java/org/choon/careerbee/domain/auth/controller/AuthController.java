@@ -101,6 +101,7 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setDomain(cookieDomain);
+        cookie.setAttribute("SameSite", "None");
         return cookie;
     }
 }
