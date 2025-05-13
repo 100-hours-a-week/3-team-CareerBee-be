@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.member.service;
 
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 
@@ -19,5 +20,10 @@ public class MemberQueryServiceImpl implements MemberQueryService {
     @Override
     public Optional<Long> getMemberIdByEmail(String email) {
         return memberRepository.findIdByEmail(email);
+    }
+
+    @Override
+    public MyInfoResp getMyInfoByMemberId(Long memberId) {
+        return memberRepository.fetchMyInfoByMemberId(memberId);
     }
 }
