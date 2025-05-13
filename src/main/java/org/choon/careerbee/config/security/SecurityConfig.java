@@ -58,7 +58,7 @@ public class SecurityConfig {
             // 권한 규칙 설정 (API 명세에 맞게 수정 필요)
             .authorizeHttpRequests((requests) -> requests
                 .requestMatchers(
-                    "/",
+                    "/health-check",
                     "/api/v1/companies",
                     "/api/v1/auth/oauth"
                 )
