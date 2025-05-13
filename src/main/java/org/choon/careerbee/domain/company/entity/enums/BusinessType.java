@@ -1,11 +1,11 @@
 package org.choon.careerbee.domain.company.entity.enums;
 
 public enum BusinessType {
-  PLATFORM,
-  SI,
-  COMMERCE,
-  GAME,
-  TELECOM,
-  SECURITY,
-  FINANCE
+    PLATFORM,
+    SI,
+    COMMERCE,
+    GAME,
+    TELECOM,
+    SECURITY,
+    FINANCE
 }

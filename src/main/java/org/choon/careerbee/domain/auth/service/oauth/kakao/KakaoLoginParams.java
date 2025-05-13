@@ -6,6 +6,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 public class KakaoLoginParams implements OAuthLoginParams {
+
     /***
      * 카카오 API 요청에 필요한 authorizationCode를 갖고있는 클래스이다.
      */

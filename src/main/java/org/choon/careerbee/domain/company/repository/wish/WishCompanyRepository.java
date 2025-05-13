@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface WishCompanyRepository extends JpaRepository<WishCompany, Long>,
     WishCompanyCustomRepository {
 
-  boolean existsByMemberAndCompany(Member member, Company company);
+    boolean existsByMemberAndCompany(Member member, Company company);
 
-  Optional<WishCompany> findByMemberAndCompany(Member member, Company company);
+    Optional<WishCompany> findByMemberAndCompany(Member member, Company company);
 }

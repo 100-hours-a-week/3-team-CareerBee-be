@@ -1,4 +1,3 @@
-
 package org.choon.careerbee.util.jwt;
 
 import lombok.RequiredArgsConstructor;
@@ -9,6 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class TokenGenerator {
+
     private final JwtUtil jwtUtil;
 
     public AuthTokens generateToken(Long id) {

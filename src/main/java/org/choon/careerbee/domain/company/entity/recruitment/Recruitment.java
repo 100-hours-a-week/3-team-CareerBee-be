@@ -15,7 +15,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
@@ -23,26 +22,27 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Table(name = "recruitment")
 public class Recruitment {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "company_id", nullable = false)
-  private Company company;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false, unique = true)
-  private Long recruitingId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 
-  @Column(length = 500)
-  private String url;
+    @Column(nullable = false, unique = true)
+    private Long recruitingId;
 
-  @Column(length = 200, nullable = false)
-  private String title;
+    @Column(length = 500)
+    private String url;
 
-  @Column(nullable = false)
-  private LocalDateTime startDate;
+    @Column(length = 200, nullable = false)
+    private String title;
 
-  @Column(nullable = false)
-  private LocalDateTime endDate;
+    @Column(nullable = false)
+    private LocalDateTime startDate;
+
+    @Column(nullable = false)
+    private LocalDateTime endDate;
 }

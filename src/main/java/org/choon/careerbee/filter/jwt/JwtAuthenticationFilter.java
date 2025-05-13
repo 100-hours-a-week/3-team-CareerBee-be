@@ -74,9 +74,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         };
 
         String path = request.getRequestURI();
-      if (path.equals("/")) {
-        return true;
-      }
+        if (path.equals("/")) {
+            return true;
+        }
 
         return Arrays.stream(excludePath).anyMatch(path::contains);
     }

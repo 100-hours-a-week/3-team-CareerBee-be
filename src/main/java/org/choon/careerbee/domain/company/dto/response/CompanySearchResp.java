@@ -5,8 +5,11 @@ import java.util.List;
 public record CompanySearchResp(
     List<CompanySearchInfo> matchingCompanies
 ) {
-  public record CompanySearchInfo(
-      Long id,
-      String name
-  ) {}
+
+    public record CompanySearchInfo(
+        Long id,
+        String name
+    ) {
+
+    }
 }

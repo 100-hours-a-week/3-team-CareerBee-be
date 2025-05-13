@@ -16,36 +16,38 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
-  private final WishCompanyRepository wishCompanyRepository;
-  private final MemberRepository memberRepository;
-  private final CompanyRepository companyRepository;
 
-  @Override
-  public void registWishCompany(Long accessMemberId, Long companyId) {
-    Member validMember = memberRepository.findById(accessMemberId)
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+    private final WishCompanyRepository wishCompanyRepository;
+    private final MemberRepository memberRepository;
+    private final CompanyRepository companyRepository;
 
-    Company validCompany = companyRepository.findById(companyId)
-        .orElseThrow(() -> new CustomException((CustomResponseStatus.COMPANY_NOT_EXIST)));
+    @Override
+    public void registWishCompany(Long accessMemberId, Long companyId) {
+        Member validMember = memberRepository.findById(accessMemberId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
 
-    if(wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany)) {
-      throw new CustomException(CustomResponseStatus.WISH_ALREADY_EXIST);
+        Company validCompany = companyRepository.findById(companyId)
+            .orElseThrow(() -> new CustomException((CustomResponseStatus.COMPANY_NOT_EXIST)));
+
+        if (wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany)) {
+            throw new CustomException(CustomResponseStatus.WISH_ALREADY_EXIST);
+        }
+
+        wishCompanyRepository.save(WishCompany.of(validMember, validCompany));
     }
 
-    wishCompanyRepository.save(WishCompany.of(validMember, validCompany));
-  }
+    @Override
+    public void deleteWishCompany(Long accessMemberId, Long companyId) {
+        Member validMember = memberRepository.findById(accessMemberId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
 
-  @Override
-  public void deleteWishCompany(Long accessMemberId, Long companyId) {
-    Member validMember = memberRepository.findById(accessMemberId)
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+        Company validCompany = companyRepository.findById(companyId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
 
-    Company validCompany = companyRepository.findById(companyId)
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+        WishCompany wishCompany = wishCompanyRepository.findByMemberAndCompany(validMember,
+                validCompany)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.WISH_COMPANY_NOT_FOUND));
 
-    WishCompany wishCompany = wishCompanyRepository.findByMemberAndCompany(validMember, validCompany)
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.WISH_COMPANY_NOT_FOUND));
-
-    wishCompanyRepository.delete(wishCompany);
-  }
+        wishCompanyRepository.delete(wishCompany);
+    }
 }

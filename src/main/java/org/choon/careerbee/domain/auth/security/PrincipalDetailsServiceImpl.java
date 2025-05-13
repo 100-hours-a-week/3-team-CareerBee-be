@@ -15,13 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PrincipalDetailsServiceImpl implements UserDetailsService {
-  private final MemberRepository memberRepository;
 
-  @Override
-  public UserDetails loadUserByUsername(String id) throws UsernameNotFoundException {
-    Member validMember = memberRepository.findById(Long.valueOf(id))
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+    private final MemberRepository memberRepository;
 
-    return new PrincipalDetails(validMember);
-  }
+    @Override
+    public UserDetails loadUserByUsername(String id) throws UsernameNotFoundException {
+        Member validMember = memberRepository.findById(Long.valueOf(id))
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+
+        return new PrincipalDetails(validMember);
+    }
 }

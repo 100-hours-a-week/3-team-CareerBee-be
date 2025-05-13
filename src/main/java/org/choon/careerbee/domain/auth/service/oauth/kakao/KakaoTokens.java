@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class KakaoTokens {
+
     /***
      * AuthorizationCode를 기반으로 타 플래폼 AccessToken을 받아오기 위한 Response Model이다.
      */

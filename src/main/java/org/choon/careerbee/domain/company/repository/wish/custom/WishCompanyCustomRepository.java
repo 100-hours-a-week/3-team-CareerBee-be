@@ -5,5 +5,5 @@ import org.choon.careerbee.domain.member.entity.Member;
 
 public interface WishCompanyCustomRepository {
 
-  WishCompanyIdResp fetchWishCompanyIdsByMember(Member member);
+    WishCompanyIdResp fetchWishCompanyIdsByMember(Member member);
 }
