@@ -25,3 +25,9 @@ oauth:
     redirect-uri: ${KAKAO_REDIRECT_URI}
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
+
+server:
+  servlet:
+    session:
+      cookie:
+        domain: ${COOKIE_DOMAIN}

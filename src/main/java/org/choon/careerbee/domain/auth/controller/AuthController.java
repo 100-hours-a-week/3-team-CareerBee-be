@@ -14,6 +14,7 @@ import org.choon.careerbee.domain.auth.dto.response.ReissueResp;
 import org.choon.careerbee.domain.auth.dto.response.TokenAndUserInfo;
 import org.choon.careerbee.domain.auth.service.auth.AuthService;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoLoginParams;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
+    @Value("${server.servlet.session.cookie.domain}")
+    private String cookieDomain;
 
     private final AuthService authService;
 
@@ -96,7 +100,7 @@ public class AuthController {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
-//    cookie.setDomain(cookieDomain);
+        cookie.setDomain(cookieDomain);
         return cookie;
     }
 }
