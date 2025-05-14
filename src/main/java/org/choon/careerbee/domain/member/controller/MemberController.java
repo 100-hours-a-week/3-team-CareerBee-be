@@ -1,5 +1,7 @@
 package org.choon.careerbee.domain.member.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
@@ -24,8 +26,14 @@ public class MemberController {
     private final MemberQueryService queryService;
     private final MemberCommandService commandService;
 
-    @GetMapping()
+    @Operation(
+        summary = "내 정보 조회",
+        description = "로그인한 사용자의 회원 정보를 조회합니다.",
+        tags = {"Member"}
+    )
+    @GetMapping
     public ResponseEntity<CommonResponse<MyInfoResp>> fetchMyInfo(
+        @Parameter(hidden = true)
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
         MyInfoResp response = queryService.getMyInfoByMemberId(principalDetails.getId());
