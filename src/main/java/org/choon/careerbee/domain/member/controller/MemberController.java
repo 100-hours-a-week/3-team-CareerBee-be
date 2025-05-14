@@ -2,8 +2,8 @@ package org.choon.careerbee.domain.member.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.common.dto.ApiResponse;
 import org.choon.careerbee.common.dto.ApiResponseEntity;
+import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
@@ -25,7 +25,7 @@ public class MemberController {
     private final MemberCommandService commandService;
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<MyInfoResp>> fetchMyInfo(
+    public ResponseEntity<CommonResponse<MyInfoResp>> fetchMyInfo(
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
         MyInfoResp response = queryService.getMyInfoByMemberId(principalDetails.getId());

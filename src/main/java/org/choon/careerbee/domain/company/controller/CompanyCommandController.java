@@ -2,8 +2,8 @@ package org.choon.careerbee.domain.company.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.common.dto.ApiResponse;
 import org.choon.careerbee.common.dto.ApiResponseEntity;
+import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -29,7 +29,7 @@ public class CompanyCommandController {
     private final CompanyQueryService queryService;
 
     @PostMapping("/{companyId}")
-    public ResponseEntity<ApiResponse<Void>> registWishCompany(
+    public ResponseEntity<CommonResponse<Void>> registWishCompany(
         @PathVariable Long companyId,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
@@ -42,7 +42,7 @@ public class CompanyCommandController {
     }
 
     @DeleteMapping("/{companyId}")
-    public ResponseEntity<ApiResponse<Void>> deleteWishCompany(
+    public ResponseEntity<CommonResponse<Void>> deleteWishCompany(
         @PathVariable Long companyId,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
@@ -55,7 +55,7 @@ public class CompanyCommandController {
     }
 
     @GetMapping("/{companyId}")
-    public ResponseEntity<ApiResponse<CheckWishCompanyResp>> checkWishCompany(
+    public ResponseEntity<CommonResponse<CheckWishCompanyResp>> checkWishCompany(
         @PathVariable Long companyId,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
@@ -70,7 +70,7 @@ public class CompanyCommandController {
     }
 
     @GetMapping("/id-list")
-    public ResponseEntity<ApiResponse<WishCompanyIdResp>> fetchCompanyDetail(
+    public ResponseEntity<CommonResponse<WishCompanyIdResp>> fetchCompanyDetail(
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
         WishCompanyIdResp response = queryService.fetchWishCompanyIds(principalDetails.getId());

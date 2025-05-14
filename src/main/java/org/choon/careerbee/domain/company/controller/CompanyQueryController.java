@@ -2,8 +2,8 @@ package org.choon.careerbee.domain.company.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.common.dto.ApiResponse;
 import org.choon.careerbee.common.dto.ApiResponseEntity;
+import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
@@ -30,7 +30,7 @@ public class CompanyQueryController {
     private final CompanyQueryService queryService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<CompanyRangeSearchResp>> fetchCompaniesByDistance(
+    public ResponseEntity<CommonResponse<CompanyRangeSearchResp>> fetchCompaniesByDistance(
         @ModelAttribute CompanyQueryAddressInfo companyQueryAddressInfo,
         @ModelAttribute CompanyQueryCond companyQueryCond
     ) {
@@ -45,7 +45,7 @@ public class CompanyQueryController {
     }
 
     @GetMapping("/{companyId}/summary")
-    public ResponseEntity<ApiResponse<CompanySummaryInfo>> fetchCompaniesSummary(
+    public ResponseEntity<CommonResponse<CompanySummaryInfo>> fetchCompaniesSummary(
         @PathVariable Long companyId
     ) {
         CompanySummaryInfo response = queryService.fetchCompanySummary(companyId);
@@ -58,7 +58,7 @@ public class CompanyQueryController {
     }
 
     @GetMapping("/{companyId}")
-    public ResponseEntity<ApiResponse<CompanyDetailResp>> fetchCompanyDetail(
+    public ResponseEntity<CommonResponse<CompanyDetailResp>> fetchCompanyDetail(
         @PathVariable Long companyId
     ) {
         CompanyDetailResp response = queryService.fetchCompanyDetail(companyId);
@@ -71,7 +71,7 @@ public class CompanyQueryController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<CompanySearchResp>> fetchCompanyDetail(
+    public ResponseEntity<CommonResponse<CompanySearchResp>> fetchCompanyDetail(
         @RequestParam(value = "keyword") String keyword
     ) {
         CompanySearchResp response = queryService.fetchMatchingCompaniesByKeyword(keyword);
@@ -84,7 +84,7 @@ public class CompanyQueryController {
     }
 
     @GetMapping("/{companyId}/locations")
-    public ResponseEntity<ApiResponse<CompanyMarkerInfo>> fetchCompanyLocationInfo(
+    public ResponseEntity<CommonResponse<CompanyMarkerInfo>> fetchCompanyLocationInfo(
         @PathVariable Long companyId
     ) {
         CompanyMarkerInfo response = queryService.fetchCompanyLocation(companyId);

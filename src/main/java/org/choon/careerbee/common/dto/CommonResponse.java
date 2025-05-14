@@ -15,29 +15,29 @@ import org.springframework.validation.ObjectError;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class ApiResponse<T> {
+public class CommonResponse<T> {
 
     private int httpStatusCode;
     private String message;
     private T data;
 
-    public static <T> ApiResponse<T> createSuccessWithMessage(
+    public static <T> CommonResponse<T> createSuccessWithMessage(
         T data,
         CustomResponseStatus customResponseStatus,
         String message
     ) {
-        return new ApiResponse<>(
+        return new CommonResponse<>(
             customResponseStatus.getHttpStatusCode(),
             message,
             data
         );
     }
 
-    public static <T> ApiResponse<T> createSuccessWithNoContent(
+    public static <T> CommonResponse<T> createSuccessWithNoContent(
         CustomResponseStatus customResponseStatus,
         String message
     ) {
-        return new ApiResponse<>(
+        return new CommonResponse<>(
             customResponseStatus.getHttpStatusCode(),
             message,
             null
@@ -48,7 +48,8 @@ public class ApiResponse<T> {
      * @param bindingResult : @Valid 의 유효성 검사를 실패한 값(필드)들
      * @return : HttpStatus 와 Code, Message, 오류 데이터를 반환한다.
      */
-    public static ApiResponse<Map<String, String>> createValidError(BindingResult bindingResult) {
+    public static CommonResponse<Map<String, String>> createValidError(
+        BindingResult bindingResult) {
         Map<String, String> errors = new HashMap<>();
 
         List<ObjectError> allErrors = bindingResult.getAllErrors();
@@ -60,7 +61,7 @@ public class ApiResponse<T> {
             }
         }
 
-        return new ApiResponse<>(
+        return new CommonResponse<>(
             HttpStatus.BAD_REQUEST.value(),
             "유효하지 않은 데이터입니다.",
             errors
@@ -72,8 +73,8 @@ public class ApiResponse<T> {
      * @param status : Custom Status Code
      * @return : data 없이 ApiResponse 를 반환한다.
      */
-    public static ApiResponse<String> createError(CustomResponseStatus status) {
-        return new ApiResponse<>(
+    public static CommonResponse<String> createError(CustomResponseStatus status) {
+        return new CommonResponse<>(
             status.getHttpStatusCode(),
             status.getMessage(),
             null
