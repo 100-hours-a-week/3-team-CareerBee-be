@@ -72,6 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/reissue",
             "/favicon.ico",
             "/api/v1/companies",
+            "/swagger-ui",
+            "/v3/api-docs"
         };
 
         String path = request.getRequestURI();
