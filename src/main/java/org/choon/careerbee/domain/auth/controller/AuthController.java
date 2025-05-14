@@ -45,7 +45,8 @@ public class AuthController {
 
     @Operation(
         summary = "소셜 로그인 URL 요청",
-        description = "카카오, 구글 등 소셜 로그인 타입에 맞는 로그인 URL을 반환합니다."
+        description = "카카오, 구글 등 소셜 로그인 타입에 맞는 로그인 URL을 반환합니다.",
+        tags = {"Auth"}
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "소셜 로그인 url 조회에 성공하였습니다."),
@@ -66,7 +67,8 @@ public class AuthController {
 
     @Operation(
         summary = "카카오 로그인 요청",
-        description = "카카오 소셜 로그인을 진행합니다."
+        description = "카카오 소셜 로그인을 진행합니다.",
+        tags = {"Auth"}
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "로그인에 성공하였습니다."),
@@ -89,7 +91,8 @@ public class AuthController {
 
     @Operation(
         summary = "로그아웃 요청",
-        description = "로그아웃을 진행합니다."
+        description = "로그아웃을 진행합니다.",
+        tags = {"Auth"}
     )
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "로그아웃에 성공하였습니다."),
@@ -115,7 +118,8 @@ public class AuthController {
             쿠키에 저장된 RefreshToken을 통해 AccessToken을 재발급합니다.\n
             ✅ Swagger에서는 HttpOnly 쿠키 전송이 불가능하므로 이 API는 Swagger UI에서 테스트할 수 없습니다.
             Postman 또는 실제 프론트엔드 클라이언트를 통해 테스트해주세요.
-            """
+            """,
+        tags = {"Auth"}
     )
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "토큰 재발급 성공"),
