@@ -56,7 +56,8 @@ public class CompanyQueryController {
 
     @Operation(
         summary = "기업 간단 정보 조회",
-        description = "기업 ID에 따른 요약 정보를 조회합니다."
+        description = "기업 ID에 따른 요약 정보를 조회합니다.",
+        tags = {"Company"}
     )
     @GetMapping("/{companyId}/summary")
     public ResponseEntity<CommonResponse<CompanySummaryInfo>> fetchCompaniesSummary(
