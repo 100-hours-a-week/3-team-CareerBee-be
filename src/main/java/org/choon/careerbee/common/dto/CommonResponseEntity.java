@@ -3,7 +3,7 @@ package org.choon.careerbee.common.dto;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.springframework.http.ResponseEntity;
 
-public class ApiResponseEntity {
+public class CommonResponseEntity {
 
     public static <T> ResponseEntity<CommonResponse<T>> ok(
         T data,

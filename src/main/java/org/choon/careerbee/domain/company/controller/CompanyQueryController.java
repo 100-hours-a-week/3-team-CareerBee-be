@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.common.dto.ApiResponseEntity;
 import org.choon.careerbee.common.dto.CommonResponse;
+import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
@@ -47,7 +47,7 @@ public class CompanyQueryController {
         CompanyRangeSearchResp response = queryService.fetchCompaniesByDistance(
             companyQueryAddressInfo, companyQueryCond);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "기업 조회에 성공하였습니다."
@@ -64,7 +64,7 @@ public class CompanyQueryController {
     ) {
         CompanySummaryInfo response = queryService.fetchCompanySummary(companyId);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "기업 간단 정보 조회에 성공하였습니다."
@@ -83,7 +83,7 @@ public class CompanyQueryController {
     ) {
         CompanyDetailResp response = queryService.fetchCompanyDetail(companyId);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "기업 상세 정보 조회에 성공하였습니다."
@@ -102,7 +102,7 @@ public class CompanyQueryController {
     ) {
         CompanySearchResp response = queryService.fetchMatchingCompaniesByKeyword(keyword);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "매칭 데이터 조회에 성공하였습니다."
@@ -121,7 +121,7 @@ public class CompanyQueryController {
     ) {
         CompanyMarkerInfo response = queryService.fetchCompanyLocation(companyId);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "기업 위치 정보 조회에 성공하였습니다."

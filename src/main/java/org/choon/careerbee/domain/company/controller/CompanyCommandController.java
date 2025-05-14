@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.common.dto.ApiResponseEntity;
 import org.choon.careerbee.common.dto.CommonResponse;
+import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -45,7 +45,7 @@ public class CompanyCommandController {
     ) {
         commandService.registWishCompany(principalDetails.getId(), companyId);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
             "관심기업 등록에 성공하였습니다."
         );
@@ -66,7 +66,7 @@ public class CompanyCommandController {
     ) {
         commandService.deleteWishCompany(principalDetails.getId(), companyId);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
             "관심기업 삭제에 성공하였습니다."
         );
@@ -88,7 +88,7 @@ public class CompanyCommandController {
         CheckWishCompanyResp response = queryService.checkWishCompany(principalDetails.getId(),
             companyId);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "관심기업 여부 조회에 성공하였습니다."
@@ -107,7 +107,7 @@ public class CompanyCommandController {
     ) {
         WishCompanyIdResp response = queryService.fetchWishCompanyIds(principalDetails.getId());
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "관심 기업 아이디 조회에 성공하였습니다."

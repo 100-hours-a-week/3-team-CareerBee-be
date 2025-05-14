@@ -10,8 +10,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.common.dto.ApiResponseEntity;
 import org.choon.careerbee.common.dto.CommonResponse;
+import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.response.LoginResp;
@@ -58,7 +58,7 @@ public class AuthController {
     ) {
         OAuthLoginUrlResp response = authService.getOAuthLoginUrl(type);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
             "소셜 로그인 url 조회에 성공하였습니다."
@@ -82,7 +82,7 @@ public class AuthController {
         TokenAndUserInfo tokenAndUserInfo = authService.login(kakaoParams);
         setTokenInCookie(response, tokenAndUserInfo.authTokens());
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             new LoginResp(tokenAndUserInfo.authTokens().accessToken(), tokenAndUserInfo.userInfo()),
             CustomResponseStatus.SUCCESS,
             "로그인에 성공하였습니다."
@@ -106,7 +106,7 @@ public class AuthController {
     ) {
         authService.logout(accessToken);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
             "로그아웃에 성공하였습니다."
         );
@@ -137,7 +137,7 @@ public class AuthController {
         AuthTokens authTokens = authService.reissue(refreshToken);
         setTokenInCookie(response, authTokens);
 
-        return ApiResponseEntity.ok(
+        return CommonResponseEntity.ok(
             new ReissueResp(authTokens.accessToken()),
             CustomResponseStatus.SUCCESS,
             "토큰 재발급에 성공하였습니다."
