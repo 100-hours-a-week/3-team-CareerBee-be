@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
@@ -33,7 +34,8 @@ public class CompanyCommandController {
     @Operation(
         summary = "관심 기업 등록",
         description = "회원이 특정 기업을 관심 기업으로 등록합니다.",
-        tags = {"WishCompany"}
+        tags = {"WishCompany"},
+        security = {@SecurityRequirement(name = "JWT")}
     )
     @PostMapping("/{companyId}")
     public ResponseEntity<CommonResponse<Void>> registWishCompany(
@@ -54,7 +56,8 @@ public class CompanyCommandController {
     @Operation(
         summary = "관심 기업 삭제",
         description = "회원이 등록한 관심 기업을 삭제합니다.",
-        tags = {"WishCompany"}
+        tags = {"WishCompany"},
+        security = {@SecurityRequirement(name = "JWT")}
     )
     @DeleteMapping("/{companyId}")
     public ResponseEntity<CommonResponse<Void>> deleteWishCompany(
@@ -75,7 +78,8 @@ public class CompanyCommandController {
     @Operation(
         summary = "관심 기업 여부 확인",
         description = "회원이 특정 기업을 관심 기업으로 등록했는지 확인합니다.",
-        tags = {"WishCompany"}
+        tags = {"WishCompany"},
+        security = {@SecurityRequirement(name = "JWT")}
     )
     @GetMapping("/{companyId}")
     public ResponseEntity<CommonResponse<CheckWishCompanyResp>> checkWishCompany(
@@ -98,7 +102,8 @@ public class CompanyCommandController {
     @Operation(
         summary = "관심 기업 ID 목록 조회",
         description = "회원이 등록한 모든 관심 기업의 ID 목록을 조회합니다.",
-        tags = {"WishCompany"}
+        tags = {"WishCompany"},
+        security = {@SecurityRequirement(name = "JWT")}
     )
     @GetMapping("/id-list")
     public ResponseEntity<CommonResponse<WishCompanyIdResp>> fetchCompanyDetail(

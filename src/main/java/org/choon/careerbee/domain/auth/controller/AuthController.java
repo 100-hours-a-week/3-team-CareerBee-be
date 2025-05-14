@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -92,7 +93,8 @@ public class AuthController {
     @Operation(
         summary = "로그아웃 요청",
         description = "로그아웃을 진행합니다.",
-        tags = {"Auth"}
+        tags = {"Auth"},
+        security = {@SecurityRequirement(name = "JWT")}
     )
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "로그아웃에 성공하였습니다."),
