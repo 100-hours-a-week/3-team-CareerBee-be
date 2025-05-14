@@ -96,7 +96,7 @@ public class CompanyQueryController {
         tags = {"Company"}
     )
     @GetMapping("/search")
-    public ResponseEntity<CommonResponse<CompanySearchResp>> fetchCompanyDetail(
+    public ResponseEntity<CommonResponse<CompanySearchResp>> searchCompanyByKeyword(
         @Parameter(description = "검색 키워드", example = "네이버")
         @RequestParam(value = "keyword") String keyword
     ) {
