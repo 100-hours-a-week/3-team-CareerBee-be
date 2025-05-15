@@ -16,7 +16,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
@@ -24,47 +23,50 @@ import org.hibernate.annotations.SQLRestriction;
 @AllArgsConstructor
 @Table(name = "recruitment")
 public class Recruitment {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "company_id", nullable = false)
-  private Company company;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(nullable = false, unique = true)
-  private Long recruitingId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id", nullable = false)
+    private Company company;
 
-  @Column(length = 500)
-  private String url;
+    @Column(nullable = false, unique = true)
+    private Long recruitingId;
 
-  @Column(length = 200, nullable = false)
-  private String title;
+    @Column(length = 500)
+    private String url;
 
-  @Column(nullable = false)
-  private LocalDateTime startDate;
+    @Column(length = 200, nullable = false)
+    private String title;
 
-  @Column(nullable = false)
-  private LocalDateTime endDate;
+    @Column(nullable = false)
+    private LocalDateTime startDate;
 
-  @Builder
-  private Recruitment(Company company, Long recruitingId, String url, String title, LocalDateTime startDate, LocalDateTime endDate) {
-    this.company = company;
-    this.recruitingId = recruitingId;
-    this.url = url;
-    this.title = title;
-    this.startDate = startDate;
-    this.endDate = endDate;
-  }
+    @Column(nullable = false)
+    private LocalDateTime endDate;
 
-  public static Recruitment from(Company company, Long recruitingId, String url, String title, LocalDateTime startDate, LocalDateTime endDate) {
-    return Recruitment.builder()
-        .company(company)
-        .recruitingId(recruitingId)
-        .url(url)
-        .title(title)
-        .startDate(startDate)
-        .endDate(endDate)
-        .build();
-  }
+    @Builder
+    private Recruitment(Company company, Long recruitingId, String url, String title,
+        LocalDateTime startDate, LocalDateTime endDate) {
+        this.company = company;
+        this.recruitingId = recruitingId;
+        this.url = url;
+        this.title = title;
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
+    public static Recruitment from(Company company, Long recruitingId, String url, String title,
+        LocalDateTime startDate, LocalDateTime endDate) {
+        return Recruitment.builder()
+            .company(company)
+            .recruitingId(recruitingId)
+            .url(url)
+            .title(title)
+            .startDate(startDate)
+            .endDate(endDate)
+            .build();
+    }
 }

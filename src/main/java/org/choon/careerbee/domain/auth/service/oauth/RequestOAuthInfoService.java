@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RequestOAuthInfoService {
+
     /***
      * OAuthApiClinet 사용하는 Service 클래스
      * KakaoApiClient와 NaverApiClient를 직접 주입받아 사용하면 중복되는 코드가 많아짐
@@ -19,7 +20,7 @@ public class RequestOAuthInfoService {
 
     public RequestOAuthInfoService(List<OAuthApiClient> clients) {
         this.clients = clients.stream().collect(
-                Collectors.toUnmodifiableMap(OAuthApiClient::oauthProvider, Function.identity())
+            Collectors.toUnmodifiableMap(OAuthApiClient::oauthProvider, Function.identity())
         );
     }
 

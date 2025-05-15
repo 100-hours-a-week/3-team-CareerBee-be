@@ -7,11 +7,11 @@ import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginParams;
 
 public interface AuthService {
 
-  OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider);
+    OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider);
 
-  TokenAndUserInfo login(OAuthLoginParams oAuthLoginParams);
+    TokenAndUserInfo login(OAuthLoginParams oAuthLoginParams);
 
-  void logout(String accessToken);
+    void logout(String accessToken);
 
-  AuthTokens reissue(String refreshToken);
+    AuthTokens reissue(String refreshToken);
 }

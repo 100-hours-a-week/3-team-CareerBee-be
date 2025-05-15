@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class NicknameGenerator {
+
     private static final String[] ADJECTIVES = {
         "귀여운", "멋진", "작은", "큰", "예쁜", "빠른", "느린", "똑똑", "하얀", "검정",
         "신비한", "강력한", "상냥한", "화려한", "차가운", "따뜻한", "용감한", "친절한", "행복한", "슬픈"

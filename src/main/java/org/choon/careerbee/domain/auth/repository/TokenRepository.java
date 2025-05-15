@@ -10,7 +10,13 @@ import org.springframework.data.repository.query.Param;
 
 public interface TokenRepository extends JpaRepository<Token, Long> {
 
-  Optional<Token> findByMemberAndStatus(Member member, TokenStatus status);
-  @Query("SELECT t FROM Token t WHERE t.member.id = :memberId AND t.status = :status")
-  Optional<Token> findByMemberIdAndStatus(@Param("memberId") Long memberId, @Param("status") TokenStatus status);
+    Optional<Token> findByMemberAndStatus(Member member, TokenStatus status);
+
+    @Query("SELECT t FROM Token t WHERE t.member.id = :memberId AND t.status = :status")
+    Optional<Token> findByMemberIdAndStatus(@Param("memberId") Long memberId,
+        @Param("status") TokenStatus status);
+
+    @Query("SELECT t FROM Token t WHERE t.tokenValue = :tokenValue AND t.status = :status")
+    Optional<Token> findByTokenValueAndStatus(@Param("tokenValue") String tokenValue,
+        @Param("status") TokenStatus status);
 }

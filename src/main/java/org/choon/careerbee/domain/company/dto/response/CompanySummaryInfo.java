@@ -9,7 +9,10 @@ public record CompanySummaryInfo(
     Long wishCount,
     List<Keyword> keywords
 ) {
-  public record Keyword(
-      String content
-  ) {}
+
+    public record Keyword(
+        String content
+    ) {
+
+    }
 }

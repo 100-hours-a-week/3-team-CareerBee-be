@@ -10,26 +10,27 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 @RequiredArgsConstructor
 public class PrincipalDetails implements UserDetails {
-  private final Member member;
 
-  @Override
-  public Collection<? extends GrantedAuthority> getAuthorities() {
-    Collection<GrantedAuthority> authorities = new ArrayList<>();
-    authorities.add(new SimpleGrantedAuthority(member.getRole().toString()));
-    return authorities;
-  }
+    private final Member member;
 
-  @Override
-  public String getPassword() {
-    return null;
-  }
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        Collection<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority(member.getRole().toString()));
+        return authorities;
+    }
 
-  @Override
-  public String getUsername() {
-    return null;
-  }
+    @Override
+    public String getPassword() {
+        return null;
+    }
 
-  public Long getId() {
-    return member.getId();
-  }
+    @Override
+    public String getUsername() {
+        return null;
+    }
+
+    public Long getId() {
+        return member.getId();
+    }
 }

@@ -24,32 +24,34 @@ import org.choon.careerbee.domain.member.entity.Member;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class Token {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "member_id")
-  private Member member;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(length = 7, nullable = false)
-  @Enumerated(EnumType.STRING)
-  private TokenStatus status;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
-  @Column(length = 255, nullable = false)
-  private String tokenValue;
+    @Column(length = 7, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TokenStatus status;
 
-  @Builder
-  public Token(Member member, TokenStatus status, String tokenValue) {
-    this.member = member;
-    this.status = status;
-    this.tokenValue = tokenValue;
-  }
+    @Column(length = 255, nullable = false)
+    private String tokenValue;
 
-  public void logout() {
-    this.status = TokenStatus.BLACK;
-  }
-  public void revoke() {
-    this.status = TokenStatus.REVOKED;
-  }
+    @Builder
+    public Token(Member member, TokenStatus status, String tokenValue) {
+        this.member = member;
+        this.status = status;
+        this.tokenValue = tokenValue;
+    }
+
+    public void logout() {
+        this.status = TokenStatus.BLACK;
+    }
+
+    public void revoke() {
+        this.status = TokenStatus.REVOKED;
+    }
 }

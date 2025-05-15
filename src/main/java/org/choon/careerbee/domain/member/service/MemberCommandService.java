@@ -5,5 +5,5 @@ import org.choon.careerbee.domain.member.entity.Member;
 
 public interface MemberCommandService {
 
-  Member forceJoin(OAuthInfoResponse oAuthInfoResponse);
+    Member forceJoin(OAuthInfoResponse oAuthInfoResponse);
 }

@@ -10,12 +10,13 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class OAuthLoginUrlProviderFactory {
-  private final List<OAuthLoginUrlProvider> providers;
 
-  public OAuthLoginUrlProvider getProvider(OAuthProvider provider) {
-    return providers.stream()
-        .filter(p -> p.getOAuthProvider() == provider)
-        .findFirst()
-        .orElseThrow(() -> new CustomException(CustomResponseStatus.OAUTH_PROVIDER_NOT_EXIST));
-  }
+    private final List<OAuthLoginUrlProvider> providers;
+
+    public OAuthLoginUrlProvider getProvider(OAuthProvider provider) {
+        return providers.stream()
+            .filter(p -> p.getOAuthProvider() == provider)
+            .findFirst()
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.OAUTH_PROVIDER_NOT_EXIST));
+    }
 }

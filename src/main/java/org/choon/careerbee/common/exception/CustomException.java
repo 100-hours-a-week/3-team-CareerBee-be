@@ -4,7 +4,8 @@ import lombok.Getter;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 
 @Getter
-public class CustomException extends RuntimeException{
+public class CustomException extends RuntimeException {
+
     private final CustomResponseStatus customResponseStatus;
 
     public CustomException(CustomResponseStatus customResponseStatus) {

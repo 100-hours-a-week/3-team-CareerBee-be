@@ -10,8 +10,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 public class CareerbeeApplication {
 
-  public static void main(String[] args) {
-    SpringApplication.run(CareerbeeApplication.class, args);
-  }
+    public static void main(String[] args) {
+        SpringApplication.run(CareerbeeApplication.class, args);
+    }
 
 }

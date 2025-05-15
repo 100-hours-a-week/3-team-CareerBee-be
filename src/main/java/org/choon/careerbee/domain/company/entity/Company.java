@@ -1,7 +1,14 @@
 package org.choon.careerbee.domain.company.entity;
 
 import io.hypersistence.utils.hibernate.type.json.JsonType;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -24,77 +31,81 @@ import org.locationtech.jts.geom.Point;
 @SQLRestriction("deleted_at is NULL")
 @Table(name = "company")
 public class Company {
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
 
-  @Column(length = 50, nullable = false, unique = true)
-  private String name;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(columnDefinition = "POINT SRID 4326")
-  private Point geoPoint;
+    @Column(length = 50, nullable = false, unique = true)
+    private String name;
 
-  @Column(length = 200)
-  private String address;
+    @Column(columnDefinition = "POINT SRID 4326")
+    private Point geoPoint;
 
-  @Column(length = 500, unique = true)
-  private String homeUrl;
+    @Column(length = 200)
+    private String address;
 
-  @Column(length = 250)
-  private String description;
+    @Column(length = 500, unique = true)
+    private String homeUrl;
 
-  @Column(length = 50)
-  private String title;
+    @Column(length = 500)
+    private String markerUrl;
 
-  @Column(columnDefinition = "LONGTEXT")
-  private String recentIssue;
+    @Column(length = 250)
+    private String description;
 
-  @Column(length = 14, nullable = false)
-  @Enumerated(EnumType.STRING)
-  private CompanyType companyType;
+    @Column(length = 50)
+    private String title;
 
-  @Column(length = 7, nullable = false)
-  @Enumerated(EnumType.STRING)
-  private RecruitingStatus recruitingStatus;
+    @Column(columnDefinition = "LONGTEXT")
+    private String recentIssue;
 
-  @Column(length = 8, nullable = false)
-  @Enumerated(EnumType.STRING)
-  private BusinessType businessType;
+    @Column(length = 14, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private CompanyType companyType;
 
-  @Column(length = 500, nullable = false)
-  private String logoUrl;
+    @Column(length = 7, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private RecruitingStatus recruitingStatus;
 
-  @Column(columnDefinition = "TIMESTAMP")
-  private LocalDateTime deletedAt;
+    @Column(length = 8, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private BusinessType businessType;
 
-  @Column(nullable = false)
-  private Integer score;
+    @Column(length = 500, nullable = false)
+    private String logoUrl;
 
-  @Column(nullable = false)
-  private Integer employeeCount;
+    @Column(columnDefinition = "TIMESTAMP")
+    private LocalDateTime deletedAt;
 
-  @Column(nullable = false)
-  private Integer annualSalary;
+    @Column(nullable = false)
+    private Integer score;
 
-  @Column(nullable = false)
-  private Integer startingSalary;
+    @Column(nullable = false)
+    private Integer employeeCount;
 
-  @Column(nullable = false)
-  private Long revenue;
+    @Column(nullable = false)
+    private Integer annualSalary;
 
-  @Column(nullable = false)
-  private Long operatingProfit;
+    @Column(nullable = false)
+    private Integer startingSalary;
 
-  @Column(columnDefinition = "LONGTEXT")
-  private String ir;
+    @Column(nullable = false)
+    private Long revenue;
 
-  private Double rating;
+    @Column(nullable = false)
+    private Long operatingProfit;
 
-  @Type(JsonType.class)
-  @Column(name = "benefits", columnDefinition = "longtext")
-  private Map<String, List<String>> benefits = new HashMap<>();
+    @Column(columnDefinition = "LONGTEXT")
+    private String ir;
 
-  public void changeRecruitingStatus(RecruitingStatus status) {
-    this.recruitingStatus = status;
-  }
+    private Double rating;
+
+    @Type(JsonType.class)
+    @Column(name = "benefits", columnDefinition = "longtext")
+    private Map<String, List<String>> benefits = new HashMap<>();
+
+    public void changeRecruitingStatus(RecruitingStatus status) {
+        this.recruitingStatus = status;
+    }
 }

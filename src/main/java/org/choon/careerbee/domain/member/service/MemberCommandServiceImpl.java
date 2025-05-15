@@ -12,17 +12,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class MemberCommandServiceImpl implements MemberCommandService {
-  private final MemberRepository memberRepository;
 
-  @Override
-  public Member forceJoin(OAuthInfoResponse oAuthInfo) {
-    Member newMember = Member.builder()
-        .nickname(NicknameGenerator.generate())
-        .email(oAuthInfo.getEmail())
-        .oAuthProvider(oAuthInfo.getOauthProvider())
-        .providerId(oAuthInfo.getProviderId())
-        .build();
+    private final MemberRepository memberRepository;
 
-    return memberRepository.save(newMember);
-  }
+    @Override
+    public Member forceJoin(OAuthInfoResponse oAuthInfo) {
+        Member newMember = Member.builder()
+            .nickname(NicknameGenerator.generate())
+            .email(oAuthInfo.getEmail())
+            .oAuthProvider(oAuthInfo.getOauthProvider())
+            .providerId(oAuthInfo.getProviderId())
+            .build();
+
+        return memberRepository.save(newMember);
+    }
 }
