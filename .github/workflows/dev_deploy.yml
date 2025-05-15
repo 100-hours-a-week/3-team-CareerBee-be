@@ -1,0 +1,58 @@
+name: Deploy Spring Boot to GCE (Dev)
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      COMMIT_HASH: ${{ github.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+
+      - name: google auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY }}"
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set timestamp-based path (Asia/Seoul)
+        run: |
+          TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
+          echo "DEPLOY_PATH=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
+
+      - name: Upload JAR to GCS
+        run: |
+          mkdir -p ./deploy
+          cp ./build/libs/*.jar ./deploy/careerbee-api.jar
+          echo "Uploading to: ${{ secrets.GCS_DEV_BUCKET_PATH }}/be/$DEPLOY_PATH"
+          gcloud storage cp -r ./deploy/* "${{ secrets.GCS_DEV_BUCKET_PATH }}/be/$DEPLOY_PATH/"
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GCE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.GCE_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Trigger remote deploy script on GCE
+        run: |
+          ssh ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} "bash ~/release/deploy-be.sh $DEPLOY_PATH"
