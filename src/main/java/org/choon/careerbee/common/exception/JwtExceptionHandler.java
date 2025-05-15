@@ -1,10 +1,12 @@
 package org.choon.careerbee.common.exception;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @RestController
 @RequestMapping("/exception")
 @Slf4j

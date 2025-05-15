@@ -5,7 +5,7 @@ import java.io.StringWriter;
 import java.nio.file.AccessDeniedException;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.common.dto.ApiResponse;
+import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,10 +26,10 @@ public class CustomExceptionHandler {
      * @return : CustomException 처리에 맞게 처리됩니다.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
+    public ResponseEntity<CommonResponse<Map<String, String>>> handleValidationException(
         BindingResult bindingResult) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.createValidError(bindingResult));
+            .body(CommonResponse.createValidError(bindingResult));
     }
 
     /**
@@ -39,18 +39,19 @@ public class CustomExceptionHandler {
      * @return : 처리되지 못한(CustomException 이 아닌) 예외의 경우 내부서버 오류로 리턴, 그 외의 예외는 CERS에 의해서 처리됨
      */
     @ExceptionHandler({CustomException.class, Exception.class})
-    public ResponseEntity<ApiResponse<String>> handleException(Exception e) {
+    public ResponseEntity<CommonResponse<String>> handleException(Exception e) {
         if (!(e instanceof CustomException custom)) {
             String stackTrace = getStackTraceAsString(e);
             log.error("[ERROR] : {}\n{}", e.getMessage(), stackTrace);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.createError(CustomResponseStatus.INTERNAL_SERVER_ERROR));
+                .body(CommonResponse.createError(CustomResponseStatus.INTERNAL_SERVER_ERROR));
         }
 
         String stackTrace = getStackTraceAsString(e);
         log.error("[ERROR] : {}\n{}", e.getMessage(), stackTrace);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.createError(custom.getCustomResponseStatus()));
+        return ResponseEntity.status(
+                ((CustomException) e).getCustomResponseStatus().getHttpStatusCode())
+            .body(CommonResponse.createError(custom.getCustomResponseStatus()));
     }
 
     /**
@@ -60,16 +61,16 @@ public class CustomExceptionHandler {
      * @return : CERS에 맞게 처리됩니다.
      */
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<String>> handleAccessDeniedException(CustomException e) {
+    public ResponseEntity<CommonResponse<String>> handleAccessDeniedException(CustomException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.createError(e.getCustomResponseStatus()));
+            .body(CommonResponse.createError(e.getCustomResponseStatus()));
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<ApiResponse<String>> handleAuthorizationDeniedException(
+    public ResponseEntity<CommonResponse<String>> handleAuthorizationDeniedException(
         AuthorizationDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-            .body(ApiResponse.createError(CustomResponseStatus.ACCESS_DENIED));
+            .body(CommonResponse.createError(CustomResponseStatus.ACCESS_DENIED));
     }
 
     private String getStackTraceAsString(Throwable e) {
