@@ -8,23 +8,23 @@ import org.springframework.stereotype.Component;
 @Component
 public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
 
-  @Value("${oauth.kakao.client-id}")
-  private String clientId;
+    @Value("${oauth.kakao.client-id}")
+    private String clientId;
 
-  @Value("${oauth.kakao.redirect-uri}")
-  private String redirectUri;
+    @Value("${oauth.kakao.redirect-uri}")
+    private String redirectUri;
 
-  @Value("${oauth.kakao.auth-uri}")
-  private String authUri;
+    @Value("${oauth.kakao.auth-uri}")
+    private String authUri;
 
-  @Override
-  public OAuthProvider getOAuthProvider() {
-    return OAuthProvider.KAKAO;
-  }
+    @Override
+    public OAuthProvider getOAuthProvider() {
+        return OAuthProvider.KAKAO;
+    }
 
-  @Override
-  public String getLoginUrl() {
-    return String.format("%s/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s",
-        authUri, clientId, redirectUri);
-  }
+    @Override
+    public String getLoginUrl() {
+        return String.format("%s/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s",
+            authUri, clientId, redirectUri);
+    }
 }

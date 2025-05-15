@@ -4,7 +4,8 @@ import lombok.Builder;
 
 @Builder
 public record TokenInfo(
-        Long id,
-        String role
+    Long id,
+    String role
 ) {
+
 }

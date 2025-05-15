@@ -58,7 +58,7 @@ public class KakaoApiClient implements OAuthApiClient {
             .retrieve()
             .body(KakaoTokens.class);
 
-      return response.getAccessToken();
+        return response.getAccessToken();
     }
 
     @Override
@@ -70,12 +70,12 @@ public class KakaoApiClient implements OAuthApiClient {
         headers.set("Authorization", "Bearer " + accessToken);
 
         String jsonBody = """
-        {
-            "property_keys": [
-                "kakao_account.email",
-            ]
-        }
-        """;
+            {
+                "property_keys": [
+                    "kakao_account.email",
+                ]
+            }
+            """;
 
         return restClient.post()
             .uri(url)

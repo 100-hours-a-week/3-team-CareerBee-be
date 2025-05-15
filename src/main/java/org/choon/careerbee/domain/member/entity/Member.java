@@ -33,76 +33,76 @@ import org.hibernate.annotations.SQLRestriction;
 })
 public class Member extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(length = 6)
-  @Enumerated(EnumType.STRING)
-  private OAuthProvider provider;
+    @Column(length = 6)
+    @Enumerated(EnumType.STRING)
+    private OAuthProvider provider;
 
-  @Column(nullable = false)
-  private Long providerId;
+    @Column(nullable = false)
+    private Long providerId;
 
-  @Column(length = 20, nullable = false)
-  private String nickname;
+    @Column(length = 20, nullable = false)
+    private String nickname;
 
-  @Column(length = 50, nullable = false)
-  private String email;
+    @Column(length = 50, nullable = false)
+    private String email;
 
-  @Column(length = 9)
-  @Enumerated(EnumType.STRING)
-  private PreferredJob preferredJob;
+    @Column(length = 9)
+    @Enumerated(EnumType.STRING)
+    private PreferredJob preferredJob;
 
-  @Column(length = 9)
-  private String psTier;
+    @Column(length = 9)
+    private String psTier;
 
-  @Column(nullable = false)
-  private Integer certificationCount;
+    @Column(nullable = false)
+    private Integer certificationCount;
 
-  @Column(length = 9)
-  @Enumerated(EnumType.STRING)
-  private MajorType majorType;
+    @Column(length = 9)
+    @Enumerated(EnumType.STRING)
+    private MajorType majorType;
 
-  @Column(length = 10)
-  @Enumerated(EnumType.STRING)
-  private CompanyType companyType;
+    @Column(length = 10)
+    @Enumerated(EnumType.STRING)
+    private CompanyType companyType;
 
-  @Column(nullable = false)
-  private Integer workPeriod;
+    @Column(nullable = false)
+    private Integer workPeriod;
 
-  @Column(length = 20)
-  private String position;
+    @Column(length = 20)
+    private String position;
 
-  @Column(length = 100)
-  private String additionalExperiences;
+    @Column(length = 100)
+    private String additionalExperiences;
 
-  @Column(columnDefinition = "TIMESTAMP")
-  private LocalDateTime withdrawnAt;
+    @Column(columnDefinition = "TIMESTAMP")
+    private LocalDateTime withdrawnAt;
 
-  @Column(nullable = false)
-  private Integer points;
+    @Column(nullable = false)
+    private Integer points;
 
-  @Column(length = 11, nullable = false)
-  @Enumerated(EnumType.STRING)
-  private RoleType role;
+    @Column(length = 11, nullable = false)
+    @Enumerated(EnumType.STRING)
+    private RoleType role;
 
-  @Column(length = 500)
-  private String imgUrl;
+    @Column(length = 500)
+    private String imgUrl;
 
-  @Column(nullable = false)
-  private Integer progress;
+    @Column(nullable = false)
+    private Integer progress;
 
-  @Builder
-  public Member(String nickname, String email, OAuthProvider oAuthProvider, Long providerId) {
-    this.nickname = nickname;
-    this.email = email;
-    this.provider = oAuthProvider;
-    this.providerId = providerId;
-    this.certificationCount = 0;
-    this.role = RoleType.ROLE_MEMBER;
-    this.points = 0;
-    this.progress = 0;
-    this.workPeriod = 0;
-  }
+    @Builder
+    public Member(String nickname, String email, OAuthProvider oAuthProvider, Long providerId) {
+        this.nickname = nickname;
+        this.email = email;
+        this.provider = oAuthProvider;
+        this.providerId = providerId;
+        this.certificationCount = 0;
+        this.role = RoleType.ROLE_MEMBER;
+        this.points = 0;
+        this.progress = 0;
+        this.workPeriod = 0;
+    }
 }

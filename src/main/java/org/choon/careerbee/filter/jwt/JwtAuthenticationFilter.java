@@ -23,53 +23,60 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-  private static final String AUTHORIZATION = "Authorization";
 
-  private final JwtUtil jwtUtil;
-  private final TokenRepository tokenRepository;
+    private static final String AUTHORIZATION = "Authorization";
 
-  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-    String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
+    private final JwtUtil jwtUtil;
+    private final TokenRepository tokenRepository;
 
-    if (Objects.equals(resolveToken, "")) {
-      request.getRequestDispatcher("/exception/entrypoint/nullToken").forward(request, response);
-      return;
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+        FilterChain filterChain) throws ServletException, IOException {
+        String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
+
+        if (Objects.equals(resolveToken, "")) {
+            request.getRequestDispatcher("/exception/entrypoint/nullToken")
+                .forward(request, response);
+            return;
+        }
+
+        try {
+            handleBlacklistedToken(resolveToken);
+            Authentication authentication = jwtUtil.getAuthentication(resolveToken);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            filterChain.doFilter(request, response);
+        } catch (CustomException e) {
+            request.getRequestDispatcher("/exception/entrypoint/logout").forward(request, response);
+        } catch (ExpiredJwtException e) {
+            request.getRequestDispatcher("/exception/entrypoint/expiredToken")
+                .forward(request, response);
+        } catch (JwtException | IllegalArgumentException e) {
+            request.getRequestDispatcher("/exception/entrypoint/badToken")
+                .forward(request, response);
+        }
     }
 
-    try {
-      handleBlacklistedToken(resolveToken);
-      Authentication authentication = jwtUtil.getAuthentication(resolveToken);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      filterChain.doFilter(request, response);
-    } catch (CustomException e) {
-      request.getRequestDispatcher("/exception/entrypoint/logout").forward(request, response);
-    } catch (ExpiredJwtException e) {
-      request.getRequestDispatcher("/exception/entrypoint/expiredToken").forward(request, response);
-    } catch (JwtException | IllegalArgumentException e) {
-      request.getRequestDispatcher("/exception/entrypoint/badToken").forward(request, response);
+    // 로그아웃한 사용자가 접근하는지 파악. -> 접근할경우 예외발생
+    private void handleBlacklistedToken(String resolveToken) throws CustomException {
+        if (tokenRepository.findByTokenValueAndStatus(resolveToken, TokenStatus.BLACK)
+            .isPresent()) {
+            throw new CustomException(CustomResponseStatus.LOGOUT_MEMBER);
+        }
     }
-  }
 
-  // 로그아웃한 사용자가 접근하는지 파악. -> 접근할경우 예외발생
-  private void handleBlacklistedToken(String resolveToken) throws CustomException {
-    Long idInToken = jwtUtil.getIdInToken(resolveToken);
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String[] excludePath = {
+            "/health-check",
+            "/auth/oauth",
+            "/auth/tokens",
+            "/auth/reissue",
+            "/favicon.ico",
+            "/api/v1/companies",
+            "/swagger-ui",
+            "/v3/api-docs"
+        };
 
-    if (tokenRepository.findByMemberIdAndStatus(idInToken, TokenStatus.BLACK).isPresent()) {
-      throw new CustomException(CustomResponseStatus.LOGOUT_MEMBER);
+        String path = request.getRequestURI();
+        return Arrays.stream(excludePath).anyMatch(path::contains);
     }
-  }
-
-  @Override
-  protected boolean shouldNotFilter(HttpServletRequest request) {
-    String[] excludePath = {
-        "/",
-        "/auth/oauth",
-        "/auth/tokens",
-        "/auth/reissue",
-        "/favicon.ico"
-    };
-    String path = request.getRequestURI();
-
-    return Arrays.asList(excludePath).contains(path);
-  }
 }

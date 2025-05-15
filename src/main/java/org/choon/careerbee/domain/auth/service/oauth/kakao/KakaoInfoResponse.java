@@ -9,6 +9,7 @@ import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KakaoInfoResponse implements OAuthInfoResponse {
+
     private Long id;
 
     @JsonProperty("kakao_account")
@@ -17,6 +18,7 @@ public class KakaoInfoResponse implements OAuthInfoResponse {
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class KakaoAccount {
+
         private String email;
     }
 
