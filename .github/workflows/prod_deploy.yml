@@ -42,7 +42,7 @@ jobs:
       - name: Upload JAR to GCS
         run: |
           mkdir -p ./deploy
-          cp ./build/libs/*.jar ./deploy/careerbee-api.jar
+          cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
           echo "Uploading to: ${{ secrets.GCS_PROD_BUCKET_PATH }}/be/$DEPLOY_PATH"
           gcloud storage cp -r ./deploy/* "${{ secrets.GCS_PROD_BUCKET_PATH }}/be/$DEPLOY_PATH/"
 
