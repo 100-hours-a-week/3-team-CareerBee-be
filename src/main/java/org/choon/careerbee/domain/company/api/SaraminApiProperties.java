@@ -7,10 +7,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Getter
 public class SaraminApiProperties {
+
     @Value("${saramin.api.base-url}")
     private String baseUrl;
 
-    @Value("${saramin.api.accessKey}")
+    @Value("${saramin.api.access-key}")
     private String accessKey;
 
 }
