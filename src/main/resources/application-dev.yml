@@ -16,8 +16,8 @@ spring:
 jwt:
   secret: ${JWT_SECRETS}
   expiration_time:
-    access_token: 10000 # 10초
-    refresh_token: 86400000000000000 # 일주일
+    access_token: 600000 # 10분
+    refresh_token: 604800000 # 7일
 
 oauth:
   kakao:
