@@ -10,6 +10,7 @@ jobs:
 
     env:
       COMMIT_HASH: ${{ github.sha }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
     steps:
       - name: Checkout code
