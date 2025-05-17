@@ -1,5 +1,6 @@
 package org.choon.careerbee.common.exception;
 
+import io.sentry.Sentry;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.AccessDeniedException;
@@ -43,6 +44,10 @@ public class CustomExceptionHandler {
         if (!(e instanceof CustomException custom)) {
             String stackTrace = getStackTraceAsString(e);
             log.error("[ERROR] : {}\n{}", e.getMessage(), stackTrace);
+
+            // ✅ Sentry로 에러 전송
+            Sentry.captureException(e);
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(CommonResponse.createError(CustomResponseStatus.INTERNAL_SERVER_ERROR));
         }
@@ -62,6 +67,7 @@ public class CustomExceptionHandler {
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<CommonResponse<String>> handleAccessDeniedException(CustomException e) {
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(CommonResponse.createError(e.getCustomResponseStatus()));
     }
@@ -69,6 +75,10 @@ public class CustomExceptionHandler {
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<CommonResponse<String>> handleAuthorizationDeniedException(
         AuthorizationDeniedException e) {
+
+        // ✅ Sentry로 에러 전송
+        Sentry.captureException(e);
+
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
             .body(CommonResponse.createError(CustomResponseStatus.ACCESS_DENIED));
     }

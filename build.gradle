@@ -2,6 +2,9 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.5'
     id 'io.spring.dependency-management' version '1.1.7'
+
+    // Sentry Gradle Plugin
+    id "io.sentry.jvm.gradle" version "5.5.0"
 }
 
 group = 'org.choon'
@@ -56,6 +59,20 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.5'
     testImplementation 'org.springframework.security:spring-security-test:6.4.5'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Sentry SDK
+    implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.5.0'
+}
+
+sentry {
+    // Generates a JVM (Java, Kotlin, etc.) source bundle and uploads your source code to Sentry.
+    // This enables source context, allowing you to see your source
+    // code as part of your stack traces in Sentry.
+    includeSourceContext = true
+
+    org = "2-7i"
+    projectName = "ssmu-dev-backend"
+    authToken = System.getenv("SENTRY_AUTH_TOKEN")
 }
 
 tasks.named('test') {
