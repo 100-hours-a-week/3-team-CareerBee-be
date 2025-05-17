@@ -79,7 +79,7 @@ jobs:
             '{
               "embeds": [
                 {
-                  "title": "✅ 개발 환경에 배포 성공",
+                  "title": "✅ 개발 환경에 백엔드 배포 성공",
                   "description": $desc,
                   "color": 65280,
                   "footer": { "text": "GitHub Actions - DEV Deploy(BE)" },
@@ -115,7 +115,7 @@ jobs:
             '{
               "embeds": [
                 {
-                  "title": "❌ 개발 환경에 배포 실패",
+                  "title": "❌ 개발 환경에 백엔드 배포 실패",
                   "description": $desc,
                   "color": 16711680,
                   "footer": { "text": "GitHub Actions - DEV Deploy(BE)" },
