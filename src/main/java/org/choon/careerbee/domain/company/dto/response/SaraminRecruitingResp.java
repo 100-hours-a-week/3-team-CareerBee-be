@@ -2,7 +2,6 @@ package org.choon.careerbee.domain.company.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.util.List;
 
@@ -23,6 +22,7 @@ public record SaraminRecruitingResp(
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonNaming(PropertyNamingStrategies.KebabCaseStrategy.class)
     public record Job(
         String url,
         Integer active,
