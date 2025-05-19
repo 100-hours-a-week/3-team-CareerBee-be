@@ -4,6 +4,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  jackson:
+    time-zone: Asia/Seoul
 
   jpa:
     hibernate:
@@ -31,3 +33,14 @@ server:
     session:
       cookie:
         domain: ${COOKIE_DOMAIN}
+
+sentry:
+  dsn: ${SENTRY_DSN}  # 필수: Sentry DSN을 환경변수로 주입
+  environment: dev     # 선택: dev, prod 등 환경 구분
+  traces-sample-rate: 1.0 # 성능 트랜잭션 수집 비율 (1.0 = 100%)
+  attach-stacktrace: true # 예외가 발생하지 않아도 스택트레이스를 첨부
+  send-default-pii: true  # 유저정보 등 개인 식별 정보 포함 여부
+  debug: false            # 로컬에서 테스트 시 true로 하면 Sentry 로그 출력
+  logging:
+    minimum-event-level: error         # Sentry에 보낼 최소 로그 수준 (e.g., error, warning, info)
+    minimum-breadcrumb-level: info    # Breadcrumbs 수집 로그 수준

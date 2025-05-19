@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -75,5 +76,16 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     @Override
     public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
         return companyRepository.fetchCompanyMarkerInfo(companyId);
+    }
+
+    @Override
+    public Company findById(Long companyId) {
+        return companyRepository.findById(companyId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+    }
+
+    @Override
+    public Optional<Company> findBySaraminName(String name) {
+        return companyRepository.findBySaraminName(name);
     }
 }

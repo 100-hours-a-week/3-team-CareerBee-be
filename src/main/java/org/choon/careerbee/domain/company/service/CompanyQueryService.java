@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
+import java.util.Optional;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -9,6 +10,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Co
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.entity.Company;
 
 public interface CompanyQueryService {
 
@@ -26,4 +28,8 @@ public interface CompanyQueryService {
     WishCompanyIdResp fetchWishCompanyIds(Long accessMemberId);
 
     CompanyMarkerInfo fetchCompanyLocation(Long companyId);
+
+    Company findById(Long companyId);
+
+    Optional<Company> findBySaraminName(String name);
 }
