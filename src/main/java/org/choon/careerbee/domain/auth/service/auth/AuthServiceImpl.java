@@ -23,6 +23,7 @@ import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
+import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.choon.careerbee.util.jwt.TokenGenerator;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final RequestOAuthInfoService requestOAuthInfoService;
 
     private final MemberCommandService memberCommandService;
+    private final MemberQueryService memberQueryService;
 
     private final TokenRepository tokenRepository;
 
@@ -74,8 +76,10 @@ public class AuthServiceImpl implements AuthService {
             return newRefreshToken;
         });
 
-        return new TokenAndUserInfo(new AuthTokens(accessToken, refreshToken),
-            new UserInfo(member.getPoints(), true));
+        return new TokenAndUserInfo(
+            new AuthTokens(accessToken, refreshToken),
+            new UserInfo(member.getPoints(), true)
+        );
     }
 
     @Override
@@ -83,10 +87,9 @@ public class AuthServiceImpl implements AuthService {
         String resolveAccessToken = jwtUtil.resolveToken(accessToken);
         TokenClaimInfo tokenClaims = jwtUtil.getTokenClaims(resolveAccessToken);
 
-        Member member = memberRepository.findById(tokenClaims.id())
-            .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
-        Token refreshTokenInRDB = tokenRepository.findByMemberIdAndStatus(tokenClaims.id(),
-                TokenStatus.LIVE)
+        Member member = memberQueryService.findById(tokenClaims.id());
+        Token refreshTokenInRDB = tokenRepository
+            .findByMemberIdAndStatus(tokenClaims.id(), TokenStatus.LIVE)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND));
 
         refreshTokenInRDB.logout();
@@ -97,12 +100,9 @@ public class AuthServiceImpl implements AuthService {
     public AuthTokens reissue(String refreshToken) {
         TokenClaimInfo tokenClaims = jwtUtil.getTokenClaims(refreshToken);
 
-        Member findMember = memberRepository.findById(tokenClaims.id()).orElseThrow(
-            () -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST)
-        );
-
-        Token refreshTokenInRDB = tokenRepository.findByMemberIdAndStatus(findMember.getId(),
-                TokenStatus.LIVE)
+        Member findMember = memberQueryService.findById(tokenClaims.id());
+        Token refreshTokenInRDB = tokenRepository
+            .findByMemberIdAndStatus(findMember.getId(), TokenStatus.LIVE)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND));
 
         if (!Objects.equals(refreshToken, refreshTokenInRDB.getTokenValue())) {
@@ -111,10 +111,11 @@ public class AuthServiceImpl implements AuthService {
 
         AuthTokens generateTokens = tokenGenerator.generateToken(findMember.getId());
         refreshTokenInRDB.revoke();
+
         tokenRepository.save(
-            new Token(findMember, TokenStatus.LIVE, generateTokens.refreshToken()));
+            new Token(findMember, TokenStatus.LIVE, generateTokens.refreshToken())
+        );
         return generateTokens;
     }
-
 
 }
