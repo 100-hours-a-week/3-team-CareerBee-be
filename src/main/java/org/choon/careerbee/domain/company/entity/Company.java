@@ -39,6 +39,9 @@ public class Company {
     @Column(length = 50, nullable = false, unique = true)
     private String name;
 
+    @Column(length = 50)
+    private String saraminName;
+
     @Column(columnDefinition = "POINT SRID 4326")
     private Point geoPoint;
 
