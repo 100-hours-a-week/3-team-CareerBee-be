@@ -25,38 +25,35 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      - name: google auth
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: "${{ secrets.GCP_SA_KEY }}"
-
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-
       - name: Set timestamp-based path (Asia/Seoul)
         run: |
           TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
           echo "DEPLOY_PATH=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
 
-      - name: Upload JAR to GCS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Upload build to S3
         run: |
           mkdir -p ./deploy
           cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
-          echo "Uploading to: ${{ secrets.GCS_PROD_BUCKET_PATH }}/be/$DEPLOY_PATH"
-          gcloud storage cp -r ./deploy/* "${{ secrets.GCS_PROD_BUCKET_PATH }}/be/$DEPLOY_PATH/"
+          echo "Uploading to: s3://${{ secrets.S3_BUCKET_NAME }}/be/$DEPLOY_PATH"
+          aws s3 cp ./deploy "s3://${{ secrets.S3_BUCKET_NAME }}/be/$DEPLOY_PATH/" --recursive
 
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.GCE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.GCE_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Trigger remote deploy script on GCE
+      - name: Trigger remote deploy script on EC2
         run: |
-          ssh ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} "bash ~/release/deploy-be.sh $DEPLOY_PATH"
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "bash ~/release/deploy-be.sh $DEPLOY_PATH"
 
       - name: Notify Discord on Success
         if: success()
