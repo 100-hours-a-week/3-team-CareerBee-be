@@ -76,4 +76,10 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
         return companyRepository.fetchCompanyMarkerInfo(companyId);
     }
+
+    @Override
+    public Company findById(Long companyId) {
+        return companyRepository.findById(companyId)
+            .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+    }
 }

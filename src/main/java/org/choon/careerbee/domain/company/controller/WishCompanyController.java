@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/api/v1/members/wish-companies")
-public class CompanyCommandController {
+public class WishCompanyController {
 
     private final CompanyCommandService commandService;
     private final CompanyQueryService queryService;
