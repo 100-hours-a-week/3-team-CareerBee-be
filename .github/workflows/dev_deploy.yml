@@ -15,10 +15,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Load .env secrets
+      - name: Export .env variables to GitHub ENV
         run: |
-          echo "${{ secrets.DEV_BE_ENV }}" | head -n 2
-
+          echo "${{ secrets.DEV_BE_ENV }}" > .env
+          while IFS= read -r line || [ -n "$line" ]; do
+            if [[ "$line" == *=* ]]; then
+              echo "$line" >> $GITHUB_ENV
+              echo "[환경변수 등록됨] $line"
+            fi
+          done < .env
+      - name: 확인용 환경 변수 출력
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}"
+          echo "DB_URL=${DB_URL}"
+          
       # - name: Restore SSH Key
       #   run: |
       #     mkdir -p ~/.ssh
