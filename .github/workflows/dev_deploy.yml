@@ -10,141 +10,147 @@ jobs:
 
     env:
       COMMIT_HASH: ${{ github.sha }}
-      DEV_BE_ENV: ${{ secrets.DEV_BE_ENV }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 확인용 환경 변수 출력
+      - name: Decrypt env file
         run: |
-          echo $DEV_BE_ENV | head -n 2
+          openssl enc -aes-256-cbc -d -in cicd-variables.sh.enc -out cicd-variables.sh -pass pass:"${{ secrets.DEV_APP_VARIABLES_ENC_PW }}"
+          chmod +x cicd-variables.sh
 
-      # - name: Restore SSH Key
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     echo "${SSH_KEY_BASE64}" | base64 --decode > "${SSH_KEY}"
-      #     chmod 600 "${SSH_KEY}"
-
-      # - name: Set up JDK
-      #   uses: actions/setup-java@v3
-      #   with:
-      #     distribution: 'temurin'
-      #     java-version: '21'
-
-      # - name: Build with Gradle
-      #   run: ./gradlew clean build -x test
-
-      # - name: Set timestamp-based path (Asia/Seoul)
-      #   run: |
-      #     TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
-      #     echo "DEPLOY_PATH=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
-
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v2
-      #   with:
-      #     aws-access-key-id: "${AWS_ACCESS_KEY_ID}"
-      #     aws-secret-access-key: "${AWS_SECRET_ACCESS_KEY}"
-      #     aws-region: "${AWS_DEFAULT_REGION}"
-
-      # - name: Upload build to S3
-      #   run: |
-      #     mkdir -p ./deploy
-      #     cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
-      #     echo "Uploading to: ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}"
-      #     aws s3 cp ./deploy "${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/" --recursive
-
-      # - name: Deploy to EC2 and restart Spring Boot
-      #   run: |
-      #     ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "ubuntu@${AWS_SERVER_IP}" <<EOF
-      #       set -e 
-      #       pkill -f 'careerbee-api.jar' || true
-
-      #       mkdir -p ~/release ~/logs
-      #       aws s3 cp ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/careerbee-api.jar ~/release/careerbee-api.jar
-
-      #       nohup java \
-      #         -Dspring.profiles.active=dev \
-      #         -DDB_URL="${DB_URL}" \
-      #         -DDB_USERNAME="${DB_USERNAME}" \
-      #         -DDB_PASSWORD="${DB_PASSWORD}" \
-      #         -DJWT_SECRETS="${JWT_SECRETS}" \
-      #         -DKAKAO_CLIENT_ID="${KAKAO_CLIENT_ID}" \
-      #         -DKAKAO_REDIRECT_URI="${KAKAO_REDIRECT_URI}" \
-      #         -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
-      #         -DSENTRY_DSN="${SENTRY_DSN}" \
-      #         -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
-      #         -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
-      #     EOF
-
-      # - name: Notify Discord on Success
-      #   if: success()
-      #   run: |
-      #     COMMIT_MSG="${{ github.event.head_commit.message }}"
-      #     REPO="${{ github.repository }}"
-      #     BRANCH="${{ github.ref_name }}"
-      #     RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      #     TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+      - name: Load env variables
+        run: |
+          set -a
+          source ./cicd-variables.sh
+          set +a
           
-      #     DESCRIPTION="**Repository:** \`${REPO}\`
-      #     **Branch:** \`${BRANCH}\`
-      #     **Commit:** \`${COMMIT_MSG}\`
-          
-          
-      #     [🔗 실행 로그 보기](${RUN_URL})"
-          
-      #     jq -n \
-      #       --arg desc "$DESCRIPTION" \
-      #       --arg timestamp "$TIMESTAMP" \
-      #       '{
-      #         "embeds": [
-      #           {
-      #             "title": "✅ 개발 환경에 백엔드 배포 성공",
-      #             "description": $desc,
-      #             "color": 65280,
-      #             "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
-      #             "timestamp": $timestamp
-      #           }
-      #         ]
-      #       }' > payload.json
-          
-      #     curl -H "Content-Type: application/json" \
-      #           -X POST \
-      #           -d @payload.json \
-      #           ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Restore SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_KEY_BASE64}" | base64 --decode > "${SSH_KEY}"
+          chmod 600 "${SSH_KEY}"
 
-      # - name: Notify Discord on Failure
-      #   if: failure()
-      #   run: |
-      #     COMMIT_MSG="${{ github.event.head_commit.message }}"
-      #     REPO="${{ github.repository }}"
-      #     BRANCH="${{ github.ref_name }}"
-      #     RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      #     TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+
+      - name: Set timestamp-based path (Asia/Seoul)
+        run: |
+          TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
+          echo "DEPLOY_PATH=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: "${AWS_ACCESS_KEY_ID}"
+          aws-secret-access-key: "${AWS_SECRET_ACCESS_KEY}"
+          aws-region: "${AWS_DEFAULT_REGION}"
+
+      - name: Upload build to S3
+        run: |
+          mkdir -p ./deploy
+          cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
+          echo "Uploading to: ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}"
+          aws s3 cp ./deploy "${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/" --recursive
+
+      - name: Deploy to EC2 and restart Spring Boot
+        run: |
+          ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "ubuntu@${AWS_SERVER_IP}" <<EOF
+            set -e 
+            pkill -f 'careerbee-api.jar' || true
+
+            mkdir -p ~/release ~/logs
+            aws s3 cp ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/careerbee-api.jar ~/release/careerbee-api.jar
+
+            nohup java \
+              -Dspring.profiles.active=dev \
+              -DDB_URL="${DB_URL}" \
+              -DDB_USERNAME="${DB_USERNAME}" \
+              -DDB_PASSWORD="${DB_PASSWORD}" \
+              -DJWT_SECRETS="${JWT_SECRETS}" \
+              -DKAKAO_CLIENT_ID="${KAKAO_CLIENT_ID}" \
+              -DKAKAO_REDIRECT_URI="${KAKAO_REDIRECT_URI}" \
+              -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
+              -DSENTRY_DSN="${SENTRY_DSN}" \
+              -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+              -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
+          EOF
+
+      - name: Notify Discord on Success
+        if: success()
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TIMESTAMP="${{ github.event.head_commit.timestamp }}"
           
-      #     DESCRIPTION="**Repository:** \`${REPO}\`
-      #     **Branch:** \`${BRANCH}\`
-      #     **Commit:** \`${COMMIT_MSG}\`
+          DESCRIPTION="**Repository:** \`${REPO}\`
+          **Branch:** \`${BRANCH}\`
+          **Commit:** \`${COMMIT_MSG}\`
           
           
-      #     [🔗 실행 로그 보기](${RUN_URL})"
+          [🔗 실행 로그 보기](${RUN_URL})"
           
-      #     jq -n \
-      #       --arg desc "$DESCRIPTION" \
-      #       --arg timestamp "$TIMESTAMP" \
-      #       '{
-      #         "embeds": [
-      #           {
-      #             "title": "❌ 개발 환경에 백엔드 배포 실패",
-      #             "description": $desc,
-      #             "color": 16711680,
-      #             "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
-      #             "timestamp": $timestamp
-      #           }
-      #         ]
-      #       }' > payload.json
+          jq -n \
+            --arg desc "$DESCRIPTION" \
+            --arg timestamp "$TIMESTAMP" \
+            '{
+              "embeds": [
+                {
+                  "title": "✅ 개발 환경에 백엔드 배포 성공",
+                  "description": $desc,
+                  "color": 65280,
+                  "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
+                  "timestamp": $timestamp
+                }
+              ]
+            }' > payload.json
           
-      #     curl -H "Content-Type: application/json" \
-      #           -X POST \
-      #           -d @payload.json \
-      #           ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -H "Content-Type: application/json" \
+                -X POST \
+                -d @payload.json \
+                ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Notify Discord on Failure
+        if: failure()
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+          
+          DESCRIPTION="**Repository:** \`${REPO}\`
+          **Branch:** \`${BRANCH}\`
+          **Commit:** \`${COMMIT_MSG}\`
+          
+          
+          [🔗 실행 로그 보기](${RUN_URL})"
+          
+          jq -n \
+            --arg desc "$DESCRIPTION" \
+            --arg timestamp "$TIMESTAMP" \
+            '{
+              "embeds": [
+                {
+                  "title": "❌ 개발 환경에 백엔드 배포 실패",
+                  "description": $desc,
+                  "color": 16711680,
+                  "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
+                  "timestamp": $timestamp
+                }
+              ]
+            }' > payload.json
+          
+          curl -H "Content-Type: application/json" \
+                -X POST \
+                -d @payload.json \
+                ${{ secrets.DISCORD_WEBHOOK_URL }}
