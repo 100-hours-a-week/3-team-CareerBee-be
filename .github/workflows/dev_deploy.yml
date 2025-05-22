@@ -17,14 +17,7 @@ jobs:
 
       - name: Load .env secrets
         run: |
-          echo "${{ secrets.DEV_BE_ENV }}" > .env
-          set -a
-          source .env
-          set +a
-          
-      - name: Check .env contents
-        run: |
-          cat .env
+          echo "${{ secrets.DEV_BE_ENV }}" | head -n 2
 
       # - name: Restore SSH Key
       #   run: |
