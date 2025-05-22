@@ -21,7 +21,9 @@ jobs:
           set -a
           source .env
           set +a
-
+          
+      - name: Check .env contents
+        run: |
           cat .env
 
       # - name: Restore SSH Key
