@@ -22,12 +22,6 @@ jobs:
           source .env
           set +a
 
-          while IFS='=' read -r key _; do
-            echo "$key=${!key}" >> $GITHUB_ENV
-          done < <(grep -v '^#' .env | grep '=')
-
-      - name: Debug loaded env names only
-        run: |
           echo "환경변수 등록 확인:"
           echo "SSH_KEY = ${SSH_KEY:+(설정됨)}"
           echo "AWS_ACCESS_KEY_ID = ${AWS_ACCESS_KEY_ID:+(설정됨)}"
