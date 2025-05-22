@@ -1,4 +1,4 @@
-name: Deploy Spring Boot to GCE (Prod)
+name: Deploy Spring Boot to EC2 (Prod)
 
 on:
   push:
