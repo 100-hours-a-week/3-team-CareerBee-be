@@ -17,7 +17,7 @@ jobs:
 
       - name: Decrypt env file
         run: |
-          openssl enc -aes-256-cbc -d -pbkdf2 -in cicd-variables.sh.enc -out cicd-variables.sh -k "${{ secrets.DEV_APP_VARIABLES_ENC_PW }}"
+          openssl enc -aes-256-cbc -d -pbkdf2 -in cicd-variables.sh.enc -out cicd-variables.sh -k "${{ secrets.DEV_CICD_VARIABLES_ENC_PW }}"
           chmod +x cicd-variables.sh
 
       - name: Load selected env variables into GitHub Environment
@@ -78,7 +78,7 @@ jobs:
       - name: Deploy to EC2 and restart Spring Boot
         run: |
           ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "ubuntu@${AWS_SERVER_IP}" <<EOF
-            set -e 
+            set -e
             pkill -f 'careerbee-api.jar' || true
 
             mkdir -p ~/release ~/logs
@@ -123,7 +123,7 @@ jobs:
                   "title": "✅ 개발 환경에 백엔드 배포 성공",
                   "description": $desc,
                   "color": 65280,
-                  "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
+                  "footer": { "text": "GitHub Actions - DEV Deploy(BE)" },
                   "timestamp": $timestamp
                 }
               ]
@@ -159,7 +159,7 @@ jobs:
                   "title": "❌ 개발 환경에 백엔드 배포 실패",
                   "description": $desc,
                   "color": 16711680,
-                  "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
+                  "footer": { "text": "GitHub Actions - DEV Deploy(BE)" },
                   "timestamp": $timestamp
                 }
               ]
