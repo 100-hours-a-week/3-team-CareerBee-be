@@ -18,9 +18,13 @@ jobs:
       - name: Load .env secrets
         run: |
           echo "${{ secrets.DEV_BE_ENV }}" > .env
-          while IFS='=' read -r key value; do
-            echo "$key=$value" >> $GITHUB_ENV
-          done < .env
+          set -a
+          source .env
+          set +a
+
+          while IFS='=' read -r key _; do
+            echo "$key=${!key}" >> $GITHUB_ENV
+          done < <(grep -v '^#' .env | grep '=')
 
       - name: Debug loaded env names only
         run: |
