@@ -25,6 +25,8 @@ jobs:
           source ./cicd-variables.sh
 
           echo "SSH_KEY=$SSH_KEY" >> $GITHUB_ENV
+          echo "SSH_KEY_BASE64=$SSH_KEY_BASE64" >> $GITHUB_ENV
+          echo "AWS_SERVER_IP=$AWS_SERVER_IP" >> $GITHUB_ENV
           echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_ENV
           echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> $GITHUB_ENV
