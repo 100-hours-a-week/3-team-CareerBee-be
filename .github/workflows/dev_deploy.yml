@@ -2,7 +2,7 @@ name: Deploy Spring Boot to S3 (Dev)
 
 on:
   push:
-    branches: [ cicd/#82 ]
+    branches: [ develop ]
 
 jobs:
   Deploy-DEV:
