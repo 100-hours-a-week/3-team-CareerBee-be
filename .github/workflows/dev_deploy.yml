@@ -25,8 +25,8 @@ jobs:
       - name: Restore SSH Key
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY_BASE64" | base64 --decode > $SSH_KEY
-          chmod 600 $SSH_KEY
+          echo "${SSH_KEY_BASE64}" | base64 --decode > "${SSH_KEY}"
+          chmod 600 "${SSH_KEY}"
 
       - name: Set up JDK
         uses: actions/setup-java@v3
@@ -40,25 +40,25 @@ jobs:
       - name: Set timestamp-based path (Asia/Seoul)
         run: |
           TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
-          echo "{DEPLOY_PATH}=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
+          echo "DEPLOY_PATH=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: $AWS_ACCESS_KEY_ID
-          aws-secret-access-key: $AWS_SECRET_ACCESS_KEY
-          aws-region: $AWS_DEFAULT_REGION
+          aws-access-key-id: "${AWS_ACCESS_KEY_ID}"
+          aws-secret-access-key: "${AWS_SECRET_ACCESS_KEY}"
+          aws-region: "${AWS_DEFAULT_REGION}"
 
       - name: Upload build to S3
         run: |
           mkdir -p ./deploy
           cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
           echo "Uploading to: ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}"
-          aws s3 cp ./deploy ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/ --recursive
+          aws s3 cp ./deploy "${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/" --recursive
 
       - name: Deploy to EC2 and restart Spring Boot
         run: |
-          ssh -i $SSH_KEY -o StrictHostKeyChecking=no ubuntu@$AWS_SERVER_IP <<EOF
+          ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "ubuntu@${AWS_SERVER_IP}" <<EOF
             set -e 
             pkill -f 'careerbee-api.jar' || true
 
@@ -101,7 +101,7 @@ jobs:
             '{
               "embeds": [
                 {
-                  "title": "✅ 프로덕션 환경에 백엔드 배포 성공",
+                  "title": "✅ 개발 환경에 백엔드 배포 성공",
                   "description": $desc,
                   "color": 65280,
                   "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
@@ -137,7 +137,7 @@ jobs:
             '{
               "embeds": [
                 {
-                  "title": "❌ 프로덕션 환경에 백엔드 배포 실패",
+                  "title": "❌ 개발 환경에 백엔드 배포 실패",
                   "description": $desc,
                   "color": 16711680,
                   "footer": { "text": "GitHub Actions - PROD Deploy(BE)" },
