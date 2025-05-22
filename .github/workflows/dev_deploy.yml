@@ -17,7 +17,7 @@ jobs:
 
       - name: Decrypt env file
         run: |
-          openssl enc -aes-256-cbc -d -in cicd-variables.sh.enc -out cicd-variables.sh -pass pass:"${{ secrets.DEV_APP_VARIABLES_ENC_PW }}"
+          openssl enc -aes-256-cbc -d -pbkdf2 -in cicd-variables.sh.enc -out cicd-variables.sh -k "${{ secrets.DEV_APP_VARIABLES_ENC_PW }}"
           chmod +x cicd-variables.sh
 
       - name: Load env variables
