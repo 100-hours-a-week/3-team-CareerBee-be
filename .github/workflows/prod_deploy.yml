@@ -1,4 +1,4 @@
-name: Deploy Spring Boot to GCE (Prod)
+name: Deploy Spring Boot to EC2 (Prod)
 
 on:
   push:
@@ -41,8 +41,8 @@ jobs:
         run: |
           mkdir -p ./deploy
           cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
-          echo "Uploading to: s3://${{ secrets.PROD_S3_BUCKET_NAME }}/be/$DEPLOY_PATH"
-          aws s3 cp ./deploy "s3://${{ secrets.PROD_S3_BUCKET_NAME }}/be/$DEPLOY_PATH/" --recursive
+          echo "Uploading to: s3://${{ secrets.PROD_S3_BUCKET_NAME }}/artifacts/be/$DEPLOY_PATH"
+          aws s3 cp ./deploy "s3://${{ secrets.PROD_S3_BUCKET_NAME }}/artifacts/be/$DEPLOY_PATH/" --recursive
 
       - name: Setup SSH key
         run: |
