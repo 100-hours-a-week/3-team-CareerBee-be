@@ -22,10 +22,12 @@ jobs:
             echo "$key=$value" >> $GITHUB_ENV
           done < .env
 
-      - name: Debug loaded environment variables
+      - name: Debug loaded env names only
         run: |
-          echo "=== SSH_KEY ==="
-          echo "${SSH_KEY}"
+          echo "환경변수 등록 확인:"
+          echo "SSH_KEY = ${SSH_KEY:+(설정됨)}"
+          echo "AWS_ACCESS_KEY_ID = ${AWS_ACCESS_KEY_ID:+(설정됨)}"
+          echo "DB_URL = ${DB_URL:+(설정됨)}"
 
       # - name: Restore SSH Key
       #   run: |
