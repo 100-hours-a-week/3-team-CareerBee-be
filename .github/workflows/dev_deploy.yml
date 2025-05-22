@@ -20,11 +20,24 @@ jobs:
           openssl enc -aes-256-cbc -d -pbkdf2 -in cicd-variables.sh.enc -out cicd-variables.sh -k "${{ secrets.DEV_APP_VARIABLES_ENC_PW }}"
           chmod +x cicd-variables.sh
 
-      - name: Load env variables
+      - name: Load selected env variables into GitHub Environment
         run: |
-          set -a
           source ./cicd-variables.sh
-          set +a
+
+          echo "SSH_KEY=$SSH_KEY" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> $GITHUB_ENV
+          echo "S3_BUCKET_INFRA=$S3_BUCKET_INFRA" >> $GITHUB_ENV
+          echo "DB_URL=$DB_URL" >> $GITHUB_ENV
+          echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
+          echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+          echo "JWT_SECRETS=$JWT_SECRETS" >> $GITHUB_ENV
+          echo "KAKAO_CLIENT_ID=$KAKAO_CLIENT_ID" >> $GITHUB_ENV
+          echo "KAKAO_REDIRECT_URI=$KAKAO_REDIRECT_URI" >> $GITHUB_ENV
+          echo "COOKIE_DOMAIN=$COOKIE_DOMAIN" >> $GITHUB_ENV
+          echo "SENTRY_DSN=$SENTRY_DSN" >> $GITHUB_ENV
+          echo "SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN" >> $GITHUB_ENV
           
       - name: Restore SSH Key
         run: |
