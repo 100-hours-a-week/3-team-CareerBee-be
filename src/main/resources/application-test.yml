@@ -1,18 +1,16 @@
 spring:
   datasource:
-    url: ${DB_URL}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-
 jwt:
   secret: ${JWT_SECRETS}
   expiration_time:
@@ -22,6 +20,14 @@ jwt:
 oauth:
   kakao:
     client-id: ${KAKAO_CLIENT_ID}
-    redirect-uri: ${KAKAO_REDIRECT_URI}
+    prod-redirect-uri: ${KAKAO_PROD_REDIRECT_URI}
+    dev-redirect-uri: ${KAKAO_DEV_REDIRECT_URI}
+    local-redirect-uri: ${KAKAO_LOCAL_REDIRECT_URI}
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
+
+server:
+  servlet:
+    session:
+      cookie:
+        domain: ${COOKIE_DOMAIN}
