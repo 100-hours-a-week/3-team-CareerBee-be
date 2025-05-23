@@ -51,7 +51,7 @@ public class Company {
     @Column(length = 500)
     private String markerUrl;
 
-    @Column(length = 250)
+    @Column(length = 300)
     private String description;
 
     @Column(length = 50)

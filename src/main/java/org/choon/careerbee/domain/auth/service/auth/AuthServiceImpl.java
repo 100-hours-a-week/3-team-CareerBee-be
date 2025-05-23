@@ -76,9 +76,10 @@ public class AuthServiceImpl implements AuthService {
             return newRefreshToken;
         });
 
+        // Todo : 추후 새 알림이 있다면 해당 코드 변경
         return new TokenAndUserInfo(
             new AuthTokens(accessToken, refreshToken),
-            new UserInfo(member.getPoints(), true)
+            new UserInfo(member.getPoints(), false)
         );
     }
 
