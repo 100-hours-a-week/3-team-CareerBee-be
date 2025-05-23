@@ -49,15 +49,16 @@ public class AuthServiceImpl implements AuthService {
 
 
     @Override
-    public OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider) {
+    public OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider, String origin) {
         OAuthProvider provider = OAuthProvider.fromString(oauthProvider);
 
-        return new OAuthLoginUrlResp(providerFactory.getProvider(provider).getLoginUrl());
+        return new OAuthLoginUrlResp(
+            providerFactory.getProvider(provider).getLoginUrlByOrigin(origin));
     }
 
     @Override
-    public TokenAndUserInfo login(OAuthLoginParams oAuthLoginParams) {
-        OAuthInfoResponse oAuthInfo = requestOAuthInfoService.request(oAuthLoginParams);
+    public TokenAndUserInfo login(OAuthLoginParams oAuthLoginParams, String origin) {
+        OAuthInfoResponse oAuthInfo = requestOAuthInfoService.request(oAuthLoginParams, origin);
 
         // Todo : 추후(Redis로 변경)에는 Member 엔티티 보단 memberId만 있으면 되므로 리팩토링시 변경 코드
         // Todo : forceJoin의 리턴타입도 Long으로 저장된 member의 id를 리턴해줘야함.
