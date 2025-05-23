@@ -17,7 +17,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
-import org.choon.careerbee.domain.member.entity.enums.CompanyType;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.entity.enums.RoleType;
@@ -47,7 +46,7 @@ public class Member extends BaseEntity {
     @Column(length = 20, nullable = false)
     private String nickname;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = 50, nullable = false, unique = true)
     private String email;
 
     @Column(length = 9)
@@ -64,9 +63,8 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MajorType majorType;
 
-    @Column(length = 10)
-    @Enumerated(EnumType.STRING)
-    private CompanyType companyType;
+    @Column(length = 50)
+    private String companyName;
 
     @Column(nullable = false)
     private Integer workPeriod;
