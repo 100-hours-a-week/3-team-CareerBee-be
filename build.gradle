@@ -57,6 +57,7 @@ dependencies {
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.5'
+    testImplementation 'com.h2database:h2:2.3.232'
     testImplementation 'org.springframework.security:spring-security-test:6.4.5'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
