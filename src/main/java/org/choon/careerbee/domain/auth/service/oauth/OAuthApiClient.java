@@ -12,7 +12,7 @@ public interface OAuthApiClient {
      */
     OAuthProvider oauthProvider();
 
-    String requestAccessToken(OAuthLoginParams loginParams);
+    String requestAccessToken(OAuthLoginParams loginParams, String origin);
 
     OAuthInfoResponse requestOauthInfo(String accessToken);
 }
