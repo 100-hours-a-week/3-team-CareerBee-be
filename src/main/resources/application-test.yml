@@ -1,9 +1,9 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:mysql://localhost:3306/careerbee?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: mumu
+    password: mumu
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -12,17 +12,17 @@ spring:
       hibernate:
         format_sql: true
 jwt:
-  secret: ${JWT_SECRETS}
+  secret: asdjfkajsdlfkjlkadjlfkasjdefwer
   expiration_time:
     access_token: 30000000000000000 # 5분
     refresh_token: 86400000000000000 # 일주일
 
 oauth:
   kakao:
-    client-id: ${KAKAO_CLIENT_ID}
-    prod-redirect-uri: ${KAKAO_PROD_REDIRECT_URI}
-    dev-redirect-uri: ${KAKAO_DEV_REDIRECT_URI}
-    local-redirect-uri: ${KAKAO_LOCAL_REDIRECT_URI}
+    client-id: 1342353523423
+    prod-redirect-uri: https://test.co.kr
+    dev-redirect-uri: https://test.co.kr
+    local-redirect-uri: https://test.co.kr
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
 
@@ -30,4 +30,4 @@ server:
   servlet:
     session:
       cookie:
-        domain: ${COOKIE_DOMAIN}
+        domain: https://test.co.kr
