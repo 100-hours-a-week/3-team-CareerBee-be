@@ -4,16 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.transaction.Transactional;
+import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
+import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.CompanyType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
+import org.choon.careerbee.domain.company.entity.wish.WishCompany;
+import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
@@ -52,6 +57,56 @@ class CompanyCustomRepositoryImplTest {
 
         // then
         assertThat(result.companies()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("유효한 company id로 기업 간단 정보 조회시 정상 조회")
+    void fetchCompanySummaryById_shouldReturnCompanySummaryResp() {
+        // given
+        Company company = createCompany(
+            "테스트 회사", 37.40203443, 127.1034665
+        );
+        em.persist(company);
+
+        Member member = createMember();
+        em.persist(member);
+
+        WishCompany wishCompany = WishCompany.of(member, company);
+        em.persist(wishCompany);
+
+        em.flush();
+        em.clear();
+
+        CompanySummaryInfo expectedResp = new CompanySummaryInfo(
+            company.getId(),
+            company.getName(),
+            company.getLogoUrl(),
+            1L,
+            List.of()
+        );
+
+        // when
+        CompanySummaryInfo actualResp = companyCustomRepository.fetchCompanySummaryInfoById(company.getId());
+
+        // then
+        assertThat(actualResp).isNotNull();
+        assertThat(actualResp.id()).isEqualTo(expectedResp.id());
+        assertThat(actualResp.name()).isEqualTo(expectedResp.name());
+        assertThat(actualResp.wishCount()).isEqualTo(expectedResp.wishCount());
+        assertThat(actualResp.logoUrl()).isEqualTo(expectedResp.logoUrl());
+        assertThat(actualResp.keywords()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 id로 간단 정보 조회시 예외 발생")
+    void fetchCompanySummaryById_shouldThrowException_whenCompanyNotFound() {
+        // given
+        Long invalidCompanyId = 10000L;
+
+        // when & then
+        assertThatThrownBy(() ->
+            companyCustomRepository.fetchCompanySummaryInfoById(invalidCompanyId)
+        ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
     @Test
@@ -115,6 +170,15 @@ class CompanyCustomRepositoryImplTest {
             .operatingProfit(0L)
             .recentIssue("...")
             .rating(4.4)
+            .build();
+    }
+
+    private Member createMember() {
+        return Member.builder()
+            .nickname("tester")
+            .email("test@careerbee.com")
+            .oAuthProvider(OAuthProvider.KAKAO)
+            .providerId(1234235L)
             .build();
     }
 }
