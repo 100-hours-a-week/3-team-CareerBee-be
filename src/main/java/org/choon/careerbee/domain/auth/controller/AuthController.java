@@ -55,9 +55,10 @@ public class AuthController {
     @GetMapping("/oauth")
     public ResponseEntity<CommonResponse<OAuthLoginUrlResp>> getOAuthLoginUrl(
         @Parameter(name = "type", description = "소셜 로그인 타입 (ex: KAKAO, GOOGLE)", required = true)
-        @RequestParam(value = "type") String type
+        @RequestParam(value = "type") String type,
+        @RequestHeader(value = "Origin") String origin
     ) {
-        OAuthLoginUrlResp response = authService.getOAuthLoginUrl(type);
+        OAuthLoginUrlResp response = authService.getOAuthLoginUrl(type, origin);
 
         return CommonResponseEntity.ok(
             response,
@@ -78,9 +79,10 @@ public class AuthController {
     public ResponseEntity<CommonResponse<LoginResp>> kakaoLogin(
         @Parameter(name = "kakaoParams", description = "KAKAO 로부터 발급받은 Authorization Code", required = true)
         @RequestBody KakaoLoginParams kakaoParams,
+        @RequestHeader(value = "Origin") String origin,
         HttpServletResponse response
     ) {
-        TokenAndUserInfo tokenAndUserInfo = authService.login(kakaoParams);
+        TokenAndUserInfo tokenAndUserInfo = authService.login(kakaoParams, origin);
         setTokenInCookie(response, tokenAndUserInfo.authTokens());
 
         return CommonResponseEntity.ok(
