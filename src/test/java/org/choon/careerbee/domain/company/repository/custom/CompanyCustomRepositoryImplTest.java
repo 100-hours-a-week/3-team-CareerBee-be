@@ -1,10 +1,10 @@
 package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.transaction.Transactional;
-import java.util.List;
-import java.util.Map;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
@@ -14,7 +14,6 @@ import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.CompanyType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.geom.Coordinate;
@@ -56,7 +55,7 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("기업 상세 정보 조회가 정상적으로 동작하는가")
+    @DisplayName("유효한 company id로 기업 상세정보 조회시 정상 조회")
     void fetchCompanyDetailById_shouldReturnCompanyDetailResp() {
         // given
         Company company = createCompany(
@@ -75,6 +74,19 @@ class CompanyCustomRepositoryImplTest {
         assertThat(actualResp.address()).isEqualTo(company.getAddress());
         assertThat(actualResp.financials().annualSalary()).isEqualTo(company.getAnnualSalary());
         assertThat(actualResp.rating()).isEqualTo(company.getRating());
+        assertThat(actualResp.benefits()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 id로 조회시 예외 발생")
+    void fetchCompanyDetailById_shouldThrowException_whenCompanyNotFound() {
+        // given
+        Long invalidCompanyId = 1000L;
+
+        // when & then
+        assertThatThrownBy(() ->
+            companyCustomRepository.fetchCompanyDetailById(invalidCompanyId)
+        ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
     private Company createCompany(
