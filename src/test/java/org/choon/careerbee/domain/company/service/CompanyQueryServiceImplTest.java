@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.company.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,6 +13,7 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -57,6 +59,31 @@ class CompanyQueryServiceImplTest {
         // then
         verify(companyRepository, times(1)).fetchByDistanceAndCondition(addressInfo, queryCond);
         assertThat(actualResponse).isEqualTo(expectedResponse);
+    }
+
+    @Test
+    @DisplayName("기업 간단 조회 시 repository 호출 및 결과 반환")
+    void fetchCompanySummary_ShouldReturnSummaryResponse() {
+        // given
+        Long companyId = 1L;
+        CompanySummaryInfo expectedResponse = new CompanySummaryInfo(
+            companyId,
+            "테스트 회사",
+            "https://test.logo.jpg",
+            1L,
+            List.of()
+        );
+        when(companyQueryService.fetchCompanySummary(anyLong())).thenReturn(expectedResponse);
+
+        // when
+        CompanySummaryInfo actualResponse = companyQueryService.fetchCompanySummary(companyId);
+
+        // then
+        verify(companyRepository, times(1)).fetchCompanySummaryInfoById(companyId);
+        assertThat(actualResponse.name()).isEqualTo(expectedResponse.name());
+        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
+        assertThat(actualResponse.logoUrl()).isEqualTo(expectedResponse.logoUrl());
+        assertThat(actualResponse.keywords()).isEqualTo(expectedResponse.keywords());
     }
 
     @Test
