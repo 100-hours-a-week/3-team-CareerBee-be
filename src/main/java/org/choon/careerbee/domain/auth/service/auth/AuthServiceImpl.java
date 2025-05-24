@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.auth.service.auth;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,6 @@ public class AuthServiceImpl implements AuthService {
     private final TokenRepository tokenRepository;
 
     private final MemberRepository memberRepository; // Todo : 추후 Redis로 이전시 없앨 예정. (개발 편의성을 위해 둠)
-
 
     @Override
     public OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider, String origin) {
@@ -100,7 +100,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthTokens reissue(String refreshToken) {
-        TokenClaimInfo tokenClaims = jwtUtil.getTokenClaims(refreshToken);
+        TokenClaimInfo tokenClaims;
+        try {
+            tokenClaims = jwtUtil.getTokenClaims(refreshToken);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_EXPIRED);
+        }
 
         Member findMember = memberQueryService.findById(tokenClaims.id());
         Token refreshTokenInRDB = tokenRepository
