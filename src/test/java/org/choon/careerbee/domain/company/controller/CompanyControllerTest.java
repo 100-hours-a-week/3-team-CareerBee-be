@@ -189,6 +189,26 @@ class CompanyControllerTest {
     }
 
     @Test
+    @DisplayName("기업 위치 정보 조회 API가 성공적으로 데이터를 반환한다")
+    void fetchCompanyLocationInfo_success() throws Exception {
+        Company company = createCompany("마커 테스트 기업", 37.40203443, 127.1034665);
+        em.persist(company);
+        em.flush();
+        em.clear();
+        Long companyId = company.getId();
+
+        mockMvc.perform(get("/api/v1/companies/{companyId}/locations", companyId)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("기업 위치 정보 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.id").value(company.getId()))
+            .andExpect(jsonPath("$.data.businessType").value(company.getBusinessType().toString()))
+            .andExpect(jsonPath("$.data.recruitingStatus").value(company.getRecruitingStatus().toString()))
+            .andExpect(jsonPath("$.data.locationInfo.latitude").value(closeTo(37.40203443, 1e-9)))
+            .andExpect(jsonPath("$.data.locationInfo.longitude").value(closeTo(127.1034665, 1e-9)));
+    }
+
+    @Test
     @DisplayName("키워드 검색시 keyword 누락되면 400 에러 발생")
     void fetchCompanyDetail_shouldReturn400_whenKeywordEmpty() throws Exception {
         mockMvc.perform(get("/api/v1/companies/search")
