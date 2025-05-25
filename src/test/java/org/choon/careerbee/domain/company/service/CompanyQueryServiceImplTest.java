@@ -151,6 +151,28 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
+    @DisplayName("기업 마커 정보 조회 시 repository 호출 및 결과 반환")
+    void fetchCompanyLocation_ShouldReturnMarkerInfo() {
+        // given
+        Long companyId = 1L;
+        CompanyMarkerInfo expectedResponse = new CompanyMarkerInfo(
+            companyId,
+            "testUrl",
+            BusinessType.GAME,
+            RecruitingStatus.ONGOING,
+            new LocationInfo(37.123, 127.01)
+        );
+        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedResponse);
+
+        // when
+        CompanyMarkerInfo actualResponse = companyQueryService.fetchCompanyLocation(companyId);
+
+        // then
+        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(companyId);
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+    }
+
+    @Test
     @DisplayName("관심 회사 여부 확인 - 존재하는 경우 true 반환")
     void checkWishCompany_existsTrue() {
         // given
