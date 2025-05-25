@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.within;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
@@ -130,6 +132,29 @@ class CompanyCustomRepositoryImplTest {
         assertThat(actualResp.financials().annualSalary()).isEqualTo(company.getAnnualSalary());
         assertThat(actualResp.rating()).isEqualTo(company.getRating());
         assertThat(actualResp.benefits()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("존재하는 기업의 위치정보 조회시 정상 조회 ")
+    void fetchCompanyMarkerInfo_shouldReturnMarkerInfo() {
+        // given
+        Company company = createCompany(
+            "마커 테스트 회사", 37.40203443, 127.1034665
+        );
+        em.persist(company);
+        em.flush();
+        em.clear();
+
+        // when
+        CompanyMarkerInfo actualResult = companyCustomRepository.fetchCompanyMarkerInfo(company.getId());
+
+        // then
+        assertThat(actualResult).isNotNull();
+        assertThat(actualResult.id()).isEqualTo(company.getId());
+        assertThat(actualResult.businessType()).isEqualTo(company.getBusinessType());
+        assertThat(actualResult.recruitingStatus()).isEqualTo(company.getRecruitingStatus());
+        assertThat(actualResult.locationInfo().longitude()).isCloseTo(127.1034665, within(1e-9));
+        assertThat(actualResult.locationInfo().latitude()).isCloseTo(37.40203443, within(1e-9));
     }
 
     @Test
