@@ -2,9 +2,9 @@ package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,9 +22,9 @@ import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
@@ -34,8 +34,6 @@ import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -199,10 +197,12 @@ class CompanyQueryServiceImplTest {
 
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(mockCompany));
-        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(false);
+        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
+            false);
 
         // when
-        CheckWishCompanyResp actualResponse = companyQueryService.checkWishCompany(memberId, companyId);
+        CheckWishCompanyResp actualResponse = companyQueryService.checkWishCompany(memberId,
+            companyId);
 
         // then
         assertThat(actualResponse.isWish()).isFalse();
@@ -248,6 +248,7 @@ class CompanyQueryServiceImplTest {
             rawKeyword);
 
         // then
+        ArgumentCaptor<String> keywordCaptor = ArgumentCaptor.forClass(String.class);
         verify(companyRepository).fetchMatchingCompaniesByKeyword(keywordCaptor.capture());
         String actualPassedKeyword = keywordCaptor.getValue();
         assertThat(actualPassedKeyword).isEqualTo(expectedKeyword);
