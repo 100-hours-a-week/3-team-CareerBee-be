@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.choon.careerbee.domain.company.fixture.CompanyFixture.createCompany;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -14,17 +15,10 @@ import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.choon.careerbee.domain.company.entity.enums.BusinessType;
-import org.choon.careerbee.domain.company.entity.enums.CompanyType;
-import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -50,7 +44,7 @@ class CompanyCustomRepositoryImplTest {
     void fetchByDistanceAndCondition_반경내_여러기업조회() {
         // given
         CompanyQueryAddressInfo addressInfo = new CompanyQueryAddressInfo(37.40024430415324, 127.10698761648364);
-        CompanyQueryCond cond = new CompanyQueryCond(1000); // 500m
+        CompanyQueryCond cond = new CompanyQueryCond(1000);
 
         // when
         CompanyRangeSearchResp result = companyCustomRepository.fetchByDistanceAndCondition(addressInfo, cond);
@@ -63,9 +57,7 @@ class CompanyCustomRepositoryImplTest {
     @DisplayName("유효한 company id로 기업 간단 정보 조회시 정상 조회")
     void fetchCompanySummaryById_shouldReturnCompanySummaryResp() {
         // given
-        Company company = createCompany(
-            "테스트 회사", 37.40203443, 127.1034665
-        );
+        Company company = createCompany("테스트 회사", 37.40203443, 127.1034665);
         em.persist(company);
 
         Member member = createMember();
@@ -142,35 +134,6 @@ class CompanyCustomRepositoryImplTest {
         assertThatThrownBy(() ->
             companyCustomRepository.fetchCompanyDetailById(invalidCompanyId)
         ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
-    }
-
-    private Company createCompany(
-        String name,
-        Double latitude,
-        Double longitude
-    ) {
-        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
-        Point geoPoint = factory.createPoint(new Coordinate(longitude, latitude));
-
-        return Company.builder()
-            .name(name)
-            .geoPoint(geoPoint)
-            .address("경기 성남시 분당구")
-            .homeUrl("https://homepage.com")
-            .logoUrl("https://logo.com")
-            .description("회사 소개")
-            .companyType(CompanyType.ENTERPRISE)
-            .recruitingStatus(RecruitingStatus.ONGOING)
-            .businessType(BusinessType.GAME)
-            .employeeCount(800)
-            .score(300)
-            .annualSalary(50000000)
-            .startingSalary(0)
-            .revenue(662100000000L)
-            .operatingProfit(0L)
-            .recentIssue("...")
-            .rating(4.4)
-            .build();
     }
 
     private Member createMember() {

@@ -21,6 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.choon.careerbee.domain.company.fixture.CompanyFixture.createCompany;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -98,31 +99,5 @@ class CompanyControllerTest {
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.message").value(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage()))
             .andExpect(jsonPath("$.httpStatusCode").value(CustomResponseStatus.COMPANY_NOT_EXIST.getHttpStatusCode()));
-    }
-
-    private Company createCompany(String name, double latitude, double longitude) {
-        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
-        Point geoPoint = factory.createPoint(new Coordinate(longitude, latitude));
-        return Company.builder()
-            .name(name)
-            .geoPoint(geoPoint)
-            .address("서울시 강남구")
-            .homeUrl("https://company.test.com")
-            .logoUrl("https://logo.test.com")
-            .description("테스트 기업 설명")
-            .recentIssue("테스트 이슈")
-            .companyType(CompanyType.MID_SIZED)
-            .recruitingStatus(RecruitingStatus.ONGOING)
-            .businessType(BusinessType.PLATFORM)
-            .score(100)
-            .employeeCount(50)
-            .annualSalary(60000)
-            .startingSalary(40000)
-            .revenue(1000000000L)
-            .operatingProfit(200000000L)
-            .ir("IR 정보")
-            .rating(4.5)
-            .benefits(null)
-            .build();
     }
 }
