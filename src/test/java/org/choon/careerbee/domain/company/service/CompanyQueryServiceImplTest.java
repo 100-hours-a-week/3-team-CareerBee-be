@@ -1,8 +1,7 @@
 package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,12 +11,15 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,6 +38,9 @@ class CompanyQueryServiceImplTest {
 
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
+
+    @Captor
+    private ArgumentCaptor<String> keywordCaptor;
 
     @Test
     @DisplayName("정상 주소와 조건으로 회사 조회 시 레포지토리 호출 및 결과 반환")
@@ -64,11 +69,18 @@ class CompanyQueryServiceImplTest {
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
-        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000, 1000000000L, 200000000L);
-        List<CompanyDetailResp.Photo> photos = List.of(new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
-        List<CompanyDetailResp.Benefit> benefits = List.of(new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
-        List<CompanyDetailResp.TechStack> techStacks = List.of(new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND", "https://example.com/spring.png"));
-        List<CompanyDetailResp.Recruitment> recruitments = List.of(new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"));
+        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000,
+            1000000000L, 200000000L);
+        List<CompanyDetailResp.Photo> photos = List.of(
+            new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
+        List<CompanyDetailResp.Benefit> benefits = List.of(
+            new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
+        List<CompanyDetailResp.TechStack> techStacks = List.of(
+            new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND",
+                "https://example.com/spring.png"));
+        List<CompanyDetailResp.Recruitment> recruitments = List.of(
+            new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01",
+                "2024-12-31"));
 
         CompanyDetailResp expectedResponse = new CompanyDetailResp(
             companyId,
@@ -99,6 +111,30 @@ class CompanyQueryServiceImplTest {
         // then
         assertThat(actualResponse).isEqualTo(expectedResponse);
         verify(companyRepository, times(1)).fetchCompanyDetailById(companyId);
+    }
+
+    @Test
+    @DisplayName("keyword 입력값은 공백 제거 및 escape 처리 후 repository로 전달되어야 한다")
+    void fetchMatchingCompaniesByKeyword_ShouldStripAndEscapeKeywordBeforeRepositoryCall() {
+        // given
+        String rawKeyword = "  카_!  ";
+        String expectedKeyword = "카!_!!";
+        CompanySearchResp expectedResponse = new CompanySearchResp(List.of());
+
+        when(companyRepository.fetchMatchingCompaniesByKeyword(anyString())).thenReturn(
+            expectedResponse);
+
+        // when
+        CompanySearchResp actualResponse = companyQueryService.fetchMatchingCompaniesByKeyword(
+            rawKeyword);
+
+        // then
+        verify(companyRepository).fetchMatchingCompaniesByKeyword(keywordCaptor.capture());
+        String actualPassedKeyword = keywordCaptor.getValue();
+        assertThat(actualPassedKeyword).isEqualTo(expectedKeyword);
+
+        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(expectedKeyword);
+        assertThat(actualResponse).isEqualTo(expectedResponse);
     }
 
 }
