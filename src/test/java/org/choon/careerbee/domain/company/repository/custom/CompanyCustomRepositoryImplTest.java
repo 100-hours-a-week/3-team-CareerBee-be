@@ -40,9 +40,26 @@ class CompanyCustomRepositoryImplTest {
     private CompanyCustomRepositoryImpl companyCustomRepository;
 
     @Test
-    @DisplayName("반경 내 기업 3개가 정상적으로 조회되는가")
-    void fetchByDistanceAndCondition_반경내_여러기업조회() {
+    @DisplayName("주어진 반경 내 기업이 정상적으로 조회되는가")
+    void fetchByDistanceAndCondition_shouldReturnOnlyCompaniesWithinGivenRadius() {
         // given
+        // 기준 좌표 (중심)
+        double lat = 37.40024430415324;
+        double lon = 127.10698761648364;
+
+        // 1km 이내 기업 3개
+        em.persist(createCompany("테스트 기업1", lat, lon)); // 기준점
+        em.persist(createCompany("테스트 기업2", lat + 0.005, lon)); // 약 555m 북쪽
+        em.persist(createCompany("테스트 기업3", lat, lon + 0.005)); // 약 450m 동쪽
+
+        // 1km 밖 기업들
+        em.persist(createCompany("테스트 기업4", lat + 0.02, lon)); // 약 2.2km 북쪽
+        em.persist(createCompany("테스트 기업5", lat, lon + 0.02)); // 약 1.7km 동쪽
+        em.persist(createCompany("테스트 기업6", lat - 0.015, lon - 0.015)); // 남서쪽 약 2km
+
+        em.flush();
+        em.clear();
+
         CompanyQueryAddressInfo addressInfo = new CompanyQueryAddressInfo(37.40024430415324, 127.10698761648364);
         CompanyQueryCond cond = new CompanyQueryCond(1000);
 
