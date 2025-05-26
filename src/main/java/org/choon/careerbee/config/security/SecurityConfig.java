@@ -40,6 +40,8 @@ public class SecurityConfig {
                 "http://127.0.0.1:5500",
                 "https://www.careerbee.co.kr",
                 "https://ai.careerbee.co.kr",
+                "https://dev.careerbee.co.kr",
+                "https://dev-ai.careerbee.co.kr",
                 "https://www.junjo.o-r.kr"
             ));
             config.setAllowCredentials(true);
@@ -60,7 +62,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/health-check",
                     "/api/v1/companies",
-                    "/api/v1/auth/oauth",
+                    "/api/v1/auth/oauth/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 )

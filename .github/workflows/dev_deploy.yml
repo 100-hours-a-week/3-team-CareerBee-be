@@ -1,4 +1,4 @@
-name: Deploy Spring Boot to GCE (Dev)
+name: Deploy Spring Boot to S3 (Dev)
 
 on:
   push:
@@ -10,11 +10,44 @@ jobs:
 
     env:
       COMMIT_HASH: ${{ github.sha }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Decrypt env file
+        run: |
+          openssl enc -aes-256-cbc -d -pbkdf2 -in cicd-variables.sh.enc -out cicd-variables.sh -k "${{ secrets.DEV_CICD_VARIABLES_ENC_PW }}"
+          chmod +x cicd-variables.sh
+
+      - name: Load selected env variables into GitHub Environment
+        run: |
+          source ./cicd-variables.sh
+
+          echo "SSH_KEY=$SSH_KEY" >> $GITHUB_ENV
+          echo "SSH_KEY_BASE64=$SSH_KEY_BASE64" >> $GITHUB_ENV
+          echo "AWS_SERVER_IP=$AWS_SERVER_IP" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> $GITHUB_ENV
+          echo "S3_BUCKET_INFRA=$S3_BUCKET_INFRA" >> $GITHUB_ENV
+          echo "DB_URL=$DB_URL" >> $GITHUB_ENV
+          echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
+          echo "DB_PASSWORD=$DB_PASSWORD" >> $GITHUB_ENV
+          echo "JWT_SECRETS=$JWT_SECRETS" >> $GITHUB_ENV
+          echo "KAKAO_CLIENT_ID=$KAKAO_CLIENT_ID" >> $GITHUB_ENV
+          echo "KAKAO_PROD_REDIRECT_URI=$KAKAO_PROD_REDIRECT_URI" >> $GITHUB_ENV
+          echo "KAKAO_DEV_REDIRECT_URI=$KAKAO_DEV_REDIRECT_URI" >> $GITHUB_ENV
+          echo "KAKAO_LOCAL_REDIRECT_URI=$KAKAO_LOCAL_REDIRECT_URI" >> $GITHUB_ENV
+          echo "COOKIE_DOMAIN=$COOKIE_DOMAIN" >> $GITHUB_ENV
+          echo "SENTRY_DSN=$SENTRY_DSN" >> $GITHUB_ENV
+          echo "SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN" >> $GITHUB_ENV
+          
+      - name: Restore SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${SSH_KEY_BASE64}" | base64 --decode > "${SSH_KEY}"
+          chmod 600 "${SSH_KEY}"
 
       - name: Set up JDK
         uses: actions/setup-java@v3
@@ -25,38 +58,49 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      - name: google auth
-        uses: google-github-actions/auth@v1
-        with:
-          credentials_json: "${{ secrets.GCP_SA_KEY }}"
-
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-
       - name: Set timestamp-based path (Asia/Seoul)
         run: |
           TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
           echo "DEPLOY_PATH=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
 
-      - name: Upload JAR to GCS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Upload build to S3
         run: |
           mkdir -p ./deploy
           cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
-          echo "Uploading to: ${{ secrets.GCS_DEV_BUCKET_PATH }}/be/$DEPLOY_PATH"
-          gcloud storage cp -r ./deploy/* "${{ secrets.GCS_DEV_BUCKET_PATH }}/be/$DEPLOY_PATH/"
+          echo "Uploading to: ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}"
+          aws s3 cp ./deploy "${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/" --recursive
 
-      - name: Setup SSH key
+      - name: Deploy to EC2 and restart Spring Boot
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.GCE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.GCE_HOST }} >> ~/.ssh/known_hosts
+          ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "ubuntu@${AWS_SERVER_IP}" <<EOF
+            set -e
+            pkill -f 'careerbee-api.jar' || true
 
-      - name: Trigger remote deploy script on GCE
-        run: |
-          ssh ${{ secrets.GCE_USER }}@${{ secrets.GCE_HOST }} "bash ~/release/deploy-be.sh $DEPLOY_PATH"
+            mkdir -p ~/release ~/logs
+            aws s3 cp ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/careerbee-api.jar ~/release/careerbee-api.jar
+
+            nohup java \
+              -Dspring.profiles.active=dev \
+              -DDB_URL="${DB_URL}" \
+              -DDB_USERNAME="${DB_USERNAME}" \
+              -DDB_PASSWORD="${DB_PASSWORD}" \
+              -DJWT_SECRETS="${JWT_SECRETS}" \
+              -DKAKAO_CLIENT_ID="${KAKAO_CLIENT_ID}" \
+              -DKAKAO_PROD_REDIRECT_URI="${KAKAO_PROD_REDIRECT_URI}" \
+              -DKAKAO_DEV_REDIRECT_URI="${KAKAO_DEV_REDIRECT_URI}" \
+              -DKAKAO_LOCAL_REDIRECT_URI="${KAKAO_LOCAL_REDIRECT_URI}" \
+              -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
+              -DSENTRY_DSN="${SENTRY_DSN}" \
+              -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+              -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
+          EOF
 
       - name: Notify Discord on Success
         if: success()

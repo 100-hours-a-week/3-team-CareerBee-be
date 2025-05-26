@@ -24,9 +24,17 @@ jwt:
 oauth:
   kakao:
     client-id: ${KAKAO_CLIENT_ID}
-    redirect-uri: ${KAKAO_REDIRECT_URI}
+    prod-redirect-uri: ${KAKAO_PROD_REDIRECT_URI}
+    dev-redirect-uri: ${KAKAO_DEV_REDIRECT_URI}
+    local-redirect-uri: ${KAKAO_LOCAL_REDIRECT_URI}
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
+
+server:
+  servlet:
+    session:
+      cookie:
+        domain: ${COOKIE_DOMAIN}
 
 sentry:
   dsn: ${SENTRY_DSN}  # 필수: Sentry DSN을 환경변수로 주입
@@ -34,6 +42,7 @@ sentry:
   traces-sample-rate: 1.0 # 성능 트랜잭션 수집 비율 (1.0 = 100%)
   attach-stacktrace: true # 예외가 발생하지 않아도 스택트레이스를 첨부
   send-default-pii: true  # 유저정보 등 개인 식별 정보 포함 여부
+  enable-tracing: true    # 성능 트랜잭션 수집 여부
   debug: false            # 로컬에서 테스트 시 true로 하면 Sentry 로그 출력
   logging:
     minimum-event-level: info         # Sentry에 보낼 최소 로그 수준 (e.g., error, warning, info)
