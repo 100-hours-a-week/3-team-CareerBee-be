@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.api.CompanyApiClient;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @Transactional
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
@@ -61,34 +63,24 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     @Override
     public void updateCompanyRecruiting() {
-        // 1. 사람인 API 호출
-        SaraminRecruitingResp apiResp = companyApiClient.searchJobs();
+        SaraminRecruitingResp apiResp = companyApiClient.searchAllRecruitment();
 
-        // 2. 공고 반복 처리
+        log.info("공고 개수 : {}", apiResp.jobs().job().size());
         for (SaraminRecruitingResp.Job job : apiResp.jobs().job()) {
+            if (job.active() == 0) {
+                continue; // 마감된 공고라면 continue
+            }
 
-            /* --- 2‑1. Company 존재 여부(name 기준) --- */
             Optional<Company> optCompany =
                 companyQueryService.findBySaraminName(job.company().detail().name());
 
-            if (optCompany.isEmpty()) {
-                continue;    // 회사가 없으면 아무 작업도 하지 않음
+            if (optCompany.isEmpty() || recruitmentRepository.existsByRecruitingId(job.id())) {
+                continue; // 매칭 안된 회사 스킵
             }
 
             Company company = optCompany.get();
-
-            /* --- 2‑2. Recruitment 중복 여부(recruitingId) --- */
-            boolean alreadyExists =
-                recruitmentRepository.existsByRecruitingId(job.id());
-
-            if (alreadyExists) {
-                continue;    // 중복 공고는 스킵
-            }
-
-            /* --- 2‑3. Company 상태 변경 (Dirty Checking) --- */
             company.changeRecruitingStatus(RecruitingStatus.ONGOING);
 
-            /* --- 2‑4. Recruitment 엔티티 저장 --- */
             recruitmentRepository.save(Recruitment.from(
                 company,
                 job.id(),
