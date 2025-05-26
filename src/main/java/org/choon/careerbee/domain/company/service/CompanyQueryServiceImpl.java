@@ -61,7 +61,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     @Override
     public CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword) {
-        return companyRepository.fetchMatchingCompaniesByKeyword(keyword);
+        return companyRepository.fetchMatchingCompaniesByKeyword(escapeLike(keyword.strip()));
     }
 
     @Override
@@ -81,5 +81,12 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public Company findById(Long companyId) {
         return companyRepository.findById(companyId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+    }
+
+    private String escapeLike(String keyword) {
+        return keyword
+            .replace("!", "!!")
+            .replace("%", "!%")
+            .replace("_", "!_");
     }
 }
