@@ -64,8 +64,21 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     @Override
     public void updateCompanyRecruiting() {
         SaraminRecruitingResp apiResp = companyApiClient.searchAllRecruitment();
+        log.info("1️⃣ 전체 공고 개수 : {}", apiResp.jobs().job().size());
 
-        log.info("공고 개수 : {}", apiResp.jobs().job().size());
+        persistNewRecruitmentsAndNotify(apiResp, false);
+    }
+
+    @Override
+    public void updateCompanyOpenRecruiting() {
+        SaraminRecruitingResp apiResp = companyApiClient.searchOpenRecruitment();
+        log.info("2️⃣ 공채 공고 개수 : {}", apiResp.jobs().job().size());
+
+        persistNewRecruitmentsAndNotify(apiResp, true);
+    }
+
+    private void persistNewRecruitmentsAndNotify(SaraminRecruitingResp apiResp,
+        boolean isOpenRecruitment) {
         for (SaraminRecruitingResp.Job job : apiResp.jobs().job()) {
             if (job.active() == 0) {
                 continue; // 마감된 공고라면 continue
@@ -89,6 +102,13 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
                 parseSaraminDate(job.postingDate()),
                 parseSaraminDate(job.expirationDate())
             ));
+
+            if (isOpenRecruitment) {
+                // Todo : 공채의 경우 알림 발송 로직 구현
+                // 1. 알림 생성
+                // 2. 해당 기업을 관심기업으로 등록한 유저들 조회
+                // 3. 생성한 알림을 유저들에게 발송
+            }
         }
     }
 

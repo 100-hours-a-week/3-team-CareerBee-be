@@ -14,6 +14,8 @@ public class CompanyScheduleRunner {
     @Scheduled(cron = "0 0 5 * * *")
     public void updateRecruiting() {
         commandService.updateCompanyRecruiting();
+
+        commandService.updateCompanyOpenRecruiting();
     }
 
 }
