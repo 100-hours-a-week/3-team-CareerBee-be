@@ -129,6 +129,18 @@ class CompanyControllerTest {
             .andExpect(jsonPath("$.data.matchingCompanies[2].name").value("현대_자동차"));
     }
 
+    @Test
+    @DisplayName("키워드 검색시 keyword 누락되면 400 에러 발생")
+    void fetchCompanyDetail_shouldReturn400_whenKeywordEmpty() throws Exception {
+        mockMvc.perform(get("/api/v1/companies/search")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest())
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
+    }
+
     private Company createCompany(String name, double latitude, double longitude) {
         GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
         Point geoPoint = factory.createPoint(new Coordinate(longitude, latitude));
