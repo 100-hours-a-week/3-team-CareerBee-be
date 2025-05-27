@@ -1,8 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -73,7 +71,7 @@ class CompanyQueryServiceImplTest {
             1L,
             List.of()
         );
-        when(companyQueryService.fetchCompanySummary(anyLong())).thenReturn(expectedResponse);
+        when(companyRepository.fetchCompanySummaryInfoById(anyLong())).thenReturn(expectedResponse);
 
         // when
         CompanySummaryInfo actualResponse = companyQueryService.fetchCompanySummary(companyId);
@@ -91,11 +89,18 @@ class CompanyQueryServiceImplTest {
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
-        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000, 1000000000L, 200000000L);
-        List<CompanyDetailResp.Photo> photos = List.of(new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
-        List<CompanyDetailResp.Benefit> benefits = List.of(new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
-        List<CompanyDetailResp.TechStack> techStacks = List.of(new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND", "https://example.com/spring.png"));
-        List<CompanyDetailResp.Recruitment> recruitments = List.of(new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"));
+        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000,
+            1000000000L, 200000000L);
+        List<CompanyDetailResp.Photo> photos = List.of(
+            new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
+        List<CompanyDetailResp.Benefit> benefits = List.of(
+            new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
+        List<CompanyDetailResp.TechStack> techStacks = List.of(
+            new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND",
+                "https://example.com/spring.png"));
+        List<CompanyDetailResp.Recruitment> recruitments = List.of(
+            new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01",
+                "2024-12-31"));
 
         CompanyDetailResp expectedResponse = new CompanyDetailResp(
             companyId,
