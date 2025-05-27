@@ -20,10 +20,9 @@ jwt:
 oauth:
   kakao:
     client-id: 1342353523423
-#    prod-redirect-uri: https://test.co.kr
-#    dev-redirect-uri: https://test.co.kr
-#    local-redirect-uri: https://test.co.kr
-    redirect-uri: https://test.co.kr
+    prod-redirect-uri: https://test.co.kr
+    dev-redirect-uri: https://test.co.kr
+    local-redirect-uri: https://test.co.kr
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
 
