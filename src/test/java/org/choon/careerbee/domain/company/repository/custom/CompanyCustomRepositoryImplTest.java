@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.within;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
@@ -9,6 +10,7 @@ import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
@@ -162,7 +164,8 @@ class CompanyCustomRepositoryImplTest {
         em.clear();
 
         // when
-        CompanyMarkerInfo actualResult = companyCustomRepository.fetchCompanyMarkerInfo(company.getId());
+        CompanyMarkerInfo actualResult = companyCustomRepository.fetchCompanyMarkerInfo(
+            company.getId());
 
         // then
         assertThat(actualResult).isNotNull();
@@ -171,6 +174,25 @@ class CompanyCustomRepositoryImplTest {
         assertThat(actualResult.recruitingStatus()).isEqualTo(company.getRecruitingStatus());
         assertThat(actualResult.locationInfo().longitude()).isCloseTo(127.1034665, within(1e-9));
         assertThat(actualResult.locationInfo().latitude()).isCloseTo(37.40203443, within(1e-9));
+    }
+
+    @Test
+    @DisplayName("존재하는 기업의 위치정보 조회시 정상 조회 ")
+    void fetchCompanyMarkerInfo_shouldReturn404_whenNonExistCompany() {
+        // given
+        Company company = createCompany(
+            "마커 테스트 회사", 37.40203443, 127.1034665
+        );
+        em.persist(company);
+        em.flush();
+        em.clear();
+
+        Long nonExistCompanyId = company.getId() + 100L;
+
+        // when & then
+        assertThatThrownBy(() -> companyCustomRepository.fetchCompanyMarkerInfo(nonExistCompanyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
     @Test
