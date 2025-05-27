@@ -1,23 +1,29 @@
 package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
+import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -64,11 +70,18 @@ class CompanyQueryServiceImplTest {
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
-        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000, 1000000000L, 200000000L);
-        List<CompanyDetailResp.Photo> photos = List.of(new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
-        List<CompanyDetailResp.Benefit> benefits = List.of(new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
-        List<CompanyDetailResp.TechStack> techStacks = List.of(new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND", "https://example.com/spring.png"));
-        List<CompanyDetailResp.Recruitment> recruitments = List.of(new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"));
+        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000,
+            1000000000L, 200000000L);
+        List<CompanyDetailResp.Photo> photos = List.of(
+            new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
+        List<CompanyDetailResp.Benefit> benefits = List.of(
+            new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
+        List<CompanyDetailResp.TechStack> techStacks = List.of(
+            new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND",
+                "https://example.com/spring.png"));
+        List<CompanyDetailResp.Recruitment> recruitments = List.of(
+            new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01",
+                "2024-12-31"));
 
         CompanyDetailResp expectedResponse = new CompanyDetailResp(
             companyId,
@@ -99,6 +112,45 @@ class CompanyQueryServiceImplTest {
         // then
         assertThat(actualResponse).isEqualTo(expectedResponse);
         verify(companyRepository, times(1)).fetchCompanyDetailById(companyId);
+    }
+
+    @Test
+    @DisplayName("관심 회사 여부 확인 - 존재하는 경우 true 반환")
+    void checkWishCompany_existsTrue() {
+        // given
+        Long memberId = 1L;
+        Long companyId = 1L;
+        Member mockMember = createMember("testnick", "test@test.com", 1L);
+        Company mockCompany = createCompany("테스트 회사", 37.1234, 127.46);
+
+        when(memberRepository.findById(anyLong())).thenReturn(Optional.of(mockMember));
+        when(companyRepository.findById(anyLong())).thenReturn(Optional.of(mockCompany));
+        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
+            true);
+
+        // when
+        CheckWishCompanyResp actualResponse =
+            companyQueryService.checkWishCompany(memberId, companyId);
+
+        // then
+        assertThat(actualResponse.isWish()).isTrue();
+
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(memberRepository, times(1)).findById(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(memberId);
+
+        ArgumentCaptor<Long> captor1 = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).findById(captor1.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
+
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        ArgumentCaptor<Company> companyCaptor = ArgumentCaptor.forClass(Company.class);
+
+        verify(wishCompanyRepository)
+            .existsByMemberAndCompany(memberCaptor.capture(), companyCaptor.capture());
+
+        assertThat(memberCaptor.getValue()).isEqualTo(mockMember);
+        assertThat(companyCaptor.getValue()).isEqualTo(mockCompany);
     }
 
 }
