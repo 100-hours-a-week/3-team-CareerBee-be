@@ -116,4 +116,42 @@ class WishCompanyControllerIntegrationTest {
             .andExpect(jsonPath("$.httpStatusCode").value(400))
             .andExpect(jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()));
     }
+
+    @Test
+    @DisplayName("관심 기업 ID 목록 조회 - 관심 기업이 존재할 경우 ID 리스트 반환")
+    void fetchWishCompanyIdList_success() throws Exception {
+        // given
+        Company company1 = companyRepository.saveAndFlush(createCompany("관심기업1", 37.1, 127.1));
+        Company company2 = companyRepository.saveAndFlush(createCompany("관심기업2", 37.2, 127.2));
+        wishCompanyRepository.saveAndFlush(createWishCompany(company1, testMember));
+        wishCompanyRepository.saveAndFlush(createWishCompany(company2, testMember));
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/wish-companies/id-list")
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(200))
+            .andExpect(jsonPath("$.message").value("관심 기업 아이디 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.wishCompanies").isArray())
+            .andExpect(jsonPath("$.data.wishCompanies.length()").value(2))
+            .andExpect(jsonPath("$.data.wishCompanies").value(
+                org.hamcrest.Matchers.containsInAnyOrder(
+                    company1.getId().intValue(), company2.getId().intValue()
+                )
+            ));
+    }
+
+    @Test
+    @DisplayName("관심 기업 ID 목록 조회 - 관심 기업이 없을 경우 빈 리스트 반환")
+    void fetchWishCompanyIdList_empty() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/v1/members/wish-companies/id-list")
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(200))
+            .andExpect(jsonPath("$.data.wishCompanies").isArray())
+            .andExpect(jsonPath("$.data.wishCompanies").isEmpty());
+    }
 }
