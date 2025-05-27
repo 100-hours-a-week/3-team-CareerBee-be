@@ -73,8 +73,6 @@ class CompanyQueryServiceImplTest {
         assertThat(addressCaptor.getValue()).isEqualTo(addressInfo);
         assertThat(condCaptor.getValue()).isEqualTo(queryCond);
 
-        verify(companyRepository, times(1)).fetchByDistanceAndCondition(addressInfo, queryCond);
-
         assertThat(actualResponse).isEqualTo(expectedResponse);
         assertThat(actualResponse.companies()).hasSize(1);
 
@@ -108,7 +106,6 @@ class CompanyQueryServiceImplTest {
         ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
         verify(companyRepository, times(1)).fetchCompanySummaryInfoById(captor.capture());
         assertThat(captor.getValue()).isEqualTo(companyId);
-        verify(companyRepository, times(1)).fetchCompanySummaryInfoById(companyId);
         assertThat(actualResponse.name()).isEqualTo(expectedResponse.name());
         assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
         assertThat(actualResponse.logoUrl()).isEqualTo(expectedResponse.logoUrl());
@@ -173,7 +170,6 @@ class CompanyQueryServiceImplTest {
         assertThat(actualResponse.rating()).isEqualTo(expectedResponse.rating());
         assertThat(actualResponse.homepageUrl()).isEqualTo(expectedResponse.homepageUrl());
         assertThat(actualResponse.techStacks()).isEqualTo(expectedResponse.techStacks());
-        verify(companyRepository, times(1)).fetchCompanyDetailById(companyId);
     }
 
 }
