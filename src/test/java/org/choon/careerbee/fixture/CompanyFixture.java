@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.fixture;
+package org.choon.careerbee.fixture;
 
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
