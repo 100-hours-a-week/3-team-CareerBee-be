@@ -5,12 +5,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
-import static org.choon.careerbee.fixture.MemberFixture.createMember;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -25,10 +22,9 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
-import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
-import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -247,6 +243,46 @@ class CompanyQueryServiceImplTest {
         assertThatThrownBy(() -> companyQueryService.checkWishCompany(memberId, nonExistCompanyId))
             .isInstanceOf(CustomException.class)
             .hasMessageContaining(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
+    }
+
+    @Test
+    @DisplayName("관심 회사 ID 목록 조회 - 정상 반환")
+    void fetchWishCompanyIds_success() {
+        // given
+        Long memberId = 1L;
+        Member mockMember = createMember("testnick", "test@test.com", memberId);
+        WishCompanyIdResp mockResp = new WishCompanyIdResp(List.of(10L, 20L, 30L));
+
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
+        when(wishCompanyRepository.fetchWishCompanyIdsByMember(mockMember)).thenReturn(mockResp);
+
+        // when
+        WishCompanyIdResp actualResp = companyQueryService.fetchWishCompanyIds(memberId);
+
+        // then
+        assertThat(actualResp.wishCompanies()).containsAll(List.of(10L, 20L, 30L));
+
+        verify(memberRepository, times(1)).findById(memberId);
+
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        verify(wishCompanyRepository, times(1)).fetchWishCompanyIdsByMember(memberCaptor.capture());
+        assertThat(memberCaptor.getValue()).isEqualTo(mockMember); // 객체 동등성 확인
+    }
+
+    @Test
+    @DisplayName("관심 회사 ID 목록 조회 - 존재하지 않는 회원일 경우 404 예외 발생")
+    void fetchWishCompanyIds_memberNotExist() {
+        // given
+        Long invalidMemberId = 999L;
+        when(memberRepository.findById(invalidMemberId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.fetchWishCompanyIds(invalidMemberId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage());
+
+        verify(memberRepository, times(1)).findById(invalidMemberId);
+        verifyNoInteractions(wishCompanyRepository);
     }
 
 }
