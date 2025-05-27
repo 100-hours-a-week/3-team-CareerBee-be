@@ -168,8 +168,19 @@ class CompanyQueryServiceImplTest {
         CompanyMarkerInfo actualResponse = companyQueryService.fetchCompanyLocation(companyId);
 
         // then
-        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(companyId);
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
         assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
+        assertThat(actualResponse.markerUrl()).isEqualTo(expectedResponse.markerUrl());
+        assertThat(actualResponse.businessType()).isEqualTo(expectedResponse.businessType());
+        assertThat(actualResponse.recruitingStatus()).isEqualTo(
+            expectedResponse.recruitingStatus());
+        assertThat(actualResponse.locationInfo().latitude()).isEqualTo(
+            expectedResponse.locationInfo().latitude());
+        assertThat(actualResponse.locationInfo().longitude()).isEqualTo(
+            expectedResponse.locationInfo().longitude());
     }
 
     @Test
