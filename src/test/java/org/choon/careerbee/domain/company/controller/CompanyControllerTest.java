@@ -1,6 +1,6 @@
 package org.choon.careerbee.domain.company.controller;
 
-import static org.choon.careerbee.domain.company.fixture.CompanyFixture.createCompany;
+import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
