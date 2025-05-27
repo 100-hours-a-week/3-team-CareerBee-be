@@ -29,8 +29,14 @@ public class KakaoApiClient implements OAuthApiClient {
     @Value("${oauth.kakao.client-id}")
     private String clientId;
 
-    @Value("${oauth.kakao.redirect-uri}")
-    private String redirectUri;
+    @Value("${oauth.kakao.prod-redirect-uri}")
+    private String prodRedirectUri;
+
+    @Value("${oauth.kakao.dev-redirect-uri}")
+    private String devRedirectUri;
+
+    @Value("${oauth.kakao.local-redirect-uri}")
+    private String localRedirectUri;
 
     private final RestClient restClient = RestClient.create();
 
@@ -40,7 +46,7 @@ public class KakaoApiClient implements OAuthApiClient {
     }
 
     @Override
-    public String requestAccessToken(OAuthLoginParams loginParams) {
+    public String requestAccessToken(OAuthLoginParams loginParams, String origin) {
         String url = authUrl + "/oauth/token";
 
         HttpHeaders headers = new HttpHeaders();
@@ -49,7 +55,7 @@ public class KakaoApiClient implements OAuthApiClient {
         MultiValueMap<String, String> body = loginParams.makeBody();
         body.add("grant_type", GRANT_TYPE);
         body.add("client_id", clientId);
-        body.add("redirect_uri", redirectUri);
+        body.add("redirect_uri", getRedirectUriByOrigin(origin));
 
         KakaoTokens response = restClient.post()
             .uri(url)
@@ -83,5 +89,17 @@ public class KakaoApiClient implements OAuthApiClient {
             .body(jsonBody)
             .retrieve()
             .body(KakaoInfoResponse.class);
+    }
+
+    private String getRedirectUriByOrigin(String origin) {
+        if (origin == null) {
+            return prodRedirectUri;
+        }
+
+        return switch (origin) {
+            case "http://localhost:5173" -> localRedirectUri;
+            case "https://dev.careerbee.co.kr" -> devRedirectUri;
+            default -> prodRedirectUri;
+        };
     }
 }

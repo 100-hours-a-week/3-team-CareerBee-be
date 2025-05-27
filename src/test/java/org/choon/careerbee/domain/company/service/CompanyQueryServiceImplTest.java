@@ -1,8 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,6 +22,7 @@ import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -43,6 +42,7 @@ class CompanyQueryServiceImplTest {
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
 
+
     @Test
     @DisplayName("정상 주소와 조건으로 회사 조회 시 레포지토리 호출 및 결과 반환")
     void fetchCompaniesByDistance_shouldCallRepository_andReturnExpectedResult() {
@@ -61,6 +61,16 @@ class CompanyQueryServiceImplTest {
             addressInfo, queryCond);
 
         // then
+        ArgumentCaptor<CompanyQueryAddressInfo> addressCaptor = ArgumentCaptor.forClass(
+            CompanyQueryAddressInfo.class);
+        ArgumentCaptor<CompanyQueryCond> condCaptor = ArgumentCaptor.forClass(
+            CompanyQueryCond.class);
+
+        verify(companyRepository, times(1))
+            .fetchByDistanceAndCondition(addressCaptor.capture(), condCaptor.capture());
+
+        assertThat(addressCaptor.getValue()).isEqualTo(addressInfo);
+        assertThat(condCaptor.getValue()).isEqualTo(queryCond);
         verify(companyRepository, times(1)).fetchByDistanceAndCondition(addressInfo, queryCond);
         assertThat(actualResponse).isEqualTo(expectedResponse);
     }
@@ -77,12 +87,15 @@ class CompanyQueryServiceImplTest {
             1L,
             List.of()
         );
-        when(companyQueryService.fetchCompanySummary(anyLong())).thenReturn(expectedResponse);
+        when(companyRepository.fetchCompanySummaryInfoById(anyLong())).thenReturn(expectedResponse);
 
         // when
         CompanySummaryInfo actualResponse = companyQueryService.fetchCompanySummary(companyId);
 
         // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanySummaryInfoById(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
         verify(companyRepository, times(1)).fetchCompanySummaryInfoById(companyId);
         assertThat(actualResponse.name()).isEqualTo(expectedResponse.name());
         assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
@@ -95,11 +108,18 @@ class CompanyQueryServiceImplTest {
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
-        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000, 1000000000L, 200000000L);
-        List<CompanyDetailResp.Photo> photos = List.of(new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
-        List<CompanyDetailResp.Benefit> benefits = List.of(new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
-        List<CompanyDetailResp.TechStack> techStacks = List.of(new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND", "https://example.com/spring.png"));
-        List<CompanyDetailResp.Recruitment> recruitments = List.of(new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"));
+        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000,
+            1000000000L, 200000000L);
+        List<CompanyDetailResp.Photo> photos = List.of(
+            new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
+        List<CompanyDetailResp.Benefit> benefits = List.of(
+            new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
+        List<CompanyDetailResp.TechStack> techStacks = List.of(
+            new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND",
+                "https://example.com/spring.png"));
+        List<CompanyDetailResp.Recruitment> recruitments = List.of(
+            new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01",
+                "2024-12-31"));
 
         CompanyDetailResp expectedResponse = new CompanyDetailResp(
             companyId,
@@ -128,7 +148,19 @@ class CompanyQueryServiceImplTest {
         CompanyDetailResp actualResponse = companyQueryService.fetchCompanyDetail(companyId);
 
         // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanyDetailById(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
         assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
+        assertThat(actualResponse.companyType()).isEqualTo(expectedResponse.companyType());
+        assertThat(actualResponse.address()).isEqualTo(expectedResponse.address());
+        assertThat(actualResponse.description()).isEqualTo(expectedResponse.description());
+        assertThat(actualResponse.employeeCount()).isEqualTo(expectedResponse.employeeCount());
+        assertThat(actualResponse.wishCount()).isEqualTo(expectedResponse.wishCount());
+        assertThat(actualResponse.rating()).isEqualTo(expectedResponse.rating());
+        assertThat(actualResponse.homepageUrl()).isEqualTo(expectedResponse.homepageUrl());
+        assertThat(actualResponse.techStacks()).isEqualTo(expectedResponse.techStacks());
         verify(companyRepository, times(1)).fetchCompanyDetailById(companyId);
     }
 
