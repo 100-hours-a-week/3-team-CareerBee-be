@@ -12,7 +12,7 @@ spring:
       hibernate:
         format_sql: true
 jwt:
-  secret: asdjfkajsdlfkjlkadjlfkasjdefwer
+  secret: asdjfkajsdlfkjlkadjlfkasjdefwerasdfkjasdlkfjasdlkjflkwjeflkjsadlfasdfewdf
   expiration_time:
     access_token: 30000000000000000 # 5분
     refresh_token: 86400000000000000 # 일주일
