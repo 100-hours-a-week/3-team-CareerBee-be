@@ -11,7 +11,11 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.entity.enums.BusinessType;
+import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -47,7 +51,10 @@ class CompanyQueryServiceImplTest {
             37.40024430415324, 127.10698761648364
         );
         CompanyQueryCond queryCond = new CompanyQueryCond(500);
-        CompanyRangeSearchResp expectedResponse = new CompanyRangeSearchResp(List.of());
+        CompanyRangeSearchResp expectedResponse = new CompanyRangeSearchResp(List.of(
+            new CompanyMarkerInfo(1L, "test.url", BusinessType.PLATFORM, RecruitingStatus.ONGOING,
+                new LocationInfo(37.4, 127.3))
+        ));
 
         when(companyRepository.fetchByDistanceAndCondition(addressInfo, queryCond))
             .thenReturn(expectedResponse);
@@ -61,14 +68,23 @@ class CompanyQueryServiceImplTest {
             CompanyQueryAddressInfo.class);
         ArgumentCaptor<CompanyQueryCond> condCaptor = ArgumentCaptor.forClass(
             CompanyQueryCond.class);
-
         verify(companyRepository, times(1))
             .fetchByDistanceAndCondition(addressCaptor.capture(), condCaptor.capture());
-
         assertThat(addressCaptor.getValue()).isEqualTo(addressInfo);
         assertThat(condCaptor.getValue()).isEqualTo(queryCond);
+
         verify(companyRepository, times(1)).fetchByDistanceAndCondition(addressInfo, queryCond);
+
         assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actualResponse.companies()).hasSize(1);
+
+        CompanyMarkerInfo firstMarker = actualResponse.companies().get(0);
+        assertThat(firstMarker.id()).isEqualTo(1L);
+        assertThat(firstMarker.markerUrl()).isEqualTo("test.url");
+        assertThat(firstMarker.businessType()).isEqualTo(BusinessType.PLATFORM);
+        assertThat(firstMarker.recruitingStatus()).isEqualTo(RecruitingStatus.ONGOING);
+        assertThat(firstMarker.locationInfo().latitude()).isEqualTo(37.4);
+        assertThat(firstMarker.locationInfo().longitude()).isEqualTo(127.3);
     }
 
     @Test
