@@ -174,7 +174,7 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("존재하는 기업의 위치정보 조회시 정상 조회 ")
+    @DisplayName("존재하지 않는 기업의 위치정보 조회하면 404 예외 발생")
     void fetchCompanyMarkerInfo_shouldReturn404_whenNonExistCompany() {
         // given
         Company company = createCompany(
