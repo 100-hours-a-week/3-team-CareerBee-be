@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
@@ -14,6 +15,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -182,6 +185,67 @@ class CompanyQueryServiceImplTest {
 
         assertThat(memberCaptor.getValue()).isEqualTo(mockMember);
         assertThat(companyCaptor.getValue()).isEqualTo(mockCompany);
+    }
+
+    @Test
+    @DisplayName("관심 회사 여부 확인 - 존재하지 않는 경우 false 반환")
+    void checkWishCompany_notExistsFalse() {
+        // given
+        Long memberId = 1L;
+        Long companyId = 1L;
+        Member mockMember = createMember("testnick", "test@test.com", 1L);
+        Company mockCompany = createCompany("테스트 회사", 37.1234, 127.46);
+
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
+        when(companyRepository.findById(companyId)).thenReturn(Optional.of(mockCompany));
+        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(false);
+
+        // when
+        CheckWishCompanyResp actualResponse = companyQueryService.checkWishCompany(memberId, companyId);
+
+        // then
+        assertThat(actualResponse.isWish()).isFalse();
+
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        ArgumentCaptor<Company> companyCaptor = ArgumentCaptor.forClass(Company.class);
+
+        verify(wishCompanyRepository)
+            .existsByMemberAndCompany(memberCaptor.capture(), companyCaptor.capture());
+
+        assertThat(memberCaptor.getValue()).isEqualTo(mockMember);
+        assertThat(companyCaptor.getValue()).isEqualTo(mockCompany);
+    }
+
+    @Test
+    @DisplayName("관심 회사 여부 확인 - 존재하지 않는 memberId인 경우 예외 발생")
+    void checkWishCompany_memberNotExist_throwsException() {
+        // given
+        Long nonExistMemberId = 1L;
+        Long companyId = 1L;
+
+        when(memberRepository.findById(nonExistMemberId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.checkWishCompany(nonExistMemberId, companyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage());
+    }
+
+    @Test
+    @DisplayName("관심 회사 여부 확인 - 존재하지 않는 companyId인 경우 예외 발생")
+    void checkWishCompany_companyNotExist_throwsException() {
+        // given
+        Long memberId = 1L;
+        Long nonExistCompanyId = 1L;
+        Member mockMember = createMember("testnick", "test@test.com", 1L);
+
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
+        when(companyRepository.findById(nonExistCompanyId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.checkWishCompany(memberId, nonExistCompanyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
 }
