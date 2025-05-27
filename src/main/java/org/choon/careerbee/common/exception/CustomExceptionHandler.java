@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -31,6 +32,14 @@ public class CustomExceptionHandler {
         BindingResult bindingResult) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(CommonResponse.createValidError(bindingResult));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<CommonResponse<String>> handleTypeMismatch(
+        MissingServletRequestParameterException e) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
     }
 
     /**
