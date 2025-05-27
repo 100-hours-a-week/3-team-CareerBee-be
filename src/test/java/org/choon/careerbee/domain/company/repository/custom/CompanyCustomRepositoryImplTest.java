@@ -2,13 +2,14 @@ package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.choon.careerbee.domain.company.fixture.CompanyFixture.createCompany;
+import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 
 import jakarta.transaction.Transactional;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
-import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
@@ -60,11 +61,13 @@ class CompanyCustomRepositoryImplTest {
         em.flush();
         em.clear();
 
-        CompanyQueryAddressInfo addressInfo = new CompanyQueryAddressInfo(37.40024430415324, 127.10698761648364);
+        CompanyQueryAddressInfo addressInfo = new CompanyQueryAddressInfo(37.40024430415324,
+            127.10698761648364);
         CompanyQueryCond cond = new CompanyQueryCond(1000);
 
         // when
-        CompanyRangeSearchResp result = companyCustomRepository.fetchByDistanceAndCondition(addressInfo, cond);
+        CompanyRangeSearchResp result = companyCustomRepository.fetchByDistanceAndCondition(
+            addressInfo, cond);
 
         // then
         assertThat(result.companies()).hasSize(3);
@@ -77,10 +80,10 @@ class CompanyCustomRepositoryImplTest {
         Company company = createCompany("테스트 회사", 37.40203443, 127.1034665);
         em.persist(company);
 
-        Member member = createMember();
+        Member member = createMember("testNickname", "test@test.com", 1L);
         em.persist(member);
 
-        WishCompany wishCompany = WishCompany.of(member, company);
+        WishCompany wishCompany = createWishCompany(company, member);
         em.persist(wishCompany);
 
         em.flush();
@@ -95,7 +98,8 @@ class CompanyCustomRepositoryImplTest {
         );
 
         // when
-        CompanySummaryInfo actualResp = companyCustomRepository.fetchCompanySummaryInfoById(company.getId());
+        CompanySummaryInfo actualResp = companyCustomRepository.fetchCompanySummaryInfoById(
+            company.getId());
 
         // then
         assertThat(actualResp).isNotNull();
@@ -123,14 +127,15 @@ class CompanyCustomRepositoryImplTest {
     void fetchCompanyDetailById_shouldReturnCompanyDetailResp() {
         // given
         Company company = createCompany(
-             "테스트 회사", 37.40203443, 127.1034665
+            "테스트 회사", 37.40203443, 127.1034665
         );
         em.persist(company);
         em.flush();
         em.clear();
 
         // when
-        CompanyDetailResp actualResp = companyCustomRepository.fetchCompanyDetailById(company.getId());
+        CompanyDetailResp actualResp = companyCustomRepository.fetchCompanyDetailById(
+            company.getId());
 
         // then
         assertThat(actualResp).isNotNull();
@@ -153,12 +158,5 @@ class CompanyCustomRepositoryImplTest {
         ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
-    private Member createMember() {
-        return Member.builder()
-            .nickname("tester")
-            .email("test@careerbee.com")
-            .oAuthProvider(OAuthProvider.KAKAO)
-            .providerId(1234235L)
-            .build();
-    }
+
 }
