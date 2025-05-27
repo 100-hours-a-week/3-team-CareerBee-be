@@ -18,6 +18,7 @@ import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -37,6 +38,7 @@ class CompanyQueryServiceImplTest {
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
 
+
     @Test
     @DisplayName("정상 주소와 조건으로 회사 조회 시 레포지토리 호출 및 결과 반환")
     void fetchCompaniesByDistance_shouldCallRepository_andReturnExpectedResult() {
@@ -55,6 +57,16 @@ class CompanyQueryServiceImplTest {
             addressInfo, queryCond);
 
         // then
+        ArgumentCaptor<CompanyQueryAddressInfo> addressCaptor = ArgumentCaptor.forClass(
+            CompanyQueryAddressInfo.class);
+        ArgumentCaptor<CompanyQueryCond> condCaptor = ArgumentCaptor.forClass(
+            CompanyQueryCond.class);
+
+        verify(companyRepository, times(1))
+            .fetchByDistanceAndCondition(addressCaptor.capture(), condCaptor.capture());
+
+        assertThat(addressCaptor.getValue()).isEqualTo(addressInfo);
+        assertThat(condCaptor.getValue()).isEqualTo(queryCond);
         verify(companyRepository, times(1)).fetchByDistanceAndCondition(addressInfo, queryCond);
         assertThat(actualResponse).isEqualTo(expectedResponse);
     }
@@ -77,6 +89,9 @@ class CompanyQueryServiceImplTest {
         CompanySummaryInfo actualResponse = companyQueryService.fetchCompanySummary(companyId);
 
         // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanySummaryInfoById(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
         verify(companyRepository, times(1)).fetchCompanySummaryInfoById(companyId);
         assertThat(actualResponse.name()).isEqualTo(expectedResponse.name());
         assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
@@ -129,7 +144,19 @@ class CompanyQueryServiceImplTest {
         CompanyDetailResp actualResponse = companyQueryService.fetchCompanyDetail(companyId);
 
         // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanyDetailById(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
         assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
+        assertThat(actualResponse.companyType()).isEqualTo(expectedResponse.companyType());
+        assertThat(actualResponse.address()).isEqualTo(expectedResponse.address());
+        assertThat(actualResponse.description()).isEqualTo(expectedResponse.description());
+        assertThat(actualResponse.employeeCount()).isEqualTo(expectedResponse.employeeCount());
+        assertThat(actualResponse.wishCount()).isEqualTo(expectedResponse.wishCount());
+        assertThat(actualResponse.rating()).isEqualTo(expectedResponse.rating());
+        assertThat(actualResponse.homepageUrl()).isEqualTo(expectedResponse.homepageUrl());
+        assertThat(actualResponse.techStacks()).isEqualTo(expectedResponse.techStacks());
         verify(companyRepository, times(1)).fetchCompanyDetailById(companyId);
     }
 
