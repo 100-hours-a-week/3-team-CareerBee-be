@@ -12,14 +12,16 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,9 +40,6 @@ class CompanyQueryServiceImplTest {
 
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
-
-    @Captor
-    private ArgumentCaptor<String> keywordCaptor;
 
     @Test
     @DisplayName("정상 주소와 조건으로 회사 조회 시 레포지토리 호출 및 결과 반환")
@@ -114,27 +113,59 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("keyword 입력값은 공백 제거 및 escape 처리 후 repository로 전달되어야 한다")
-    void fetchMatchingCompaniesByKeyword_ShouldStripAndEscapeKeywordBeforeRepositoryCall() {
+    @DisplayName("기업 검색시 repository 호출 및 결과 반환")
+    void fetchMatchingCompaniesByKeyword_shouldReturnResponseFromRepository() {
         // given
-        String rawKeyword = "  카_!  ";
-        String expectedKeyword = "카!_!!";
-        CompanySearchResp expectedResponse = new CompanySearchResp(List.of());
-
-        when(companyRepository.fetchMatchingCompaniesByKeyword(anyString())).thenReturn(
-            expectedResponse);
+        String keyword = "카";
+        CompanySearchResp expected = new CompanySearchResp(List.of(
+            new CompanySearchInfo(1L, "카카오"),
+            new CompanySearchInfo(2L, "카카오 헬스케어")
+        ));
+        when(companyRepository.fetchMatchingCompaniesByKeyword(anyString())).thenReturn(expected);
 
         // when
-        CompanySearchResp actualResponse = companyQueryService.fetchMatchingCompaniesByKeyword(
-            rawKeyword);
+        CompanySearchResp actual = companyQueryService.fetchMatchingCompaniesByKeyword(keyword);
 
         // then
-        verify(companyRepository).fetchMatchingCompaniesByKeyword(keywordCaptor.capture());
-        String actualPassedKeyword = keywordCaptor.getValue();
-        assertThat(actualPassedKeyword).isEqualTo(expectedKeyword);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(keyword);
 
-        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(expectedKeyword);
-        assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actual).isEqualTo(expected);
+
+        assertThat(actual.matchingCompanies().get(0).id())
+            .isEqualTo(expected.matchingCompanies().get(0).id());
+        assertThat(actual.matchingCompanies().get(0).name())
+            .isEqualTo(expected.matchingCompanies().get(0).name());
+
+        assertThat(actual.matchingCompanies().get(1).id())
+            .isEqualTo(expected.matchingCompanies().get(1).id());
+        assertThat(actual.matchingCompanies().get(1).name())
+            .isEqualTo(expected.matchingCompanies().get(1).name());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'카카오', 카카오",
+        "'  카카오  ', 카카오",
+        "'카!오', 카!!오",
+        "%, !%",
+        "'   ', ''"
+    })
+    @DisplayName("keyword는 공백 제거 및 escape 처리되어 repository로 전달된다 - 다양한 입력 케이스")
+    void fetchMatchingCompaniesByKeyword_shouldTrimAndEscapeKeyword_variants(String rawKeyword,
+        String expectedKeyword) {
+        // given
+        when(companyRepository.fetchMatchingCompaniesByKeyword(anyString())).thenReturn(
+            new CompanySearchResp(List.of()));
+
+        // when
+        companyQueryService.fetchMatchingCompaniesByKeyword(rawKeyword);
+
+        // then
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(expectedKeyword);
     }
 
 }
