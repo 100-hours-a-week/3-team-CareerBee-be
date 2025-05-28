@@ -158,6 +158,24 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
+    @DisplayName("존재하지 않는 id로 기업 상세정보 조회시 404 예외 발생")
+    void fetchCompanyDetailById_shouldThrowException_whenCompanyNotFound() {
+        // given
+        Company comp = createCompany("테스트기업", 37.123, 127.34);
+        em.persist(comp);
+        em.flush();
+        em.clear();
+
+        Long nonExistCompanyId = comp.getId() + 100L;
+
+        // when & then
+        assertThatThrownBy(() ->
+            companyCustomRepository.fetchCompanyDetailById(nonExistCompanyId)
+        ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
+    }
+
+
+    @Test
     @DisplayName("존재하는 기업의 위치정보 조회시 정상 조회 ")
     void fetchCompanyMarkerInfo_shouldReturnMarkerInfo() {
         // given
