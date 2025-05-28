@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="CareerBee PMD Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                             https://pmd.sourceforge.io/ruleset_2_0_0.xsd"
+         xmlns:xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0">
+
+    <description>
+        기본적인 버그 위험 요소 및 코드 스멜을 탐지하는 PMD 룰셋입니다.
+        개발 속도를 저해하지 않는 범위 내에서 코드 품질 확보를 목표로 합니다.
+    </description>
+
+    <!-- ⚠️ 중요: NullPointerException, 불필요한 if 등 -->
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="UseAssertEqualsInsteadOfAssertTrue" />
+        <exclude name="AvoidAssertAsIdentifier" />
+    </rule>
+
+    <!-- 📏 코드 스타일 관련 (지나치게 과한 건 제외) -->
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="AtLeastOneConstructor" />
+        <exclude name="MethodArgumentCouldBeFinal" />
+        <exclude name="AvoidUsingShortType" />
+    </rule>
+
+    <!-- 🧠 간단한 성능 개선 제안 -->
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="AvoidInstantiatingObjectsInLoops" />
+        <exclude name="UseUtilityClass" />
+    </rule>
+
+    <!-- 💬 가독성 관련 -->
+    <rule ref="category/java/design.xml">
+        <exclude name="LawOfDemeter" />
+        <exclude name="TooManyMethods" />
+        <exclude name="UseUtilityClass" />
+    </rule>
+
+    <!-- 🧹 불필요한 코드 -->
+    <rule ref="category/java/unnecessary.xml"/>
+
+</ruleset>
