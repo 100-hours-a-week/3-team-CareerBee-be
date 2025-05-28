@@ -3,7 +3,9 @@ package org.choon.careerbee.domain.company.controller;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,7 +104,8 @@ class WishCompanyControllerIntegrationTest {
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.httpStatusCode").value(404))
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage()));
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage()));
     }
 
     @ParameterizedTest
@@ -114,6 +117,102 @@ class WishCompanyControllerIntegrationTest {
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.httpStatusCode").value(400))
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()));
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()));
+    }
+
+    @Test
+    @DisplayName("관심 기업 ID 목록 조회 - 관심 기업이 존재할 경우 ID 리스트 반환")
+    void fetchWishCompanyIdList_success() throws Exception {
+        // given
+        Company company1 = companyRepository.saveAndFlush(createCompany("관심기업1", 37.1, 127.1));
+        Company company2 = companyRepository.saveAndFlush(createCompany("관심기업2", 37.2, 127.2));
+        wishCompanyRepository.saveAndFlush(createWishCompany(company1, testMember));
+        wishCompanyRepository.saveAndFlush(createWishCompany(company2, testMember));
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/wish-companies/id-list")
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(200))
+            .andExpect(jsonPath("$.message").value("관심 기업 아이디 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.wishCompanies").isArray())
+            .andExpect(jsonPath("$.data.wishCompanies.length()").value(2))
+            .andExpect(jsonPath("$.data.wishCompanies").value(
+                org.hamcrest.Matchers.containsInAnyOrder(
+                    company1.getId().intValue(), company2.getId().intValue()
+                )
+            ));
+    }
+
+    @Test
+    @DisplayName("관심 기업 ID 목록 조회 - 관심 기업이 없을 경우 빈 리스트 반환")
+    void fetchWishCompanyIdList_empty() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/v1/members/wish-companies/id-list")
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(200))
+            .andExpect(jsonPath("$.data.wishCompanies").isArray())
+            .andExpect(jsonPath("$.data.wishCompanies").isEmpty());
+    }
+
+    @Test
+    @DisplayName("관심 기업 등록 - 성공")
+    void registWishCompany_success() throws Exception {
+        mockMvc.perform(post("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode").value(204))
+            .andExpect(jsonPath("$.message").value("관심기업 등록에 성공하였습니다."));
+    }
+
+    @Test
+    @DisplayName("관심 기업 등록 - 이미 등록된 경우 예외 반환")
+    void registWishCompany_alreadyExists() throws Exception {
+        // given
+        wishCompanyRepository.saveAndFlush(createWishCompany(testCompany, testMember));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.httpStatusCode").value(409))
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.WISH_ALREADY_EXIST.getMessage()));
+    }
+
+    @Test
+    @DisplayName("관심 기업 삭제 - 성공")
+    void deleteWishCompany_success() throws Exception {
+        // given
+        wishCompanyRepository.saveAndFlush(createWishCompany(testCompany, testMember));
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode").value(204))
+            .andExpect(jsonPath("$.message").value("관심기업 삭제에 성공하였습니다."));
+    }
+
+    @Test
+    @DisplayName("관심 기업 삭제 - 등록되지 않은 경우 404 예외 발생")
+    void deleteWishCompany_notExist_throwsException() throws Exception {
+        // given: 등록되지 않은 상태 (wishCompanyRepository 비워둠)
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.httpStatusCode").value(404))
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.WISH_COMPANY_NOT_FOUND.getMessage()));
     }
 }
