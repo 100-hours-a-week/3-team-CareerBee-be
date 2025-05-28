@@ -1,11 +1,13 @@
-name: Checkstyle Lint
+name: Lint & Format Check
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
 
 jobs:
-  code-quality:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
