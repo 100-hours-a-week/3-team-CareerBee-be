@@ -15,11 +15,14 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -158,5 +161,51 @@ class CompanyCustomRepositoryImplTest {
         ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "카, 3",
+        "'  카', 0",
+        "테스트, 1",
+        "존재하지 않는 회사, 0",
+    })
+    @DisplayName("해당 키워드에 매칭되는 기업에 대해 정상적인 개수 반환")
+    void fetchMatchingCompaniesByKeyword_success(String keyword, Integer expectedCount) {
+        // given
+        Company kakao = createCompany("카카오", 37.123, 127.123);
+        Company kakaoHealth = createCompany("카카오 헬스케어", 37.123, 127.123);
+        Company testKakao = createCompany("테스트 카카오", 37.123, 127.123);
+
+        em.persist(kakao);
+        em.persist(kakaoHealth);
+        em.persist(testKakao);
+        em.flush();
+        em.clear();
+
+        // when
+        CompanySearchResp actualResp = companyCustomRepository.fetchMatchingCompaniesByKeyword(
+            keyword);
+
+        // then
+        assertThat(actualResp.matchingCompanies().size()).isEqualTo(expectedCount);
+    }
+
+    @Test
+    @DisplayName("기업 검색시 최대 8개까지만 조회되는지 확인")
+    void fetchMatchingCompaniesByKeyword_shouldReturnAtMost8Companies() {
+        // given
+        for (int i = 1; i <= 10; i++) {
+            Company company = createCompany("테스트 기업 " + i, 37.123 + i * 0.001, 127.123 + i * 0.001);
+            em.persist(company);
+        }
+        em.flush();
+        em.clear();
+
+        // when
+        CompanySearchResp actualResp = companyCustomRepository.fetchMatchingCompaniesByKeyword(
+            "테스트");
+
+        // then
+        assertThat(actualResp.matchingCompanies().size()).isEqualTo(8);
+    }
 
 }
