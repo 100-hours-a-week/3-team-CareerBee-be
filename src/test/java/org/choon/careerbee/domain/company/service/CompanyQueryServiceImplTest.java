@@ -291,6 +291,39 @@ class CompanyQueryServiceImplTest {
         verify(memberRepository, times(1)).findById(invalidMemberId);
         verifyNoInteractions(wishCompanyRepository);
     }
+  
+    @Test
+    @DisplayName("기업 마커 정보 조회 시 repository 호출 및 결과 반환")
+    void fetchCompanyLocation_ShouldReturnMarkerInfo() {
+        // given
+        Long companyId = 1L;
+        CompanyMarkerInfo expectedResponse = new CompanyMarkerInfo(
+            companyId,
+            "testUrl",
+            BusinessType.GAME,
+            RecruitingStatus.ONGOING,
+            new LocationInfo(37.123, 127.01)
+        );
+        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedResponse);
+
+        // when
+        CompanyMarkerInfo actualResponse = companyQueryService.fetchCompanyLocation(companyId);
+
+        // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
+        assertThat(actualResponse.markerUrl()).isEqualTo(expectedResponse.markerUrl());
+        assertThat(actualResponse.businessType()).isEqualTo(expectedResponse.businessType());
+        assertThat(actualResponse.recruitingStatus()).isEqualTo(
+            expectedResponse.recruitingStatus());
+        assertThat(actualResponse.locationInfo().latitude()).isEqualTo(
+            expectedResponse.locationInfo().latitude());
+        assertThat(actualResponse.locationInfo().longitude()).isEqualTo(
+            expectedResponse.locationInfo().longitude());
+    }
 
     @Test
     @DisplayName("기업 검색시 repository 호출 및 결과 반환")
