@@ -36,6 +36,63 @@ class CompanyControllerTest {
     private EntityManager em;
 
     @Test
+    @DisplayName("주어진 반경 내 기업이 거리순으로 정상 조회된다")
+    void fetchCompaniesByDistance_success() throws Exception {
+        // given
+        double lat = 37.40024430415324;
+        double lon = 127.10698761648364;
+
+        // 반경 1km 내 기업
+        em.persist(createCompany("기업1", lat, lon));
+        em.persist(createCompany("기업2", lat + 0.005, lon));
+        em.persist(createCompany("기업3", lat, lon + 0.005));
+
+        // 반경 1km 밖 기업
+        em.persist(createCompany("기업4", lat + 0.02, lon));
+        em.persist(createCompany("기업5", lat, lon + 0.02));
+        em.persist(createCompany("기업6", lat - 0.015, lon - 0.015));
+
+        em.flush();
+        em.clear();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/companies")
+                .param("latitude", String.valueOf(lat))
+                .param("longitude", String.valueOf(lon))
+                .param("radius", "1000")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("기업 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.companies.length()").value(3))
+            .andExpect(jsonPath("$.data.companies[0].id").exists())
+            .andExpect(jsonPath("$.data.companies[0].locationInfo.latitude").exists())
+            .andExpect(jsonPath("$.data.companies[0].businessType").value("PLATFORM"));
+    }
+
+    @Test
+    @DisplayName("기업 거리 기반 조회 - 반경 내 기업이 없을 경우 빈 리스트 반환")
+    void fetchCompaniesByDistance_shouldReturnEmptyList_whenNoCompanyInRadius() throws Exception {
+        // given
+        double lat = 37.40024430415324;
+        double lon = 127.10698761648364;
+
+        em.persist(createCompany("멀리있는 기업", lat + 0.1, lon + 0.1));
+        em.flush();
+        em.clear();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/companies")
+                .param("latitude", String.valueOf(lat))
+                .param("longitude", String.valueOf(lon))
+                .param("radius", "1000") // 반경 1km 내에는 없음
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("기업 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.companies").isArray())
+            .andExpect(jsonPath("$.data.companies").isEmpty());
+    }
+
+    @Test
     @DisplayName("기업 간단 정보 조회 API가 성공적으로 데이터를 반환한다")
     void fetchCompanySummary_success() throws Exception {
         Company company = createCompany("통합테스트기업", 37.40203443, 127.1034665);
