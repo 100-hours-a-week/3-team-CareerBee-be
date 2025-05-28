@@ -26,7 +26,7 @@ checkstyle {
 }
 
 pmd {
-    toolVersion = '6.55.0'
+    toolVersion = '7.13.0'
     ruleSets = []  // 기본 룰셋 제거
     ruleSetFiles = files("$rootDir/config/pmd/pmd-ruleset.xml")
     sourceSets = [sourceSets.main] // test 제외
