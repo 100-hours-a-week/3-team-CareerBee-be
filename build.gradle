@@ -5,6 +5,37 @@ plugins {
 
     // Sentry Gradle Plugin
     id "io.sentry.jvm.gradle" version "5.5.0"
+
+    // Checkstyle Plugin - 코드 스타일 검사
+    id 'checkstyle'
+
+    // SpotBugs Plugin - 코드 품질 검사
+    id 'com.github.spotbugs' version '6.1.12'
+
+    // PMD Plugin - 코드 스멜/잠재적 버그 검사
+    id 'pmd'
+}
+
+
+checkstyle {
+    toolVersion = '10.24.0'
+    configFile = file("config/checkstyle/google_checks.xml")
+    // 테스트 제외
+    sourceSets = [sourceSets.main]
+    ignoreFailures = true // <- 에러 무시하고 빌드 계속
+}
+
+pmd {
+    toolVersion = '7.13.0'
+    ruleSets = []  // 기본 룰셋 제거
+    ruleSetFiles = files("$rootDir/config/pmd/pmd-ruleset.xml")
+    sourceSets = [sourceSets.main] // test 제외
+    ignoreFailures = true // <- 에러 무시하고 빌드 계속
+}
+
+spotbugs {
+    toolVersion = '4.9.3'
+    ignoreFailures = true // <- 에러 무시하고 빌드 계속
 }
 
 group = 'org.choon'
@@ -73,6 +104,11 @@ sentry {
     org = "2-7i"
     projectName = "ssmu-dev-backend"
     authToken = System.getenv("SENTRY_AUTH_TOKEN")
+}
+
+// build.gradle에 추가
+tasks.named('check') {
+    dependsOn 'checkstyleMain', 'pmdMain', 'spotbugsMain'
 }
 
 tasks.named('test') {
