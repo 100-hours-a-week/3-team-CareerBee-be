@@ -1,11 +1,11 @@
-name: Code Quality Report
+name: Checkstyle Lint
 
 on:
   pull_request:
     branches: [main, develop]
 
 jobs:
-  static-analysis:
+  code-quality:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,28 +18,22 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 🧱 Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-
-      - name: 🧪 Run static analysis
-        run: ./gradlew checkstyleMain pmdMain spotbugsMain --continue
+      - name: 🧪 Run Checkstyle + PMD + SpotBugs
+        run: ./gradlew checkstyleMain pmdMain spotbugsMain
 
       - name: 📦 Upload Checkstyle Report
-        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: checkstyle-report
           path: build/reports/checkstyle/
 
       - name: 📦 Upload PMD Report
-        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: pmd-report
           path: build/reports/pmd/
 
       - name: 📦 Upload SpotBugs Report
-        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: spotbugs-report
