@@ -14,6 +14,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -46,6 +47,14 @@ public class CustomExceptionHandler {
     @ExceptionHandler(MissingPathVariableException.class)
     public ResponseEntity<CommonResponse<String>> handleMissingPathVariable(
         MissingPathVariableException e) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
+    }
+      
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<CommonResponse<String>> handleTypeMismatch(
+        MissingServletRequestParameterException e) {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
