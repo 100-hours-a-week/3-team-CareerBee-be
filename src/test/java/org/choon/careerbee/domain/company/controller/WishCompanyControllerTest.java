@@ -4,6 +4,7 @@ import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,7 +103,8 @@ class WishCompanyControllerIntegrationTest {
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.httpStatusCode").value(404))
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage()));
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage()));
     }
 
     @ParameterizedTest
@@ -114,7 +116,8 @@ class WishCompanyControllerIntegrationTest {
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.httpStatusCode").value(400))
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()));
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()));
     }
 
     @Test
@@ -153,5 +156,32 @@ class WishCompanyControllerIntegrationTest {
             .andExpect(jsonPath("$.httpStatusCode").value(200))
             .andExpect(jsonPath("$.data.wishCompanies").isArray())
             .andExpect(jsonPath("$.data.wishCompanies").isEmpty());
+    }
+
+    @Test
+    @DisplayName("관심 기업 등록 - 성공")
+    void registWishCompany_success() throws Exception {
+        mockMvc.perform(post("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode").value(204))
+            .andExpect(jsonPath("$.message").value("관심기업 등록에 성공하였습니다."));
+    }
+
+    @Test
+    @DisplayName("관심 기업 등록 - 이미 등록된 경우 예외 반환")
+    void registWishCompany_alreadyExists() throws Exception {
+        // given
+        wishCompanyRepository.saveAndFlush(createWishCompany(testCompany, testMember));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.httpStatusCode").value(409))
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.WISH_ALREADY_EXIST.getMessage()));
     }
 }
