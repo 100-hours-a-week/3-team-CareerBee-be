@@ -5,6 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -23,6 +24,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Co
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
@@ -32,6 +34,8 @@ import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -226,6 +230,30 @@ class CompanyQueryServiceImplTest {
         assertThatThrownBy(() -> companyQueryService.checkWishCompany(nonExistMemberId, companyId))
             .isInstanceOf(CustomException.class)
             .hasMessageContaining(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage());
+    }
+
+    @Test
+    @DisplayName("keyword 입력값은 공백 제거 및 escape 처리 후 repository로 전달되어야 한다")
+    void fetchMatchingCompaniesByKeyword_ShouldStripAndEscapeKeywordBeforeRepositoryCall() {
+        // given
+        String rawKeyword = "  카_!  ";
+        String expectedKeyword = "카!_!!";
+        CompanySearchResp expectedResponse = new CompanySearchResp(List.of());
+
+        when(companyRepository.fetchMatchingCompaniesByKeyword(anyString())).thenReturn(
+            expectedResponse);
+
+        // when
+        CompanySearchResp actualResponse = companyQueryService.fetchMatchingCompaniesByKeyword(
+            rawKeyword);
+
+        // then
+        verify(companyRepository).fetchMatchingCompaniesByKeyword(keywordCaptor.capture());
+        String actualPassedKeyword = keywordCaptor.getValue();
+        assertThat(actualPassedKeyword).isEqualTo(expectedKeyword);
+
+        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(expectedKeyword);
+        assertThat(actualResponse).isEqualTo(expectedResponse);
     }
 
     @Test
