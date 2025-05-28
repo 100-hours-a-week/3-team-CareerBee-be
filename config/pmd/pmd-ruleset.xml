@@ -21,15 +21,16 @@
         <exclude name="MethodArgumentCouldBeFinal" />
     </rule>
 
-    <!-- 🧠 간단한 성능 개선 제안 -->
-    <rule ref="category/java/bestpractices.xml">
-        <exclude name="AvoidInstantiatingObjectsInLoops" />
-    </rule>
-
     <!-- 💬 가독성 관련 -->
     <rule ref="category/java/design.xml">
         <exclude name="LawOfDemeter" />
         <exclude name="TooManyMethods" />
         <exclude name="UseUtilityClass" />
+    </rule>
+
+    <rule ref="category/java/design.xml/LoosePackageCoupling">
+        <properties>
+            <property name="coupledPackagePatterns" value="java.util., org.springframework."/>
+        </properties>
     </rule>
 </ruleset>
