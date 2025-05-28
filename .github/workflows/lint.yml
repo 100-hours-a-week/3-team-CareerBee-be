@@ -24,19 +24,19 @@ jobs:
         run: ./gradlew checkstyleMain pmdMain spotbugsMain
 
       - name: 📦 Upload Checkstyle Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: checkstyle-report
           path: build/reports/checkstyle/
 
       - name: 📦 Upload PMD Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pmd-report
           path: build/reports/pmd/
 
       - name: 📦 Upload SpotBugs Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: spotbugs-report
           path: build/reports/spotbugs/
