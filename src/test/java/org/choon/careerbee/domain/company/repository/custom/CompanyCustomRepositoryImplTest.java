@@ -47,10 +47,9 @@ class CompanyCustomRepositoryImplTest {
     private CompanyCustomRepositoryImpl companyCustomRepository;
 
     @Test
-    @DisplayName("주어진 반경 내 기업이 정상적으로 조회되는가")
+    @DisplayName("주어진 위도 경도를 기준으로 반경 내 기업이 정상적으로 조회되는가")
     void fetchByDistanceAndCondition_shouldReturnOnlyCompaniesWithinGivenRadius() {
         // given
-        // 기준 좌표 (중심)
         double lat = 37.40024430415324;
         double lon = 127.10698761648364;
 
@@ -80,7 +79,7 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("유효한 company id로 기업 간단 정보 조회시 정상 조회")
+    @DisplayName("존재하는 company id로 기업 간단 정보 조회시 정상 조회")
     void fetchCompanySummaryById_shouldReturnCompanySummaryResp() {
         // given
         Company company = createCompany("테스트 회사", 37.40203443, 127.1034665);
@@ -117,19 +116,25 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 id로 간단 정보 조회시 예외 발생")
+    @DisplayName("존재하지 않는 id로 간단 정보 조회시 404 예외 발생")
     void fetchCompanySummaryById_shouldThrowException_whenCompanyNotFound() {
         // given
-        Long invalidCompanyId = 10000L;
+        Company comp = createCompany("테스트기업", 37.123, 127.34);
+        em.persist(comp);
+        em.flush();
+        em.clear();
+
+        Long invalidCompanyId = comp.getId() + 100L;
 
         // when & then
-        assertThatThrownBy(() ->
-            companyCustomRepository.fetchCompanySummaryInfoById(invalidCompanyId)
-        ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
+        assertThatThrownBy(
+            () -> companyCustomRepository.fetchCompanySummaryInfoById(invalidCompanyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
     @Test
-    @DisplayName("유효한 company id로 기업 상세정보 조회시 정상 조회")
+    @DisplayName("존재하는 company id로 기업 상세정보 조회시 정상 조회")
     void fetchCompanyDetailById_shouldReturnCompanyDetailResp() {
         // given
         Company company = createCompany(
@@ -195,18 +200,6 @@ class CompanyCustomRepositoryImplTest {
             .hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
-    @Test
-    @DisplayName("존재하지 않는 id로 조회시 예외 발생")
-    void fetchCompanyDetailById_shouldThrowException_whenCompanyNotFound() {
-        // given
-        Long invalidCompanyId = 1000L;
-
-        // when & then
-        assertThatThrownBy(() ->
-            companyCustomRepository.fetchCompanyDetailById(invalidCompanyId)
-        ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
-    }
-
     @ParameterizedTest
     @CsvSource({
         "카, 3",
@@ -246,12 +239,14 @@ class CompanyCustomRepositoryImplTest {
         em.flush();
         em.clear();
 
+        int searchMaxCount = 8;
+
         // when
         CompanySearchResp actualResp = companyCustomRepository.fetchMatchingCompaniesByKeyword(
             "테스트");
 
         // then
-        assertThat(actualResp.matchingCompanies().size()).isEqualTo(8);
+        assertThat(actualResp.matchingCompanies().size()).isEqualTo(searchMaxCount);
     }
 
 
