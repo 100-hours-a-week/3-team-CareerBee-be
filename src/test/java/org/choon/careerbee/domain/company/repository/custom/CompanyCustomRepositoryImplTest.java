@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.within;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
@@ -9,17 +10,22 @@ import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -41,10 +47,9 @@ class CompanyCustomRepositoryImplTest {
     private CompanyCustomRepositoryImpl companyCustomRepository;
 
     @Test
-    @DisplayName("주어진 반경 내 기업이 정상적으로 조회되는가")
+    @DisplayName("주어진 위도 경도를 기준으로 반경 내 기업이 정상적으로 조회되는가")
     void fetchByDistanceAndCondition_shouldReturnOnlyCompaniesWithinGivenRadius() {
         // given
-        // 기준 좌표 (중심)
         double lat = 37.40024430415324;
         double lon = 127.10698761648364;
 
@@ -74,7 +79,7 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("유효한 company id로 기업 간단 정보 조회시 정상 조회")
+    @DisplayName("존재하는 company id로 기업 간단 정보 조회시 정상 조회")
     void fetchCompanySummaryById_shouldReturnCompanySummaryResp() {
         // given
         Company company = createCompany("테스트 회사", 37.40203443, 127.1034665);
@@ -111,19 +116,25 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 id로 간단 정보 조회시 예외 발생")
+    @DisplayName("존재하지 않는 id로 간단 정보 조회시 404 예외 발생")
     void fetchCompanySummaryById_shouldThrowException_whenCompanyNotFound() {
         // given
-        Long invalidCompanyId = 10000L;
+        Company comp = createCompany("테스트기업", 37.123, 127.34);
+        em.persist(comp);
+        em.flush();
+        em.clear();
+
+        Long invalidCompanyId = comp.getId() + 100L;
 
         // when & then
-        assertThatThrownBy(() ->
-            companyCustomRepository.fetchCompanySummaryInfoById(invalidCompanyId)
-        ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
+        assertThatThrownBy(
+            () -> companyCustomRepository.fetchCompanySummaryInfoById(invalidCompanyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
     @Test
-    @DisplayName("유효한 company id로 기업 상세정보 조회시 정상 조회")
+    @DisplayName("존재하는 company id로 기업 상세정보 조회시 정상 조회")
     void fetchCompanyDetailById_shouldReturnCompanyDetailResp() {
         // given
         Company company = createCompany(
@@ -147,15 +158,113 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 id로 조회시 예외 발생")
+    @DisplayName("존재하지 않는 id로 기업 상세정보 조회시 404 예외 발생")
     void fetchCompanyDetailById_shouldThrowException_whenCompanyNotFound() {
         // given
-        Long invalidCompanyId = 1000L;
+        Company comp = createCompany("테스트기업", 37.123, 127.34);
+        em.persist(comp);
+        em.flush();
+        em.clear();
+
+        Long nonExistCompanyId = comp.getId() + 100L;
 
         // when & then
         assertThatThrownBy(() ->
-            companyCustomRepository.fetchCompanyDetailById(invalidCompanyId)
+            companyCustomRepository.fetchCompanyDetailById(nonExistCompanyId)
         ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
+    }
+
+
+    @Test
+    @DisplayName("존재하는 기업의 위치정보 조회시 정상 조회 ")
+    void fetchCompanyMarkerInfo_shouldReturnMarkerInfo() {
+        // given
+        Company company = createCompany(
+            "마커 테스트 회사", 37.40203443, 127.1034665
+        );
+        em.persist(company);
+        em.flush();
+        em.clear();
+
+        // when
+        CompanyMarkerInfo actualResult = companyCustomRepository.fetchCompanyMarkerInfo(
+            company.getId());
+
+        // then
+        assertThat(actualResult).isNotNull();
+        assertThat(actualResult.id()).isEqualTo(company.getId());
+        assertThat(actualResult.businessType()).isEqualTo(company.getBusinessType());
+        assertThat(actualResult.recruitingStatus()).isEqualTo(company.getRecruitingStatus());
+        assertThat(actualResult.locationInfo().longitude()).isCloseTo(127.1034665, within(1e-9));
+        assertThat(actualResult.locationInfo().latitude()).isCloseTo(37.40203443, within(1e-9));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 기업의 위치정보 조회하면 404 예외 발생")
+    void fetchCompanyMarkerInfo_shouldReturn404_whenNonExistCompany() {
+        // given
+        Company company = createCompany(
+            "마커 테스트 회사", 37.40203443, 127.1034665
+        );
+        em.persist(company);
+        em.flush();
+        em.clear();
+
+        Long nonExistCompanyId = company.getId() + 100L;
+
+        // when & then
+        assertThatThrownBy(() -> companyCustomRepository.fetchCompanyMarkerInfo(nonExistCompanyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "카, 3",
+        "'  카', 0",
+        "테스트, 1",
+        "존재하지 않는 회사, 0",
+    })
+    @DisplayName("해당 키워드에 매칭되는 기업에 대해 정상적인 개수 반환")
+    void fetchMatchingCompaniesByKeyword_success(String keyword, Integer expectedCount) {
+        // given
+        Company kakao = createCompany("카카오", 37.123, 127.123);
+        Company kakaoHealth = createCompany("카카오 헬스케어", 37.123, 127.123);
+        Company testKakao = createCompany("테스트 카카오", 37.123, 127.123);
+
+        em.persist(kakao);
+        em.persist(kakaoHealth);
+        em.persist(testKakao);
+        em.flush();
+        em.clear();
+
+        // when
+        CompanySearchResp actualResp = companyCustomRepository.fetchMatchingCompaniesByKeyword(
+            keyword);
+
+        // then
+        assertThat(actualResp.matchingCompanies().size()).isEqualTo(expectedCount);
+    }
+
+    @Test
+    @DisplayName("기업 검색시 최대 8개까지만 조회되는지 확인")
+    void fetchMatchingCompaniesByKeyword_shouldReturnAtMost8Companies() {
+        // given
+        for (int i = 1; i <= 10; i++) {
+            Company company = createCompany("테스트 기업 " + i, 37.123 + i * 0.001, 127.123 + i * 0.001);
+            em.persist(company);
+        }
+        em.flush();
+        em.clear();
+
+        int searchMaxCount = 8;
+
+        // when
+        CompanySearchResp actualResp = companyCustomRepository.fetchMatchingCompaniesByKeyword(
+            "테스트");
+
+        // then
+        assertThat(actualResp.matchingCompanies().size()).isEqualTo(searchMaxCount);
     }
 
 
