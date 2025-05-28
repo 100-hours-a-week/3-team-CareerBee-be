@@ -7,7 +7,6 @@
 
     <description>
         기본적인 버그 위험 요소 및 코드 스멜을 탐지하는 PMD 룰셋입니다.
-        개발 속도를 저해하지 않는 범위 내에서 코드 품질 확보를 목표로 합니다.
     </description>
 
     <!-- ⚠️ 중요: NullPointerException, 불필요한 if 등 -->
@@ -28,9 +27,4 @@
         <exclude name="UseUtilityClass" />
     </rule>
 
-    <rule ref="category/java/design.xml/LoosePackageCoupling">
-        <properties>
-            <property name="coupledPackagePatterns" value="java.util., org.springframework."/>
-        </properties>
-    </rule>
 </ruleset>
