@@ -5,6 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -27,6 +28,8 @@ import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -34,6 +37,8 @@ import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -285,6 +290,62 @@ class CompanyQueryServiceImplTest {
 
         verify(memberRepository, times(1)).findById(invalidMemberId);
         verifyNoInteractions(wishCompanyRepository);
+    }
+
+    @Test
+    @DisplayName("기업 검색시 repository 호출 및 결과 반환")
+    void fetchMatchingCompaniesByKeyword_shouldReturnResponseFromRepository() {
+        // given
+        String keyword = "카";
+        CompanySearchResp expected = new CompanySearchResp(List.of(
+            new CompanySearchInfo(1L, "카카오"),
+            new CompanySearchInfo(2L, "카카오 헬스케어")
+        ));
+        when(companyRepository.fetchMatchingCompaniesByKeyword(anyString())).thenReturn(expected);
+
+        // when
+        CompanySearchResp actual = companyQueryService.fetchMatchingCompaniesByKeyword(keyword);
+
+        // then
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(keyword);
+
+        assertThat(actual).isEqualTo(expected);
+
+        assertThat(actual.matchingCompanies().get(0).id())
+            .isEqualTo(expected.matchingCompanies().get(0).id());
+        assertThat(actual.matchingCompanies().get(0).name())
+            .isEqualTo(expected.matchingCompanies().get(0).name());
+
+        assertThat(actual.matchingCompanies().get(1).id())
+            .isEqualTo(expected.matchingCompanies().get(1).id());
+        assertThat(actual.matchingCompanies().get(1).name())
+            .isEqualTo(expected.matchingCompanies().get(1).name());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'카카오', 카카오",
+        "'  카카오  ', 카카오",
+        "'카!오', 카!!오",
+        "%, !%",
+        "'   ', ''"
+    })
+    @DisplayName("keyword는 공백 제거 및 escape 처리되어 repository로 전달된다 - 다양한 입력 케이스")
+    void fetchMatchingCompaniesByKeyword_shouldTrimAndEscapeKeyword_variants(String rawKeyword,
+        String expectedKeyword) {
+        // given
+        when(companyRepository.fetchMatchingCompaniesByKeyword(anyString())).thenReturn(
+            new CompanySearchResp(List.of()));
+
+        // when
+        companyQueryService.fetchMatchingCompaniesByKeyword(rawKeyword);
+
+        // then
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(expectedKeyword);
     }
 
 }

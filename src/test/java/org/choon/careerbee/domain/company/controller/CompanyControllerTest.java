@@ -130,4 +130,98 @@ class CompanyControllerTest {
             .andExpect(jsonPath("$.httpStatusCode").value(
                 CustomResponseStatus.COMPANY_NOT_EXIST.getHttpStatusCode()));
     }
+
+    @Test
+    @DisplayName("키워드로 기업 검색 시 200 응답과 결과 반환")
+    void searchCompanyByKeyword_shouldReturn200() throws Exception {
+        // given
+        Company kakao = createCompany("카카오", 37.12, 127.13);
+        Company kakao_health = createCompany("카카오 헬스케어", 37.12, 127.13);
+        Company hyundai = createCompany("현대자동차", 37.12, 127.13);
+        Company coupang = createCompany("쿠팡", 37.12, 127.13);
+
+        em.persist(kakao);
+        em.persist(kakao_health);
+        em.persist(hyundai);
+        em.persist(coupang);
+
+        em.flush();
+        em.clear();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/companies/search")
+                .param("keyword", "카")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("매칭 데이터 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.matchingCompanies.length()").value(2))
+            .andExpect(jsonPath("$.data.matchingCompanies[0].name").value("카카오"))
+            .andExpect(jsonPath("$.data.matchingCompanies[1].name").value("카카오 헬스케어"));
+    }
+
+    @Test
+    @DisplayName("키워드로 기업 검색 시 escape 처리하여 결과 반환")
+    void searchCompanyByKeyword_shouldReturn200_withStripAndEscape() throws Exception {
+        // given
+        Company kakao = createCompany("카_오", 37.12, 127.13);
+        Company kakao_health = createCompany("카카오_헬스케어", 37.12, 127.13);
+        Company hyundai = createCompany("현대_자동차", 37.12, 127.13);
+        Company coupang = createCompany("쿠팡", 37.12, 127.13);
+
+        em.persist(kakao);
+        em.persist(kakao_health);
+        em.persist(hyundai);
+        em.persist(coupang);
+
+        em.flush();
+        em.clear();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/companies/search")
+                .param("keyword", "_")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("매칭 데이터 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.matchingCompanies.length()").value(3))
+            .andExpect(jsonPath("$.data.matchingCompanies[0].name").value("카_오"))
+            .andExpect(jsonPath("$.data.matchingCompanies[1].name").value("카카오_헬스케어"))
+            .andExpect(jsonPath("$.data.matchingCompanies[2].name").value("현대_자동차"));
+    }
+
+    @Test
+    @DisplayName("키워드 검색시 keyword 누락되면 400 에러 발생")
+    void fetchCompanyDetail_shouldReturn400_whenKeywordEmpty() throws Exception {
+        mockMvc.perform(get("/api/v1/companies/search")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest())
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
+    }
+
+    private Company createCompany(String name, double latitude, double longitude) {
+        GeometryFactory factory = new GeometryFactory(new PrecisionModel(), 4326);
+        Point geoPoint = factory.createPoint(new Coordinate(longitude, latitude));
+        return Company.builder()
+            .name(name)
+            .geoPoint(geoPoint)
+            .address("서울시 강남구")
+            .logoUrl("https://logo.test.com")
+            .description("테스트 기업 설명")
+            .recentIssue("테스트 이슈")
+            .companyType(CompanyType.MID_SIZED)
+            .recruitingStatus(RecruitingStatus.ONGOING)
+            .businessType(BusinessType.PLATFORM)
+            .score(100)
+            .employeeCount(50)
+            .annualSalary(60000)
+            .startingSalary(40000)
+            .revenue(1000000000L)
+            .operatingProfit(200000000L)
+            .ir("IR 정보")
+            .rating(4.5)
+            .benefits(null)
+            .build();
+    }
 }

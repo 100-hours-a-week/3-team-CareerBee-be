@@ -194,7 +194,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
                 )
             )
             .from(company)
-            .where(company.name.like("%" + keyword + "%"))
+            .where(company.name.like("%" + keyword + "%", '!'))
             .limit(8)
             .fetch();
 
