@@ -2,8 +2,8 @@ package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
@@ -20,12 +20,13 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
+import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
-import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
-import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
@@ -88,6 +89,42 @@ class CompanyQueryServiceImplTest {
         assertThat(condCaptor.getValue()).isEqualTo(queryCond);
 
         assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actualResponse.companies()).hasSize(1);
+
+        CompanyMarkerInfo firstMarker = actualResponse.companies().get(0);
+        assertThat(firstMarker.id()).isEqualTo(1L);
+        assertThat(firstMarker.markerUrl()).isEqualTo("test.url");
+        assertThat(firstMarker.businessType()).isEqualTo(BusinessType.PLATFORM);
+        assertThat(firstMarker.recruitingStatus()).isEqualTo(RecruitingStatus.ONGOING);
+        assertThat(firstMarker.locationInfo().latitude()).isEqualTo(37.4);
+        assertThat(firstMarker.locationInfo().longitude()).isEqualTo(127.3);
+    }
+
+    @Test
+    @DisplayName("기업 간단 조회 시 repository 호출 및 결과 반환")
+    void fetchCompanySummary_ShouldReturnSummaryResponse() {
+        // given
+        Long companyId = 1L;
+        CompanySummaryInfo expectedResponse = new CompanySummaryInfo(
+            companyId,
+            "테스트 회사",
+            "https://test.logo.jpg",
+            1L,
+            List.of()
+        );
+        when(companyRepository.fetchCompanySummaryInfoById(anyLong())).thenReturn(expectedResponse);
+
+        // when
+        CompanySummaryInfo actualResponse = companyQueryService.fetchCompanySummary(companyId);
+
+        // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanySummaryInfoById(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
+        assertThat(actualResponse.name()).isEqualTo(expectedResponse.name());
+        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
+        assertThat(actualResponse.logoUrl()).isEqualTo(expectedResponse.logoUrl());
+        assertThat(actualResponse.keywords()).isEqualTo(expectedResponse.keywords());
     }
 
     @Test
@@ -269,6 +306,23 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
+    @DisplayName("관심 회사 여부 확인 - 존재하지 않는 companyId인 경우 예외 발생")
+    void checkWishCompany_companyNotExist_throwsException() {
+        // given
+        Long memberId = 1L;
+        Long nonExistCompanyId = 1L;
+        Member mockMember = createMember("testnick", "test@test.com", 1L);
+
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
+        when(companyRepository.findById(nonExistCompanyId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.checkWishCompany(memberId, nonExistCompanyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
+    }
+
+    @Test
     @DisplayName("기업 검색시 repository 호출 및 결과 반환")
     void fetchMatchingCompaniesByKeyword_shouldReturnResponseFromRepository() {
         // given
@@ -323,23 +377,6 @@ class CompanyQueryServiceImplTest {
         verify(companyRepository).fetchMatchingCompaniesByKeyword(keywordCaptor.capture());
         String actualPassedKeyword = keywordCaptor.getValue();
         assertThat(actualPassedKeyword).isEqualTo(expectedKeyword);
-    }
-
-    @Test
-    @DisplayName("관심 회사 여부 확인 - 존재하지 않는 companyId인 경우 예외 발생")
-    void checkWishCompany_companyNotExist_throwsException() {
-        // given
-        Long memberId = 1L;
-        Long nonExistCompanyId = 1L;
-        Member mockMember = createMember("testnick", "test@test.com", 1L);
-
-        when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
-        when(companyRepository.findById(nonExistCompanyId)).thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> companyQueryService.checkWishCompany(memberId, nonExistCompanyId))
-            .isInstanceOf(CustomException.class)
-            .hasMessageContaining(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
     }
 
     @Test

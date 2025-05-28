@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.company.repository.custom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.within;
+import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 
@@ -19,9 +20,6 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Co
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.choon.careerbee.domain.company.entity.enums.BusinessType;
-import org.choon.careerbee.domain.company.entity.enums.CompanyType;
-import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
@@ -255,5 +253,6 @@ class CompanyCustomRepositoryImplTest {
         // then
         assertThat(actualResp.matchingCompanies().size()).isEqualTo(8);
     }
+
 
 }

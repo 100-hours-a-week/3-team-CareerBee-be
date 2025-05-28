@@ -133,6 +133,63 @@ class CompanyControllerTest {
     }
 
     @Test
+    @DisplayName("기업 위치 정보 조회 API가 성공적으로 데이터를 반환한다")
+    void fetchCompanyLocationInfo_success() throws Exception {
+        // given
+        Company company = createCompany("마커 테스트 기업", 37.40203443, 127.1034665);
+        em.persist(company);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get("/api/v1/companies/{companyId}/locations", company.getId())
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("기업 위치 정보 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.id").value(company.getId()))
+            .andExpect(jsonPath("$.data.businessType").value(company.getBusinessType().toString()))
+            .andExpect(
+                jsonPath("$.data.recruitingStatus").value(company.getRecruitingStatus().toString()))
+            .andExpect(jsonPath("$.data.locationInfo.latitude").value(closeTo(37.40203443, 1e-9)))
+            .andExpect(jsonPath("$.data.locationInfo.longitude").value(closeTo(127.1034665, 1e-9)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"id", " "})
+    @DisplayName("기업 위치 정보 조회시 유효하지 않은 입력의 경우 400 에러가 발생한다.")
+    void fetchCompanyLocationInfo_shouldReturn400_whenInvalidInput(String invalidInput)
+        throws Exception {
+        // given
+        mockMvc.perform(get("/api/v1/companies/{companyId}/locations", invalidInput)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest())
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("기업 위치정보 조회시 존재하지 않는 기업 ID 조회시 404 에러가 발생한다.")
+    void fetchCompanyLocationInfo_shouldReturn404_whenNonExistCompany() throws Exception {
+        // given
+        Company company = createCompany("테스트기업", 37.40203443, 127.1034665);
+        em.persist(company);
+        em.flush();
+        em.clear();
+
+        Long nonExistCompanyId = 2L;
+
+        // when & then
+        mockMvc.perform(get("/api/v1/companies/{companyId}/locations", nonExistCompanyId)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.COMPANY_NOT_EXIST.getHttpStatusCode()));
+    }
+
+    @Test
     @DisplayName("키워드로 기업 검색 시 200 응답과 결과 반환")
     void searchCompanyByKeyword_shouldReturn200() throws Exception {
         // given
@@ -187,62 +244,6 @@ class CompanyControllerTest {
             .andExpect(jsonPath("$.data.matchingCompanies[0].name").value("카_오"))
             .andExpect(jsonPath("$.data.matchingCompanies[1].name").value("카카오_헬스케어"))
             .andExpect(jsonPath("$.data.matchingCompanies[2].name").value("현대_자동차"));
-    }
-
-    @Test
-    @DisplayName("기업 위치 정보 조회 API가 성공적으로 데이터를 반환한다")
-    void fetchCompanyLocationInfo_success() throws Exception {
-        // given
-        Company company = createCompany("마커 테스트 기업", 37.40203443, 127.1034665);
-        em.persist(company);
-        em.flush();
-        em.clear();
-
-        mockMvc.perform(get("/api/v1/companies/{companyId}/locations", company.getId())
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.message").value("기업 위치 정보 조회에 성공하였습니다."))
-            .andExpect(jsonPath("$.data.id").value(company.getId()))
-            .andExpect(jsonPath("$.data.businessType").value(company.getBusinessType().toString()))
-            .andExpect(jsonPath("$.data.recruitingStatus").value(company.getRecruitingStatus().toString()))
-            .andExpect(jsonPath("$.data.locationInfo.latitude").value(closeTo(37.40203443, 1e-9)))
-            .andExpect(jsonPath("$.data.locationInfo.longitude").value(closeTo(127.1034665, 1e-9)));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"id", " "})
-    @DisplayName("기업 위치 정보 조회시 유효하지 않은 입력의 경우 400 에러가 발생한다.")
-    void fetchCompanyLocationInfo_shouldReturn400_whenInvalidInput(String invalidInput)
-        throws Exception {
-        // given
-        mockMvc.perform(get("/api/v1/companies/{companyId}/locations", invalidInput)
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isBadRequest())
-            .andExpect(
-                jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()))
-            .andExpect(jsonPath("$.httpStatusCode").value(
-                CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
-    }
-
-    @Test
-    @DisplayName("상세조회시 존재하지 않는 회사 ID 조회시 404 에러가 발생한다.")
-    void fetchCompanyLocationInfo_shouldReturn404_whenNonExistCompany() throws Exception {
-        // given
-        Company company = createCompany("테스트기업", 37.40203443, 127.1034665);
-        em.persist(company);
-        em.flush();
-        em.clear();
-
-        Long nonExistCompanyId = 2L;
-
-        // when & then
-        mockMvc.perform(get("/api/v1/companies/{companyId}/locations", nonExistCompanyId)
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound())
-            .andExpect(
-                jsonPath("$.message").value(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage()))
-            .andExpect(jsonPath("$.httpStatusCode").value(
-                CustomResponseStatus.COMPANY_NOT_EXIST.getHttpStatusCode()));
     }
 
     @Test

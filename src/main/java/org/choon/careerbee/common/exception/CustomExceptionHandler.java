@@ -51,6 +51,14 @@ public class CustomExceptionHandler {
             .status(HttpStatus.BAD_REQUEST)
             .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
     }
+      
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<CommonResponse<String>> handleTypeMismatch(
+        MissingServletRequestParameterException e) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
+    }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<CommonResponse<String>> handleTypeMismatch(
