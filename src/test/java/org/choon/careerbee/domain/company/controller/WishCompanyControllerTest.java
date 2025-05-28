@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.company.controller;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -183,5 +184,35 @@ class WishCompanyControllerIntegrationTest {
             .andExpect(jsonPath("$.httpStatusCode").value(409))
             .andExpect(
                 jsonPath("$.message").value(CustomResponseStatus.WISH_ALREADY_EXIST.getMessage()));
+    }
+
+    @Test
+    @DisplayName("관심 기업 삭제 - 성공")
+    void deleteWishCompany_success() throws Exception {
+        // given
+        wishCompanyRepository.saveAndFlush(createWishCompany(testCompany, testMember));
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode").value(204))
+            .andExpect(jsonPath("$.message").value("관심기업 삭제에 성공하였습니다."));
+    }
+
+    @Test
+    @DisplayName("관심 기업 삭제 - 등록되지 않은 경우 404 예외 발생")
+    void deleteWishCompany_notExist_throwsException() throws Exception {
+        // given: 등록되지 않은 상태 (wishCompanyRepository 비워둠)
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/members/wish-companies/{companyId}", testCompany.getId())
+                .header("Authorization", "Bearer " + jwtToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.httpStatusCode").value(404))
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.WISH_COMPANY_NOT_FOUND.getMessage()));
     }
 }
