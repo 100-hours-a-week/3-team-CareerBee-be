@@ -1,7 +1,10 @@
 package org.choon.careerbee.domain.auth.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.TokenFixture.createToken;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,8 +18,13 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.auth.repository.TokenRepository;
+import org.choon.careerbee.domain.auth.service.oauth.OAuthApiClient;
+import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
+import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoInfoResponse;
+import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoLoginParams;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
+import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.filter.jwt.JwtAuthenticationFilter;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +36,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,10 +63,19 @@ class AuthControllerTest {
     private JwtUtil jwtUtil;
 
     @Autowired
+    private MemberCommandService memberCommandService;
+
+    @Autowired
+    private OAuthApiClient kakaoApiClient;
+
+    @Autowired
     private WebApplicationContext context;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private RequestOAuthInfoService requestOAuthInfoService;
 
     private String testAccessToken;
     private Member testMember;
@@ -104,6 +123,71 @@ class AuthControllerTest {
                 jsonPath("$.message").value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()))
             .andExpect(jsonPath("$.httpStatusCode").value(
                 CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("카카오 로그인 요청 성공 - 신규 회원인 경우")
+    void kakaoLogin_success_newMember() throws Exception {
+        // given
+        KakaoLoginParams loginParams = new KakaoLoginParams();
+        ReflectionTestUtils.setField(loginParams, "authorizationCode", "test-auth-code");
+
+        KakaoInfoResponse mockOAuthInfo = new KakaoInfoResponse();
+        KakaoInfoResponse.KakaoAccount kakaoAccount = new KakaoInfoResponse.KakaoAccount();
+        ReflectionTestUtils.setField(kakaoAccount, "email", "mock@kakao.com");
+        ReflectionTestUtils.setField(mockOAuthInfo, "kakaoAccount", kakaoAccount);
+        ReflectionTestUtils.setField(mockOAuthInfo, "id", 12345L);
+
+        when(requestOAuthInfoService.request(any(), any())).thenReturn(mockOAuthInfo);
+
+        long countBefore = memberRepository.count();
+
+        // when & then
+        mockMvc.perform(post("/api/v1/auth/oauth/tokens/kakao")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Origin", "http://localhost:5173")
+                .content(objectMapper.writeValueAsString(loginParams)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("로그인에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode").value(200))
+            .andExpect(jsonPath("$.data.accessToken").exists())
+            .andExpect(jsonPath("$.data.userInfo").exists());
+
+        long countAfter = memberRepository.count();
+        assertThat(countBefore + 1).isEqualTo(countAfter);
+    }
+
+    @Test
+    @DisplayName("카카오 로그인 요청 성공 - 기존 회원인 경우")
+    void kakaoLogin_success_existingMember() throws Exception {
+        // given
+        KakaoLoginParams loginParams = new KakaoLoginParams();
+        ReflectionTestUtils.setField(loginParams, "authorizationCode", "test-auth-code");
+
+        KakaoInfoResponse mockOAuthInfo = new KakaoInfoResponse();
+        KakaoInfoResponse.KakaoAccount kakaoAccount = new KakaoInfoResponse.KakaoAccount();
+        ReflectionTestUtils.setField(kakaoAccount, "email", "mock@kakao.com");
+        ReflectionTestUtils.setField(mockOAuthInfo, "kakaoAccount", kakaoAccount);
+        ReflectionTestUtils.setField(mockOAuthInfo, "id", 12345L);
+
+        memberRepository.saveAndFlush(createMember("testnick", "mock@kakao.com", 12345L));
+        when(requestOAuthInfoService.request(any(), any())).thenReturn(mockOAuthInfo);
+
+        long countBefore = memberRepository.count();
+
+        // when & then
+        mockMvc.perform(post("/api/v1/auth/oauth/tokens/kakao")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Origin", "http://localhost:5173")
+                .content(objectMapper.writeValueAsString(loginParams)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("로그인에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode").value(200))
+            .andExpect(jsonPath("$.data.accessToken").exists())
+            .andExpect(jsonPath("$.data.userInfo").exists());
+
+        long countAfter = memberRepository.count();
+        assertThat(countBefore).isEqualTo(countAfter);
     }
 
     @Test
