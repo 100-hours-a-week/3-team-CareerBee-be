@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
@@ -26,6 +27,7 @@ import org.locationtech.jts.geom.Point;
 
 @Entity
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @SQLRestriction("deleted_at is NULL")
@@ -51,7 +53,7 @@ public class Company {
     @Column(length = 500)
     private String markerUrl;
 
-    @Column(length = 250)
+    @Column(length = 300)
     private String description;
 
     @Column(length = 50)

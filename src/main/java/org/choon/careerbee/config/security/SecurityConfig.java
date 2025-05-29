@@ -1,5 +1,6 @@
 package org.choon.careerbee.config.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final TokenRepository tokenRepository;
+    private final ObjectMapper objectMapper;
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -40,6 +42,8 @@ public class SecurityConfig {
                 "http://127.0.0.1:5500",
                 "https://www.careerbee.co.kr",
                 "https://ai.careerbee.co.kr",
+                "https://dev.careerbee.co.kr",
+                "https://dev-ai.careerbee.co.kr",
                 "https://www.junjo.o-r.kr"
             ));
             config.setAllowCredentials(true);
@@ -60,9 +64,10 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/health-check",
                     "/api/v1/companies",
-                    "/api/v1/auth/oauth",
+                    "/api/v1/auth/oauth/**",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/actuator/**"
                 )
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
                 .requestMatchers("/users/**").hasRole("MEMBER")
@@ -73,7 +78,7 @@ public class SecurityConfig {
             // 커스텀 JWT 핸들러 및 엔트리 포인트를 사용하기 위해 httpBasic disable
             .httpBasic(AbstractHttpConfigurer::disable)
             // JWT Filter 를 필터체인에 끼워넣어줌
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenRepository),
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenRepository, objectMapper),
                 UsernamePasswordAuthenticationFilter.class)
             .build();
     }

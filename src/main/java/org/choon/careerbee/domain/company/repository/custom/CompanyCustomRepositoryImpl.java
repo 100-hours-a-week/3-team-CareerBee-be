@@ -23,6 +23,7 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
@@ -194,7 +195,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
                 )
             )
             .from(company)
-            .where(company.name.like("%" + keyword + "%"))
+            .where(company.name.like("%" + keyword + "%", '!'))
             .limit(8)
             .fetch();
 
@@ -203,7 +204,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
 
     @Override
     public CompanyMarkerInfo fetchCompanyMarkerInfo(Long companyId) {
-        return queryFactory.select(
+        CompanyMarkerInfo result = queryFactory.select(
                 Projections.constructor(
                     CompanyMarkerInfo.class,
                     company.id,
@@ -211,7 +212,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
                     company.businessType,
                     company.recruitingStatus,
                     Projections.constructor(
-                        CompanyRangeSearchResp.LocationInfo.class,
+                        LocationInfo.class,
                         Expressions.numberTemplate(Double.class, "ST_X({0})", company.geoPoint),
                         Expressions.numberTemplate(Double.class, "ST_Y({0})", company.geoPoint)
                     )
@@ -220,6 +221,12 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .from(company)
             .where(company.id.eq(companyId))
             .fetchOne();
+
+        if (result == null) {
+            throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
+        }
+
+        return result;
     }
 
     private BooleanExpression inDistance(String point, Integer radius) {

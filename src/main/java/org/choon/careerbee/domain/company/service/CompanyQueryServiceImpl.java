@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -61,7 +62,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     @Override
     public CompanySearchResp fetchMatchingCompaniesByKeyword(String keyword) {
-        return companyRepository.fetchMatchingCompaniesByKeyword(keyword);
+        return companyRepository.fetchMatchingCompaniesByKeyword(escapeLike(keyword));
     }
 
     @Override
@@ -81,5 +82,15 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public Company findById(Long companyId) {
         return companyRepository.findById(companyId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+    }
+
+    private String escapeLike(String keyword) {
+        return keyword.strip()
+            .chars()
+            .mapToObj(c -> {
+                char ch = (char) c;
+                return (ch == '!' || ch == '_' || ch == '%') ? "!" + ch : String.valueOf(ch);
+            })
+            .collect(Collectors.joining());
     }
 }

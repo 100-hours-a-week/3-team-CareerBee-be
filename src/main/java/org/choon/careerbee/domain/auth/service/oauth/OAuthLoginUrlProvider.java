@@ -6,5 +6,5 @@ public interface OAuthLoginUrlProvider {
 
     OAuthProvider getOAuthProvider();
 
-    String getLoginUrl();
+    String getLoginUrlByOrigin(String origin);
 }

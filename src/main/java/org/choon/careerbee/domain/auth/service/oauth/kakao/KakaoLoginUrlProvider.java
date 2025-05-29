@@ -11,8 +11,14 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     @Value("${oauth.kakao.client-id}")
     private String clientId;
 
-    @Value("${oauth.kakao.redirect-uri}")
-    private String redirectUri;
+    @Value("${oauth.kakao.prod-redirect-uri}")
+    private String prodRedirectUri;
+
+    @Value("${oauth.kakao.dev-redirect-uri}")
+    private String devRedirectUri;
+
+    @Value("${oauth.kakao.local-redirect-uri}")
+    private String localRedirectUri;
 
     @Value("${oauth.kakao.auth-uri}")
     private String authUri;
@@ -23,8 +29,16 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     }
 
     @Override
-    public String getLoginUrl() {
-        return String.format("%s/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s",
-            authUri, clientId, redirectUri);
+    public String getLoginUrlByOrigin(String origin) {
+        String redirectUri = switch (origin) {
+            case "http://localhost:5173" -> localRedirectUri;
+            case "https://dev.careerbee.co.kr" -> devRedirectUri;
+            default -> prodRedirectUri;
+        };
+
+        return String.format(
+            "%s/oauth/authorize?response_type=code&client_id=%s&redirect_uri=%s",
+            authUri, clientId, redirectUri
+        );
     }
 }

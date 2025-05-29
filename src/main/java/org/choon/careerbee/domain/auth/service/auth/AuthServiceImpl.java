@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.auth.service.auth;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -47,17 +48,17 @@ public class AuthServiceImpl implements AuthService {
 
     private final MemberRepository memberRepository; // Todo : 추후 Redis로 이전시 없앨 예정. (개발 편의성을 위해 둠)
 
-
     @Override
-    public OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider) {
+    public OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider, String origin) {
         OAuthProvider provider = OAuthProvider.fromString(oauthProvider);
 
-        return new OAuthLoginUrlResp(providerFactory.getProvider(provider).getLoginUrl());
+        return new OAuthLoginUrlResp(
+            providerFactory.getProvider(provider).getLoginUrlByOrigin(origin));
     }
 
     @Override
-    public TokenAndUserInfo login(OAuthLoginParams oAuthLoginParams) {
-        OAuthInfoResponse oAuthInfo = requestOAuthInfoService.request(oAuthLoginParams);
+    public TokenAndUserInfo login(OAuthLoginParams oAuthLoginParams, String origin) {
+        OAuthInfoResponse oAuthInfo = requestOAuthInfoService.request(oAuthLoginParams, origin);
 
         // Todo : 추후(Redis로 변경)에는 Member 엔티티 보단 memberId만 있으면 되므로 리팩토링시 변경 코드
         // Todo : forceJoin의 리턴타입도 Long으로 저장된 member의 id를 리턴해줘야함.
@@ -76,9 +77,10 @@ public class AuthServiceImpl implements AuthService {
             return newRefreshToken;
         });
 
+        // Todo : 추후 새 알림이 있다면 해당 코드 변경
         return new TokenAndUserInfo(
             new AuthTokens(accessToken, refreshToken),
-            new UserInfo(member.getPoints(), true)
+            new UserInfo(member.getPoints(), false)
         );
     }
 
@@ -98,7 +100,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthTokens reissue(String refreshToken) {
-        TokenClaimInfo tokenClaims = jwtUtil.getTokenClaims(refreshToken);
+        TokenClaimInfo tokenClaims;
+        try {
+            tokenClaims = jwtUtil.getTokenClaims(refreshToken);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_EXPIRED);
+        }
 
         Member findMember = memberQueryService.findById(tokenClaims.id());
         Token refreshTokenInRDB = tokenRepository
