@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
 
+    private static final int RECRUITING_STATUS_CLOSED = 0;
     private static final DateTimeFormatter SARAMIN_DT_FMT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
@@ -80,7 +81,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     private void persistNewRecruitmentsAndNotify(SaraminRecruitingResp apiResp,
         boolean isOpenRecruitment) {
         for (SaraminRecruitingResp.Job job : apiResp.jobs().job()) {
-            if (job.active() == 0) {
+            if (job.active() == RECRUITING_STATUS_CLOSED) {
                 continue; // 마감된 공고라면 continue
             }
 
