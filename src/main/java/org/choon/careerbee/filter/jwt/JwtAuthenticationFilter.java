@@ -81,7 +81,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/favicon.ico",
             "/api/v1/companies",
             "/swagger-ui",
-            "/v3/api-docs"
+            "/v3/api-docs",
+            "/actuator",
         };
 
         String path = request.getRequestURI();

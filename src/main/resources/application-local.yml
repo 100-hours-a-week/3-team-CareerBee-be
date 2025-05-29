@@ -33,3 +33,14 @@ server:
     session:
       cookie:
         domain: ${COOKIE_DOMAIN}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus  # 노출할 엔드포인트 지정
+  endpoint:
+    health:
+      show-details: always  # 상세 정보 포함
+  server:
+    port: 8081
