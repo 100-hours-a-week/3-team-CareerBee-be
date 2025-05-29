@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +90,12 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public Optional<Company> findBySaraminName(String name) {
         return companyRepository.findBySaraminName(name);
     }
-  
+
+    @Override
+    public List<Company> findBySaraminNameIn(List<String> companyNames) {
+        return companyRepository.findBySaraminNameIn(companyNames);
+    }
+
     private String escapeLike(String keyword) {
         return keyword.strip()
             .chars()

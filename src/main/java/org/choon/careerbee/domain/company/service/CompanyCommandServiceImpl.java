@@ -3,7 +3,13 @@ package org.choon.careerbee.domain.company.service;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -110,6 +116,71 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
                 // 2. 해당 기업을 관심기업으로 등록한 유저들 조회
                 // 3. 생성한 알림을 유저들에게 발송
             }
+        }
+    }
+
+    private void optimizationPersistNewRecruitmentsAndNotify(
+        SaraminRecruitingResp apiResp,
+        boolean isOpenRecruitment
+    ) {
+        List<SaraminRecruitingResp.Job> jobs = apiResp.jobs().job();
+
+        // 1. ID, 회사명 추출
+        List<String> companyNames = jobs.stream()
+            .map(j -> j.company().detail().name())
+            .distinct()
+            .collect(Collectors.toList());
+
+        List<Long> jobIds = jobs.stream()
+            .map(SaraminRecruitingResp.Job::id)
+            .collect(Collectors.toList());
+
+        // 2. DB에서 한 번에 조회
+        List<Company> companies = companyQueryService.findBySaraminNameIn(companyNames);
+        Map<String, Company> companyMap = companies.stream()
+            .collect(Collectors.toMap(Company::getSaraminName, Function.identity()));
+
+        // 이미 등록된 공고 ID만 꺼내오기 (엔티티가 아닌 ID만)
+        Set<Long> existingIds = recruitmentRepository
+            .findRecruitingIdByRecruitingIdIn(jobIds)
+            .stream().collect(Collectors.toSet());
+
+        // 3. 메모리 필터링 & 엔티티 생성
+        List<Recruitment> toSave = new ArrayList<>();
+        for (SaraminRecruitingResp.Job job : jobs) {
+            if (job.active() == RECRUITING_STATUS_CLOSED) {
+                continue;
+            }
+
+            Company company = companyMap.get(job.company().detail().name());
+            if (company == null) {
+                continue;
+            }
+            if (existingIds.contains(job.id())) {
+                continue;
+            }
+
+            // 상태 변경
+            company.changeRecruitingStatus(RecruitingStatus.ONGOING);
+
+            toSave.add(Recruitment.from(
+                company,
+                job.id(),
+                job.url(),
+                job.position().title(),
+                parseSaraminDate(job.postingDate()),
+                parseSaraminDate(job.expirationDate())
+            ));
+        }
+
+        if (!toSave.isEmpty()) {
+            // 4. Batch Insert
+            recruitmentRepository.saveAll(toSave);
+        }
+
+        // 5. 알림 이벤트 발행
+        if (isOpenRecruitment) {
+
         }
     }
 
