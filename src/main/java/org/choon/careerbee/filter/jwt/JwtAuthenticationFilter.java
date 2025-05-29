@@ -1,5 +1,6 @@
 package org.choon.careerbee.filter.jwt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
@@ -28,14 +30,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final TokenRepository tokenRepository;
+    private final ObjectMapper objectMapper;
 
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
         FilterChain filterChain) throws ServletException, IOException {
         String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
 
         if (Objects.equals(resolveToken, "")) {
-            request.getRequestDispatcher("/exception/entrypoint/nullToken")
-                .forward(request, response);
+            writeErrorResponse(response, CustomResponseStatus.NULL_JWT);
             return;
         }
 
@@ -45,22 +47,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (CustomException e) {
-            request.getRequestDispatcher("/exception/entrypoint/logout").forward(request, response);
+            writeErrorResponse(response, CustomResponseStatus.LOGOUT_MEMBER);
         } catch (ExpiredJwtException e) {
-            request.getRequestDispatcher("/exception/entrypoint/expiredToken")
-                .forward(request, response);
+            writeErrorResponse(response, CustomResponseStatus.EXPIRED_JWT);
         } catch (JwtException | IllegalArgumentException e) {
-            request.getRequestDispatcher("/exception/entrypoint/badToken")
-                .forward(request, response);
+            writeErrorResponse(response, CustomResponseStatus.BAD_JWT);
         }
     }
 
-    // 로그아웃한 사용자가 접근하는지 파악. -> 접근할경우 예외발생
     private void handleBlacklistedToken(String resolveToken) throws CustomException {
         if (tokenRepository.findByTokenValueAndStatus(resolveToken, TokenStatus.BLACK)
             .isPresent()) {
             throw new CustomException(CustomResponseStatus.LOGOUT_MEMBER);
         }
+    }
+
+    private void writeErrorResponse(HttpServletResponse response, CustomResponseStatus status)
+        throws IOException {
+        response.setStatus(status.getHttpStatusCode());
+        response.setContentType("application/json;charset=UTF-8");
+
+        String responseBody = objectMapper.writeValueAsString(CommonResponse.createError(status));
+        response.getWriter().write(responseBody);
     }
 
     @Override

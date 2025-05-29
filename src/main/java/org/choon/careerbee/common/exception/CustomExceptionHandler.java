@@ -14,6 +14,7 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,7 +43,8 @@ public class CustomExceptionHandler {
         MethodArgumentTypeMismatchException.class,
         MissingPathVariableException.class,
         MissingServletRequestParameterException.class,
-        MissingRequestHeaderException.class
+        MissingRequestHeaderException.class,
+        MissingRequestCookieException.class
     })
     public ResponseEntity<CommonResponse<String>> handleTypeMismatch(Exception e) {
         return ResponseEntity
