@@ -5,10 +5,12 @@ import static org.choon.careerbee.fixture.TokenFixture.createToken;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
@@ -71,12 +73,6 @@ class AuthControllerTest {
 
         testAccessToken =
             "Bearer " + jwtUtil.createToken(testMember.getId(), TokenType.ACCESS_TOKEN);
-//        testRefreshTokenValue = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
-//
-//        testRefreshToken = tokenRepository.saveAndFlush(
-//            createToken(testMember, testRefreshTokenValue, TokenStatus.LIVE)
-//        );
-
     }
 
     @Test
@@ -140,4 +136,51 @@ class AuthControllerTest {
                 CustomResponseStatus.NULL_JWT.getHttpStatusCode()));
     }
 
+    @Test
+    @DisplayName("토큰 재발급 요청이 성공적으로 처리된다")
+    void reissue_success() throws Exception {
+        // given
+        String validRefreshToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
+        tokenRepository.saveAndFlush(createToken(testMember, validRefreshToken, TokenStatus.LIVE));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/auth/reissue")
+                .cookie(new Cookie("refreshToken", validRefreshToken))
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("토큰 재발급에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode").value(200))
+            .andExpect(jsonPath("$.data.newAccessToken").isNotEmpty())
+            .andExpect(cookie().exists("refreshToken"));
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 실패 - 쿠키 누락")
+    void reissue_shouldReturn400_whenCookieMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reissue")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 실패 - 토큰 불일치")
+    void reissue_shouldReturn401_whenTokenMismatch() throws Exception {
+        // given
+        String validRefreshToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
+        tokenRepository.saveAndFlush(createToken(testMember, validRefreshToken, TokenStatus.LIVE));
+        String fakeToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
+
+        mockMvc.perform(post("/api/v1/auth/reissue")
+                .cookie(new Cookie("refreshToken", fakeToken))
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getHttpStatusCode()));
+    }
 }

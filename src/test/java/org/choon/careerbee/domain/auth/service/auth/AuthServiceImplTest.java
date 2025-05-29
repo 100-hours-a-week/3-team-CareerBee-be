@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.auth.service.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.choon.careerbee.fixture.TokenFixture.createToken;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -10,9 +11,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.jwt.TokenClaimInfo;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
 import org.choon.careerbee.domain.auth.entity.Token;
@@ -24,6 +27,7 @@ import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProviderFactor
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.util.jwt.JwtUtil;
+import org.choon.careerbee.util.jwt.TokenGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +60,8 @@ class AuthServiceImplTest {
     @Mock
     private TokenRepository tokenRepository;
 
+    @Mock
+    private TokenGenerator tokenGenerator;
 
     @Test
     @DisplayName("소셜 로그인 URL 조회 성공 - 카카오")
@@ -162,5 +168,91 @@ class AuthServiceImplTest {
         assertThatThrownBy(() -> authService.logout(accessToken))
             .isInstanceOf(CustomException.class)
             .hasMessage(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage());
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 성공")
+    void reissue_success() {
+        // given
+        Long memberId = 1L;
+        Member member = createMember("nickname", "email@test.com", memberId);
+        ReflectionTestUtils.setField(member, "id", 1L);
+
+        String oldRefreshToken = "old-refresh-token";
+        TokenClaimInfo tokenClaimInfo = new TokenClaimInfo(memberId);
+        Token storedToken = createToken(member, oldRefreshToken, TokenStatus.LIVE);
+        AuthTokens newAuthTokens = new AuthTokens("new-access-token", "new-refresh-token");
+
+        when(jwtUtil.getTokenClaims(oldRefreshToken)).thenReturn(tokenClaimInfo);
+        when(memberQueryService.findById(anyLong())).thenReturn(member);
+        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
+            .thenReturn(Optional.of(storedToken));
+        when(tokenGenerator.generateToken(anyLong())).thenReturn(newAuthTokens);
+
+        // when
+        AuthTokens result = authService.reissue(oldRefreshToken);
+
+        // then
+        assertThat(result.accessToken()).isEqualTo("new-access-token");
+        assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
+    }
+
+    @Test
+    @DisplayName("재발급 실패 - 리프레시 토큰 만료")
+    void reissue_shouldThrow_whenTokenExpired() {
+        // given
+        String expiredRefreshToken = "expired-token";
+        when(jwtUtil.getTokenClaims(expiredRefreshToken)).thenThrow(
+            new ExpiredJwtException(null, null, "만료"));
+
+        // when & then
+        assertThatThrownBy(() -> authService.reissue(expiredRefreshToken))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.REFRESH_TOKEN_EXPIRED.getMessage());
+    }
+
+    @Test
+    @DisplayName("재발급 실패 - 저장된 리프레시 토큰이 없음")
+    void reissue_shouldThrow_whenNoStoredRefreshToken() {
+        // given
+        Member member = createMember("nickname", "email@test.com", 1234L);
+        ReflectionTestUtils.setField(member, "id", 1L);
+
+        String refreshToken = "refresh-token";
+        TokenClaimInfo tokenClaimInfo = new TokenClaimInfo(member.getId());
+
+        when(jwtUtil.getTokenClaims(anyString())).thenReturn(tokenClaimInfo);
+        when(memberQueryService.findById(anyLong())).thenReturn(member);
+        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
+            .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> authService.reissue(refreshToken))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND.getMessage());
+    }
+
+    @Test
+    @DisplayName("재발급 실패 - 요청한 리프레시 토큰과 저장된 토큰 불일치")
+    void reissue_shouldThrow_whenTokenNotMatch() {
+        // given
+        Member member = createMember("nickname", "email@test.com", 1234L);
+        ReflectionTestUtils.setField(member, "id", 1l);
+
+        String providedRefreshToken = "provided-token";
+        String actualStoredToken = "different-token";
+
+        TokenClaimInfo tokenClaimInfo = new TokenClaimInfo(member.getId());
+        Token tokenInDB = createToken(member, actualStoredToken, TokenStatus.LIVE);
+
+        when(jwtUtil.getTokenClaims(providedRefreshToken)).thenReturn(tokenClaimInfo);
+        when(memberQueryService.findById(anyLong())).thenReturn(member);
+        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
+            .thenReturn(Optional.of(tokenInDB));
+
+        // when & then
+        assertThatThrownBy(() -> authService.reissue(providedRefreshToken))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getMessage());
     }
 }
