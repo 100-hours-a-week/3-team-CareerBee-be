@@ -31,3 +31,8 @@ server:
     session:
       cookie:
         domain: https://test.co.kr
+
+saramin:
+  api:
+    base-url: https://oapi.saramin.co.kr
+    access-key: 1231242342504
