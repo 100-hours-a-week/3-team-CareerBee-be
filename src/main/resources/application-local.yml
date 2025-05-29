@@ -43,4 +43,4 @@ management:
     health:
       show-details: always  # 상세 정보 포함
   server:
-    port: 8081
+    port: 8080
