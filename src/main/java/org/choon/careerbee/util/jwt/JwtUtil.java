@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts.SIG;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import java.util.Date;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -97,6 +98,7 @@ public class JwtUtil {
             .claim(ID, subject)
             .issuedAt(new Date(System.currentTimeMillis()))
             .expiration(new Date(System.currentTimeMillis() + expirationTime))
+            .id(UUID.randomUUID().toString())
             .signWith(getSigningKey(SECRET_KEY), SIG.HS256)
             .compact();
     }
