@@ -1,5 +1,6 @@
 package org.choon.careerbee.config.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final TokenRepository tokenRepository;
+    private final ObjectMapper objectMapper;
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -75,7 +77,7 @@ public class SecurityConfig {
             // 커스텀 JWT 핸들러 및 엔트리 포인트를 사용하기 위해 httpBasic disable
             .httpBasic(AbstractHttpConfigurer::disable)
             // JWT Filter 를 필터체인에 끼워넣어줌
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenRepository),
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenRepository, objectMapper),
                 UsernamePasswordAuthenticationFilter.class)
             .build();
     }
