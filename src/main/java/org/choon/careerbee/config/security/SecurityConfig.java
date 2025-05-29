@@ -66,7 +66,8 @@ public class SecurityConfig {
                     "/api/v1/companies",
                     "/api/v1/auth/oauth/**",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/actuator/**"
                 )
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
                 .requestMatchers("/users/**").hasRole("MEMBER")

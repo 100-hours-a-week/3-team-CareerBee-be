@@ -93,6 +93,10 @@ dependencies {
 
     // Sentry SDK
     implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.5.0'
+
+    // Spring Actuator + Prometheus
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 sentry {
