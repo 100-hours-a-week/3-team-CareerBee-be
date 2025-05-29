@@ -38,8 +38,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (Objects.equals(resolveToken, "")) {
             writeErrorResponse(response, CustomResponseStatus.NULL_JWT);
-//            request.getRequestDispatcher("/exception/entrypoint/nullToken")
-//                .forward(request, response);
             return;
         }
 
@@ -49,17 +47,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (CustomException e) {
-            request.getRequestDispatcher("/exception/entrypoint/logout").forward(request, response);
+            writeErrorResponse(response, CustomResponseStatus.LOGOUT_MEMBER);
         } catch (ExpiredJwtException e) {
-            request.getRequestDispatcher("/exception/entrypoint/expiredToken")
-                .forward(request, response);
+            writeErrorResponse(response, CustomResponseStatus.EXPIRED_JWT);
         } catch (JwtException | IllegalArgumentException e) {
-            request.getRequestDispatcher("/exception/entrypoint/badToken")
-                .forward(request, response);
+            writeErrorResponse(response, CustomResponseStatus.BAD_JWT);
         }
     }
 
-    // 로그아웃한 사용자가 접근하는지 파악. -> 접근할경우 예외발생
     private void handleBlacklistedToken(String resolveToken) throws CustomException {
         if (tokenRepository.findByTokenValueAndStatus(resolveToken, TokenStatus.BLACK)
             .isPresent()) {
