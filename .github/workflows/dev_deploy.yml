@@ -24,6 +24,25 @@ jobs:
         run: |
           source ./cicd-variables.sh
 
+          echo "::add-mask::$SSH_KEY"
+          echo "::add-mask::$SSH_KEY_BASE64"
+          echo "::add-mask::$AWS_SERVER_IP"
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "::add-mask::$AWS_DEFAULT_REGION"
+          echo "::add-mask::$S3_BUCKET_INFRA"
+          echo "::add-mask::$DB_URL"
+          echo "::add-mask::$DB_USERNAME"
+          echo "::add-mask::$DB_PASSWORD"
+          echo "::add-mask::$JWT_SECRETS"
+          echo "::add-mask::$KAKAO_CLIENT_ID"
+          echo "::add-mask::$KAKAO_PROD_REDIRECT_URI"
+          echo "::add-mask::$KAKAO_DEV_REDIRECT_URI"
+          echo "::add-mask::$KAKAO_LOCAL_REDIRECT_URI"
+          echo "::add-mask::$COOKIE_DOMAIN"
+          echo "::add-mask::$SENTRY_DSN"
+          echo "::add-mask::$SENTRY_AUTH_TOKEN"
+
           echo "SSH_KEY=$SSH_KEY" >> $GITHUB_ENV
           echo "SSH_KEY_BASE64=$SSH_KEY_BASE64" >> $GITHUB_ENV
           echo "AWS_SERVER_IP=$AWS_SERVER_IP" >> $GITHUB_ENV
@@ -99,6 +118,12 @@ jobs:
               -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
               -DSENTRY_DSN="${SENTRY_DSN}" \
               -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+              --add-opens java.base/java.lang=ALL-UNNAMED \
+              --add-exports java.base/sun.net=ALL-UNNAMED \
+              -Djdk.attach.allowAttachSelf=true \
+              -javaagent:/home/ubuntu/scouter/agent.java/scouter.agent.jar \
+              -Dscouter.config=/home/ubuntu/scouter/agent.java/conf/scouter.conf \
+              -Dobj_name=careerbee-api \
               -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
           EOF
 
