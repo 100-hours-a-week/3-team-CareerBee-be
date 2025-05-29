@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.auth.controller;
 
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.choon.careerbee.fixture.TokenFixture.createToken;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -65,9 +67,16 @@ class AuthControllerTest {
             .apply(springSecurity())
             .build();
 
-        testMember = memberRepository.save(createMember("testnick", "test@test.com", 1L));
+        testMember = memberRepository.saveAndFlush(createMember("testnick", "test@test.com", 1L));
+
         testAccessToken =
             "Bearer " + jwtUtil.createToken(testMember.getId(), TokenType.ACCESS_TOKEN);
+//        testRefreshTokenValue = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
+//
+//        testRefreshToken = tokenRepository.saveAndFlush(
+//            createToken(testMember, testRefreshTokenValue, TokenStatus.LIVE)
+//        );
+
     }
 
     @Test
@@ -105,12 +114,17 @@ class AuthControllerTest {
     @DisplayName("로그아웃 요청이 성공적으로 처리된다")
     void logout_success() throws Exception {
         // given
+        String testRefreshTokenValue = jwtUtil.createToken(testMember.getId(),
+            TokenType.REFRESH_TOKEN);
+        tokenRepository.saveAndFlush(
+            createToken(testMember, testRefreshTokenValue, TokenStatus.LIVE)
+        );
 
         // when & then
         mockMvc.perform(post("/api/v1/auth/logout")
                 .header("Authorization", testAccessToken)
                 .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk())
+            .andExpect(status().isNoContent())
             .andExpect(jsonPath("$.data").doesNotExist());
     }
 
