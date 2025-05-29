@@ -41,6 +41,9 @@ public class Company {
     @Column(length = 50, nullable = false, unique = true)
     private String name;
 
+    @Column(length = 50)
+    private String saraminName;
+
     @Column(columnDefinition = "POINT SRID 4326")
     private Point geoPoint;
 
@@ -106,4 +109,8 @@ public class Company {
     @Type(JsonType.class)
     @Column(name = "benefits", columnDefinition = "longtext")
     private Map<String, List<String>> benefits = new HashMap<>();
+
+    public void changeRecruitingStatus(RecruitingStatus status) {
+        this.recruitingStatus = status;
+    }
 }

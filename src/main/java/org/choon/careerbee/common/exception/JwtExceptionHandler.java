@@ -37,4 +37,3 @@ public class JwtExceptionHandler {
         throw new CustomException(CustomResponseStatus.LOGOUT_MEMBER);
     }
 }
-

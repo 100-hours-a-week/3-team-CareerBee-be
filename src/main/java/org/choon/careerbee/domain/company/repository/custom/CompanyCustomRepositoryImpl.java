@@ -229,6 +229,18 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         return result;
     }
 
+    @Override
+    public List<Company> findBySaraminNameIn(List<String> companyNames) {
+        if (companyNames == null || companyNames.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return queryFactory
+            .selectFrom(company)
+            .where(company.saraminName.in(companyNames))
+            .fetch();
+    }
+
     private BooleanExpression inDistance(String point, Integer radius) {
         return radius != null
             ? Expressions.booleanTemplate(
