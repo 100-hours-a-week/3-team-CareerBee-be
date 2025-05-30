@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.competition.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -10,7 +11,9 @@ import java.time.LocalDateTime;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.competition.domain.Competition;
+import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -43,6 +46,9 @@ class CompetitionControllerTest {
 
     @Autowired
     private CompetitionRepository competitionRepository;
+
+    @Autowired
+    private CompetitionParticipantRepository competitionParticipantRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -180,6 +186,56 @@ class CompetitionControllerTest {
                 .header("Authorization", accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("대회 참여 여부 조회 - 참여한 경우 true 반환")
+    void checkCompetitionParticipation_participated() throws Exception {
+        // given
+        competitionParticipantRepository.save(
+            CompetitionParticipant.of(testMember, testCompetition)
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/{competitionId}", testCompetition.getId())
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.isParticipant").value(true))
+            .andExpect(jsonPath("$.message").value("대회 참여 여부 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("대회 참여 여부 조회 - 참여하지 않은 경우 false 반환")
+    void checkCompetitionParticipation_notParticipated() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/{competitionId}", testCompetition.getId())
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.isParticipant").value(false))
+            .andExpect(jsonPath("$.message").value("대회 참여 여부 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("대회 참여 여부 조회 - 존재하지 않는 대회일 경우 404 반환")
+    void checkCompetitionParticipation_notExistCompetition() throws Exception {
+        // given
+        Long invalidCompetitionId = testCompetition.getId() + 100L;
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/{competitionId}", invalidCompetitionId)
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.message")
                 .value(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
