@@ -34,8 +34,15 @@ public class CompetitionParticipant extends BaseEntity {
     private Competition competition;
 
     @Builder
-    public CompetitionParticipant(Member member, Competition competition) {
+    private CompetitionParticipant(Member member, Competition competition) {
         this.member = member;
         this.competition = competition;
+    }
+
+    public static CompetitionParticipant of(Member member, Competition competition) {
+        return CompetitionParticipant.builder()
+            .member(member)
+            .competition(competition)
+            .build();
     }
 }
