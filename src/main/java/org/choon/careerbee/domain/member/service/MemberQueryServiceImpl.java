@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
@@ -34,5 +35,10 @@ public class MemberQueryServiceImpl implements MemberQueryService {
     public Member findById(Long memberId) {
         return memberRepository.findById(memberId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
+    }
+
+    @Override
+    public WishCompaniesResp fetchWishCompanies(Long id) {
+        return null;
     }
 }

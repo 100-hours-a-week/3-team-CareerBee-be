@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.member.service;
 
 import java.util.Optional;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 
 public interface MemberQueryService {
@@ -13,4 +14,6 @@ public interface MemberQueryService {
     MyInfoResp getMyInfoByMemberId(Long memberId);
 
     Member findById(Long memberId);
+
+    WishCompaniesResp fetchWishCompanies(Long id);
 }

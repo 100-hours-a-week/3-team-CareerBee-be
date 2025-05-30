@@ -10,6 +10,7 @@ import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +45,21 @@ public class MemberController {
             response,
             CustomResponseStatus.SUCCESS,
             "유저 정보 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/wish-companies")
+    public ResponseEntity<CommonResponse<WishCompaniesResp>> fetchWishCompanies(
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        WishCompaniesResp response = queryService.fetchWishCompanies(
+            principalDetails.getId()
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "관심 기업 목록 조회에 성공하였습니다."
         );
     }
 }
