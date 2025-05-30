@@ -4,11 +4,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.competition.domain.Competition;
+import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -107,5 +109,81 @@ class CompetitionControllerTest {
                 .value(CustomResponseStatus.COMPETITION_ALREADY_JOIN.getHttpStatusCode()))
             .andExpect(jsonPath("$.message")
                 .value(CustomResponseStatus.COMPETITION_ALREADY_JOIN.getMessage()));
+    }
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Test
+    @DisplayName("대회 결과 제출 - 성공")
+    void submitCompetitionResult_success() throws Exception {
+        // given: 대회에 먼저 참가
+        mockMvc.perform(post("/api/v1/competitions/{competitionId}", testCompetition.getId())
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent());
+
+        CompetitionResultSubmitReq request = new CompetitionResultSubmitReq((short) 3, 598);
+
+        // when & then
+        mockMvc.perform(
+                post("/api/v1/competitions/{competitionId}/results", testCompetition.getId())
+                    .header("Authorization", accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.message").value("대회 제출에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode").value(204));
+    }
+
+    @Test
+    @DisplayName("대회 결과 제출 - 이미 제출한 경우")
+    void submitCompetitionResult_alreadySubmitted() throws Exception {
+        // given: 대회 참가 + 결과 1회 제출
+        mockMvc.perform(post("/api/v1/competitions/{competitionId}", testCompetition.getId())
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent());
+
+        CompetitionResultSubmitReq request = new CompetitionResultSubmitReq((short) 2, 420);
+
+        mockMvc.perform(
+                post("/api/v1/competitions/{competitionId}/results", testCompetition.getId())
+                    .header("Authorization", accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent());
+
+        // when & then
+        mockMvc.perform(
+                post("/api/v1/competitions/{competitionId}/results", testCompetition.getId())
+                    .header("Authorization", accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.RESULT_ALREADY_SUBMIT.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.RESULT_ALREADY_SUBMIT.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("대회 결과 제출 - 존재하지 않는 대회")
+    void submitCompetitionResult_competitionNotFound() throws Exception {
+        // given
+        Long invalidCompetitionId = testCompetition.getId() + 100L;
+
+        CompetitionResultSubmitReq request = new CompetitionResultSubmitReq((short) 3, 123);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/competitions/{competitionId}/results", invalidCompetitionId)
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
     }
 }
