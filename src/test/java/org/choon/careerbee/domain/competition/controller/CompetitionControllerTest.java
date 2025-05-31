@@ -1,5 +1,7 @@
 package org.choon.careerbee.domain.competition.controller;
 
+import static org.choon.careerbee.fixture.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.ProblemChoiceFixture.createProblemChoice;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -12,9 +14,12 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
+import org.choon.careerbee.domain.competition.domain.problem.CompetitionProblem;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionProblemRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
+import org.choon.careerbee.domain.competition.repository.ProblemChoiceRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.fixture.CompetitionFixture;
@@ -49,6 +54,12 @@ class CompetitionControllerTest {
 
     @Autowired
     private CompetitionParticipantRepository competitionParticipantRepository;
+
+    @Autowired
+    private CompetitionProblemRepository competitionProblemRepository;
+
+    @Autowired
+    private ProblemChoiceRepository problemChoiceRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -241,5 +252,44 @@ class CompetitionControllerTest {
                 .value(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("대회 문제 조회 - 문제와 보기 정상 조회")
+    void fetchCompetitionProblems_success() throws Exception {
+        // given: 문제와 보기를 직접 저장
+        CompetitionProblem problem = competitionProblemRepository.save(
+            createProblem(testCompetition, "문제 제목", "문제 설명", "문제 해설", (short) 2)
+        );
+
+        problemChoiceRepository.save(createProblemChoice(problem, "보기 1", (short) 1));
+        problemChoiceRepository.save(createProblemChoice(problem, "보기 2", (short) 2));
+        problemChoiceRepository.save(createProblemChoice(problem, "보기 3", (short) 3));
+
+        // when & then
+        mockMvc.perform(get("/api/v1/competitions/{competitionId}/problems", testCompetition.getId())
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("대회 문제 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode").value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.data.problems[0].title").value("문제 제목"))
+            .andExpect(jsonPath("$.data.problems[0].choices.length()").value(3))
+            .andExpect(jsonPath("$.data.problems[0].choices[1].content").value("보기 2"));
+    }
+
+    @Test
+    @DisplayName("대회 문제 조회 - 존재하지 않는 대회")
+    void fetchCompetitionProblems_competitionNotFound() throws Exception {
+        // given
+        Long invalidId = testCompetition.getId() + 999L;
+
+        // when & then
+        mockMvc.perform(get("/api/v1/competitions/{competitionId}/problems", invalidId)
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
     }
 }
