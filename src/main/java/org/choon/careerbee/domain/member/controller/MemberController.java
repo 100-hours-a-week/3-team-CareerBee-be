@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -45,21 +46,6 @@ public class MemberController {
             response,
             CustomResponseStatus.SUCCESS,
             "유저 정보 조회에 성공하였습니다."
-        );
-    }
-
-    @GetMapping("/wish-companies")
-    public ResponseEntity<CommonResponse<WishCompaniesResp>> fetchWishCompanies(
-        @AuthenticationPrincipal PrincipalDetails principalDetails
-    ) {
-        WishCompaniesResp response = queryService.fetchWishCompanies(
-            principalDetails.getId()
-        );
-
-        return CommonResponseEntity.ok(
-            response,
-            CustomResponseStatus.SUCCESS,
-            "관심 기업 목록 조회에 성공하였습니다."
         );
     }
 }
