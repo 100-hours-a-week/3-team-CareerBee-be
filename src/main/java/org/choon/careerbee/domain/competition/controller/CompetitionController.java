@@ -7,6 +7,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.service.CompetitionCommandService;
 import org.choon.careerbee.domain.competition.service.CompetitionQueryService;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,19 @@ public class CompetitionController {
             response,
             CustomResponseStatus.SUCCESS,
             "대회 참여 여부 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("competitions/{competitionId}/problems")
+    public ResponseEntity<CommonResponse<CompetitionProblemResp>> fetchCompetitionProblems(
+        @PathVariable Long competitionId
+    ) {
+        CompetitionProblemResp response = queryService.fetchProblems(competitionId);
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "대회 문제 조회에 성공하였습니다."
         );
     }
 }
