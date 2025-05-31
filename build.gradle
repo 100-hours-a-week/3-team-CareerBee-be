@@ -41,6 +41,10 @@ spotbugs {
 group = 'org.choon'
 version = '0.0.1-SNAPSHOT'
 
+bootJar {
+    archiveFileName = "careerbee-api.jar"
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
