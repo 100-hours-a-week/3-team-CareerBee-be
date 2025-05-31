@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.competition.domain.Competition;
@@ -39,4 +40,29 @@ public class CompetitionProblem {
 
     @Column(nullable = false)
     private Short answer;
+
+    @Builder
+    private CompetitionProblem(
+        Competition competition, String title, String description,
+        String solution, Short answer
+    ) {
+        this.competition = competition;
+        this.title = title;
+        this.description = description;
+        this.solution = solution;
+        this.answer = answer;
+    }
+
+    public static CompetitionProblem of(
+        Competition competition, String title, String description,
+        String solution, Short answer
+    ) {
+        return CompetitionProblem.builder()
+            .competition(competition)
+            .title(title)
+            .description(description)
+            .solution(solution)
+            .answer(answer)
+            .build();
+    }
 }

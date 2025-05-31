@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
@@ -34,4 +35,18 @@ public class ProblemChoice extends BaseEntity {
     @Column(name = "choice_order", nullable = false)
     private Short choiceOrder;
 
+    @Builder
+    private ProblemChoice(CompetitionProblem competitionProblem, String content, Short choiceOrder) {
+        this.competitionProblem = competitionProblem;
+        this.content = content;
+        this.choiceOrder = choiceOrder;
+    }
+
+    public static ProblemChoice of(CompetitionProblem competitionProblem, String content, Short choiceOrder) {
+        return ProblemChoice.builder()
+            .competitionProblem(competitionProblem)
+            .content(content)
+            .choiceOrder(choiceOrder)
+            .build();
+    }
 }
