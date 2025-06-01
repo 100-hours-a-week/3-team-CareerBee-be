@@ -8,10 +8,12 @@ import static org.choon.careerbee.domain.company.entity.techStack.QCompanyTechSt
 import static org.choon.careerbee.domain.company.entity.techStack.QTechStack.techStack;
 import static org.choon.careerbee.domain.company.entity.wish.QWishCompany.wishCompany;
 
+import com.querydsl.core.annotations.QueryProjection;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +25,12 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -203,7 +207,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
 
     @Override
     public CompanyMarkerInfo fetchCompanyMarkerInfo(Long companyId) {
-        return queryFactory.select(
+        CompanyMarkerInfo result = queryFactory.select(
                 Projections.constructor(
                     CompanyMarkerInfo.class,
                     company.id,
@@ -211,7 +215,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
                     company.businessType,
                     company.recruitingStatus,
                     Projections.constructor(
-                        CompanyRangeSearchResp.LocationInfo.class,
+                        LocationInfo.class,
                         Expressions.numberTemplate(Double.class, "ST_X({0})", company.geoPoint),
                         Expressions.numberTemplate(Double.class, "ST_Y({0})", company.geoPoint)
                     )
@@ -220,6 +224,12 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .from(company)
             .where(company.id.eq(companyId))
             .fetchOne();
+
+        if (result == null) {
+            throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
+        }
+
+        return result;
     }
 
     private BooleanExpression inDistance(String point, Integer radius) {

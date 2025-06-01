@@ -5,6 +5,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
+import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,12 +28,15 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Lo
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
+import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -153,6 +158,39 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
+    @DisplayName("기업 마커 정보 조회 시 repository 호출 및 결과 반환")
+    void fetchCompanyLocation_ShouldReturnMarkerInfo() {
+        // given
+        Long companyId = 1L;
+        CompanyMarkerInfo expectedResponse = new CompanyMarkerInfo(
+            companyId,
+            "testUrl",
+            BusinessType.GAME,
+            RecruitingStatus.ONGOING,
+            new LocationInfo(37.123, 127.01)
+        );
+        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedResponse);
+
+        // when
+        CompanyMarkerInfo actualResponse = companyQueryService.fetchCompanyLocation(companyId);
+
+        // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(companyId);
+        assertThat(actualResponse).isEqualTo(expectedResponse);
+        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
+        assertThat(actualResponse.markerUrl()).isEqualTo(expectedResponse.markerUrl());
+        assertThat(actualResponse.businessType()).isEqualTo(expectedResponse.businessType());
+        assertThat(actualResponse.recruitingStatus()).isEqualTo(
+            expectedResponse.recruitingStatus());
+        assertThat(actualResponse.locationInfo().latitude()).isEqualTo(
+            expectedResponse.locationInfo().latitude());
+        assertThat(actualResponse.locationInfo().longitude()).isEqualTo(
+            expectedResponse.locationInfo().longitude());
+    }
+
+    @Test
     @DisplayName("관심 회사 여부 확인 - 존재하는 경우 true 반환")
     void checkWishCompany_existsTrue() {
         // given
@@ -202,10 +240,12 @@ class CompanyQueryServiceImplTest {
 
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
         when(companyRepository.findById(companyId)).thenReturn(Optional.of(mockCompany));
-        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(false);
+        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
+            false);
 
         // when
-        CheckWishCompanyResp actualResponse = companyQueryService.checkWishCompany(memberId, companyId);
+        CheckWishCompanyResp actualResponse = companyQueryService.checkWishCompany(memberId,
+            companyId);
 
         // then
         assertThat(actualResponse.isWish()).isFalse();
@@ -343,9 +383,91 @@ class CompanyQueryServiceImplTest {
         companyQueryService.fetchMatchingCompaniesByKeyword(rawKeyword);
 
         // then
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(companyRepository, times(1)).fetchMatchingCompaniesByKeyword(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(expectedKeyword);
+        ArgumentCaptor<String> keywordCaptor = ArgumentCaptor.forClass(String.class);
+        verify(companyRepository).fetchMatchingCompaniesByKeyword(keywordCaptor.capture());
+        String actualPassedKeyword = keywordCaptor.getValue();
+        assertThat(actualPassedKeyword).isEqualTo(expectedKeyword);
+    }
+
+    @Test
+    @DisplayName("관심 회사 ID 목록 조회 - 정상 반환")
+    void fetchWishCompanyIds_success() {
+        // given
+        Long memberId = 1L;
+        Member mockMember = createMember("testnick", "test@test.com", memberId);
+        WishCompanyIdResp mockResp = new WishCompanyIdResp(List.of(10L, 20L, 30L));
+
+        when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
+        when(wishCompanyRepository.fetchWishCompanyIdsByMember(mockMember)).thenReturn(mockResp);
+
+        // when
+        WishCompanyIdResp actualResp = companyQueryService.fetchWishCompanyIds(memberId);
+
+        // then
+        assertThat(actualResp.wishCompanies()).containsAll(List.of(10L, 20L, 30L));
+
+        verify(memberRepository, times(1)).findById(memberId);
+
+        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
+        verify(wishCompanyRepository, times(1)).fetchWishCompanyIdsByMember(memberCaptor.capture());
+        assertThat(memberCaptor.getValue()).isEqualTo(mockMember); // 객체 동등성 확인
+    }
+
+    @Test
+    @DisplayName("관심 회사 ID 목록 조회 - 존재하지 않는 회원일 경우 404 예외 발생")
+    void fetchWishCompanyIds_memberNotExist() {
+        // given
+        Long invalidMemberId = 999L;
+        when(memberRepository.findById(invalidMemberId)).thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.fetchWishCompanyIds(invalidMemberId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage());
+
+        verify(memberRepository, times(1)).findById(invalidMemberId);
+        verifyNoInteractions(wishCompanyRepository);
+    }
+
+    @Test
+    @DisplayName("관심 회사 목록 조회 - repository 호출 및 결과 반환")
+    void fetchWishCompanies_shouldCallRepositoryAndReturnResponse() {
+        // given
+        Long memberId = 1L;
+        Long cursor = 100L;
+        int size = 10;
+
+        CompanySummaryInfo company1 = new CompanySummaryInfo(
+            101L, "회사A", "https://logo.a", 12L, List.of(new CompanySummaryInfo.Keyword("복지"))
+        );
+        CompanySummaryInfo company2 = new CompanySummaryInfo(
+            102L, "회사B", "https://logo.b", 7L, List.of(new CompanySummaryInfo.Keyword("자율출퇴근"))
+        );
+
+        WishCompaniesResp mockResp = new WishCompaniesResp(List.of(company1, company2), 200L, true);
+
+        when(wishCompanyRepository.fetchWishCompaniesByMemberId(memberId, cursor, size))
+            .thenReturn(mockResp);
+
+        // when
+        WishCompaniesResp actual = companyQueryService.fetchWishCompanies(memberId, cursor, size);
+
+        // then
+        assertThat(actual).isEqualTo(mockResp);
+        assertThat(actual.wishCompanies()).hasSize(2);
+        assertThat(actual.nextCursor()).isEqualTo(200L);
+        assertThat(actual.hasNext()).isTrue();
+
+        ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Long> cursorCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
+
+        verify(wishCompanyRepository, times(1))
+            .fetchWishCompaniesByMemberId(idCaptor.capture(), cursorCaptor.capture(), sizeCaptor.capture());
+
+        assertThat(idCaptor.getValue()).isEqualTo(memberId);
+        assertThat(cursorCaptor.getValue()).isEqualTo(cursor);
+        assertThat(sizeCaptor.getValue()).isEqualTo(size);
     }
 
 }

@@ -13,6 +13,7 @@ import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.service.CompanyCommandService;
 import org.choon.careerbee.domain.company.service.CompanyQueryService;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -116,6 +118,25 @@ public class WishCompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "관심 기업 아이디 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping()
+    public ResponseEntity<CommonResponse<WishCompaniesResp>> fetchWishCompanies(
+        @RequestParam(required = false) Long cursor,
+        @RequestParam(defaultValue = "5") int size,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        WishCompaniesResp response = queryService.fetchWishCompanies(
+            principalDetails.getId(),
+            cursor,
+            size
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "관심 기업 목록 조회에 성공하였습니다."
         );
     }
 }

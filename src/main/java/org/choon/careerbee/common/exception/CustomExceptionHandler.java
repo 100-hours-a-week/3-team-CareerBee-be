@@ -14,6 +14,8 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
+import org.springframework.web.bind.MissingRequestCookieException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -31,22 +33,20 @@ public class CustomExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<CommonResponse<Map<String, String>>> handleValidationException(
-        BindingResult bindingResult) {
+        BindingResult bindingResult
+    ) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(CommonResponse.createValidError(bindingResult));
     }
 
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<CommonResponse<String>> handleTypeMismatch(
-        MethodArgumentTypeMismatchException e) {
-        return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
-    }
-
-    @ExceptionHandler(MissingPathVariableException.class)
-    public ResponseEntity<CommonResponse<String>> handleMissingPathVariable(
-        MissingPathVariableException e) {
+    @ExceptionHandler({
+        MethodArgumentTypeMismatchException.class,
+        MissingPathVariableException.class,
+        MissingServletRequestParameterException.class,
+        MissingRequestHeaderException.class,
+        MissingRequestCookieException.class
+    })
+    public ResponseEntity<CommonResponse<String>> handleTypeMismatch(Exception e) {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
@@ -101,7 +101,8 @@ public class CustomExceptionHandler {
 
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<CommonResponse<String>> handleAuthorizationDeniedException(
-        AuthorizationDeniedException e) {
+        AuthorizationDeniedException e
+    ) {
 
         // ✅ Sentry로 에러 전송
         Sentry.captureException(e);
