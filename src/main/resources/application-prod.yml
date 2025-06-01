@@ -63,3 +63,9 @@ management:
       show-details: always  # 상세 정보 포함
   server:
     port: 8080
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

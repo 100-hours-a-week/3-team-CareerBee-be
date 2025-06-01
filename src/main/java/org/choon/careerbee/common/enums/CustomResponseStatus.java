@@ -17,6 +17,10 @@ public enum CustomResponseStatus {
     WISH_ALREADY_EXIST(HttpStatus.CONFLICT.value(), "이미 관심기업에 등록되어 있습니다."),
     WISH_COMPANY_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "존재하지 않는 관심기업 입니다."),
 
+    COMPETITION_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 대회입니다."),
+    COMPETITION_ALREADY_JOIN(HttpStatus.CONFLICT.value(), "이미 참여한 대회입니다."),
+    RESULT_ALREADY_SUBMIT(HttpStatus.CONFLICT.value(), "이미 제출하였습니다."),
+
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
 
     BAD_JWT(HttpStatus.BAD_REQUEST.value(), "잘못된 토큰입니다."),

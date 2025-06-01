@@ -18,6 +18,7 @@ import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
@@ -94,6 +95,10 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     @Override
     public List<Company> findBySaraminNameIn(List<String> companyNames) {
         return companyRepository.findBySaraminNameIn(companyNames);
+
+    @Override  
+    public WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size) {
+        return wishCompanyRepository.fetchWishCompaniesByMemberId(id, cursor, size);
     }
 
     private String escapeLike(String keyword) {
