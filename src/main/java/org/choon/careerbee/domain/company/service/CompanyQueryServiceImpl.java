@@ -87,7 +87,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     @Override
     public WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size) {
-        return companyRepository.fetchWishCompaniesByMemberId(id, cursor, size);
+        return wishCompanyRepository.fetchWishCompaniesByMemberId(id, cursor, size);
     }
 
     private String escapeLike(String keyword) {

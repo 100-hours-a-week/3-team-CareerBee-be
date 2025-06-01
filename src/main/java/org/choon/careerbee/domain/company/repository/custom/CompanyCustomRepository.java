@@ -22,5 +22,4 @@ public interface CompanyCustomRepository {
 
     CompanyMarkerInfo fetchCompanyMarkerInfo(Long companyId);
 
-    WishCompaniesResp fetchWishCompaniesByMemberId(Long memberId, Long cursor, int size);
 }

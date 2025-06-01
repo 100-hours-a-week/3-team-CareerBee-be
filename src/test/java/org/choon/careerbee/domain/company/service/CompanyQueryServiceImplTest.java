@@ -437,7 +437,7 @@ class CompanyQueryServiceImplTest {
 
         WishCompaniesResp mockResp = new WishCompaniesResp(List.of(company1, company2), 200L, true);
 
-        when(companyRepository.fetchWishCompaniesByMemberId(memberId, cursor, size))
+        when(wishCompanyRepository.fetchWishCompaniesByMemberId(memberId, cursor, size))
             .thenReturn(mockResp);
 
         // when
@@ -453,7 +453,7 @@ class CompanyQueryServiceImplTest {
         ArgumentCaptor<Long> cursorCaptor = ArgumentCaptor.forClass(Long.class);
         ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
-        verify(companyRepository, times(1))
+        verify(wishCompanyRepository, times(1))
             .fetchWishCompaniesByMemberId(idCaptor.capture(), cursorCaptor.capture(), sizeCaptor.capture());
 
         assertThat(idCaptor.getValue()).isEqualTo(memberId);
