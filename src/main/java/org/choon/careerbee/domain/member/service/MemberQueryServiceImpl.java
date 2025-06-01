@@ -35,4 +35,5 @@ public class MemberQueryServiceImpl implements MemberQueryService {
         return memberRepository.findById(memberId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
     }
+
 }
