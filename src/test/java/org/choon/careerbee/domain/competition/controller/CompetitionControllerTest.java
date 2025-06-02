@@ -327,4 +327,39 @@ class CompetitionControllerTest {
             .andExpect(jsonPath("$.data.week[0].continuous").value(2))
             .andExpect(jsonPath("$.data.month[2].nickname").value("member2"));
     }
+
+    @Test
+    @DisplayName("오늘 날짜 기준 대회 ID 조회 - 성공")
+    void fetchTodayCompetitionId_success() throws Exception {
+        // given
+        LocalDateTime now = LocalDateTime.now();
+        Competition todayCompetition = competitionRepository.saveAndFlush(
+            CompetitionFixture.createCompetition(
+                now.withHour(10).withMinute(0),
+                now.withHour(23).withMinute(0)
+            )
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/competitions/ids")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value("오늘 대회 id 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.competitionId").value(todayCompetition.getId()));
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준 대회 ID 조회 - 대회 없을 경우 null 반환")
+    void fetchTodayCompetitionId_noCompetition() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/v1/competitions/ids")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value("오늘 대회 id 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data").isEmpty());
+    }
 }

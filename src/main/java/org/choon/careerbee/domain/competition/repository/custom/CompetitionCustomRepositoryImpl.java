@@ -1,14 +1,18 @@
 package org.choon.careerbee.domain.competition.repository.custom;
 
+import static org.choon.careerbee.domain.competition.domain.QCompetition.competition;
 import static org.choon.careerbee.domain.competition.domain.problem.QCompetitionProblem.competitionProblem;
 import static org.choon.careerbee.domain.competition.domain.problem.QProblemChoice.problemChoice;
 
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp.ProblemChoiceInfo;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp.ProblemInfo;
@@ -67,5 +71,24 @@ public class CompetitionCustomRepositoryImpl implements CompetitionCustomReposit
             ));
 
         return new CompetitionProblemResp(problemInfos);
+    }
+
+    @Override
+    public CompetitionIdResp fetchCompetitionIdFromToday(LocalDate today) {
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59);
+
+        Long competitionId = queryFactory
+            .select(competition.id)
+            .from(competition)
+            .where(
+                competition.startDateTime.loe(endOfDay),
+                competition.endDateTime.goe(startOfDay)
+            )
+            .orderBy(competition.startDateTime.asc())
+            .limit(1)
+            .fetchOne();
+
+        return competitionId != null ? new CompetitionIdResp(competitionId) : null;
     }
 }

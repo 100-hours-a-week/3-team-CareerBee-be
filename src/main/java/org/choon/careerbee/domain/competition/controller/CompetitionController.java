@@ -7,6 +7,7 @@ import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
@@ -93,6 +94,17 @@ public class CompetitionController {
             response,
             CustomResponseStatus.SUCCESS,
             "랭킹조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("competitions/ids")
+    public ResponseEntity<CommonResponse<CompetitionIdResp>> fetchTodayCompetitionId() {
+        CompetitionIdResp response = queryService.fetchCompetitionIdBy(LocalDate.now());
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "오늘 대회 id 조회에 성공하였습니다."
         );
     }
 }

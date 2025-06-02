@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
@@ -197,5 +198,41 @@ class CompetitionQueryServiceImplTest {
         ArgumentCaptor<LocalDate> captor = ArgumentCaptor.forClass(LocalDate.class);
         verify(competitionSummaryRepository, times(1)).fetchRankings(captor.capture());
         assertThat(captor.getValue()).isEqualTo(today);
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준으로 대회 ID 조회 - 정상 반환")
+    void fetchCompetitionIdBy_success() {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 2);
+        CompetitionIdResp mockResp = new CompetitionIdResp(42L);
+
+        when(competitionRepository.fetchCompetitionIdFromToday(today)).thenReturn(mockResp);
+
+        // when
+        CompetitionIdResp result = competitionQueryService.fetchCompetitionIdBy(today);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.competitionId()).isEqualTo(42L);
+
+        verify(competitionRepository, times(1)).fetchCompetitionIdFromToday(today);
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준으로 대회 ID 조회 - 해당 날짜 대회 없으면 null 반환")
+    void fetchCompetitionIdBy_noneExist_returnsNull() {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 2);
+
+        when(competitionRepository.fetchCompetitionIdFromToday(today)).thenReturn(null);
+
+        // when
+        CompetitionIdResp result = competitionQueryService.fetchCompetitionIdBy(today);
+
+        // then
+        assertThat(result).isNull();
+
+        verify(competitionRepository).fetchCompetitionIdFromToday(today);
     }
 }
