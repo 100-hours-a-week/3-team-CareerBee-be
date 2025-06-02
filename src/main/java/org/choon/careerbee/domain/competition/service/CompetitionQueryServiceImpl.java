@@ -8,6 +8,7 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
@@ -52,5 +53,10 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     @Override
     public CompetitionIdResp fetchCompetitionIdBy(LocalDate today) {
         return competitionRepository.fetchCompetitionIdFromToday(today);
+    }
+
+    @Override
+    public MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId) {
+        return competitionSummaryRepository.fetchMemberRankingById(accessMemberId);
     }
 }

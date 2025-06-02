@@ -34,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
         FilterChain filterChain) throws ServletException, IOException {
+        log.info("come in filter");
         String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
 
         if (Objects.equals(resolveToken, "")) {
@@ -88,6 +89,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         };
 
         String path = request.getRequestURI();
+        if (path.equals("/api/v1/members/competitions/rankings")) {
+            return false;
+        }
         return Arrays.stream(excludePath).anyMatch(path::contains);
     }
 }

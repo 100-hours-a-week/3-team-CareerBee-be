@@ -11,6 +11,7 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.service.CompetitionCommandService;
 import org.choon.careerbee.domain.competition.service.CompetitionQueryService;
 import org.springframework.http.ResponseEntity;
@@ -94,6 +95,20 @@ public class CompetitionController {
             response,
             CustomResponseStatus.SUCCESS,
             "랭킹조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("members/competitions/rankings")
+    public ResponseEntity<CommonResponse<MemberRankingResp>> fetchMemberCompetitionRanking(
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        MemberRankingResp response = queryService.fetchMemberCompetitionRankingById(
+            principalDetails.getId());
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "내 랭킹 조회에 성공하였습니다."
         );
     }
 
