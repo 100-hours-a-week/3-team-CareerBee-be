@@ -68,6 +68,7 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "competitions/rankings",
+                    "/competitions/ids",
                     "/actuator/**"
                 )
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
