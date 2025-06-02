@@ -8,6 +8,8 @@ import static org.choon.careerbee.fixture.competition.CompetitionSummaryFixture.
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
@@ -17,6 +19,7 @@ import org.choon.careerbee.domain.member.entity.Member;
 public class RankingTestDataSupport {
 
     private final EntityManager em;
+    private final Map<String, Member> memberMap = new HashMap<>();
 
     public RankingTestDataSupport(EntityManager em) {
         this.em = em;
@@ -26,6 +29,10 @@ public class RankingTestDataSupport {
         Member member1 = em.merge(createMember("member1", "m1@test.com", 1L));
         Member member2 = em.merge(createMember("member2", "m2@test.com", 2L));
         Member member3 = em.merge(createMember("member3", "m3@test.com", 3L));
+
+        memberMap.put("member1", member1);
+        memberMap.put("member2", member2);
+        memberMap.put("member3", member3);
 
         Competition comp1 = em.merge(createCompetition(LocalDateTime.of(2025, 6, 1, 20, 0),
             LocalDateTime.of(2025, 6, 1, 20, 10)));
@@ -75,6 +82,14 @@ public class RankingTestDataSupport {
 
         em.flush();
         em.clear();
+    }
+
+    public Long getMemberId(String nickname) {
+        Member member = memberMap.get(nickname);
+        if (member == null) {
+            throw new IllegalArgumentException("해당 nickname에 대한 멤버가 없습니다: " + nickname);
+        }
+        return member.getId();
     }
 
     private void updateCreatedAt(CompetitionResult result, LocalDateTime createdAt) {
