@@ -78,6 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/oauth",
             "/auth/tokens",
             "/auth/reissue",
+            "competitions/rankings",
             "/favicon.ico",
             "/api/v1/companies",
             "/swagger-ui",
