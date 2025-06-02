@@ -1,7 +1,7 @@
 package org.choon.careerbee.domain.competition.controller;
 
-import static org.choon.careerbee.fixture.CompetitionProblemFixture.createProblem;
-import static org.choon.careerbee.fixture.ProblemChoiceFixture.createProblemChoice;
+import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -22,8 +22,8 @@ import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.ProblemChoiceRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.choon.careerbee.fixture.CompetitionFixture;
 import org.choon.careerbee.fixture.MemberFixture;
+import org.choon.careerbee.fixture.competition.CompetitionFixture;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -267,12 +267,14 @@ class CompetitionControllerTest {
         problemChoiceRepository.save(createProblemChoice(problem, "보기 3", (short) 3));
 
         // when & then
-        mockMvc.perform(get("/api/v1/competitions/{competitionId}/problems", testCompetition.getId())
-                .header("Authorization", accessToken)
-                .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(
+                get("/api/v1/competitions/{competitionId}/problems", testCompetition.getId())
+                    .header("Authorization", accessToken)
+                    .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").value("대회 문제 조회에 성공하였습니다."))
-            .andExpect(jsonPath("$.httpStatusCode").value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.data.problems[0].title").value("문제 제목"))
             .andExpect(jsonPath("$.data.problems[0].choices.length()").value(3))
             .andExpect(jsonPath("$.data.problems[0].choices[1].content").value("보기 2"));
@@ -289,7 +291,9 @@ class CompetitionControllerTest {
                 .header("Authorization", accessToken)
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
-            .andExpect(jsonPath("$.httpStatusCode").value(CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
+            .andExpect(jsonPath("$.message").value(
+                CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
     }
 }
