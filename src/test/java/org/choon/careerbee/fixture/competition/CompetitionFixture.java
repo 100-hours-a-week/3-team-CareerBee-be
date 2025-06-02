@@ -1,4 +1,4 @@
-package org.choon.careerbee.fixture;
+package org.choon.careerbee.fixture.competition;
 
 import java.time.LocalDateTime;
 import org.choon.careerbee.domain.competition.domain.Competition;

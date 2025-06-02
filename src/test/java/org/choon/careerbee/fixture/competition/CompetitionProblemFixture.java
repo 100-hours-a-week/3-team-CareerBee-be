@@ -1,4 +1,4 @@
-package org.choon.careerbee.fixture;
+package org.choon.careerbee.fixture.competition;
 
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.problem.CompetitionProblem;

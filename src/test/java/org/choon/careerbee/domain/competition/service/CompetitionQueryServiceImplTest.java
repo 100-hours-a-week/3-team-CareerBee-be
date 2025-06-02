@@ -4,16 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +37,10 @@ class CompetitionQueryServiceImplTest {
 
     @Mock
     private CompetitionParticipantRepository competitionParticipantRepository;
+
+    @Mock
+    private CompetitionSummaryRepository competitionSummaryRepository;
+
 
     @Test
     @DisplayName("대회 참여 여부 확인 - 참가한 경우 true 반환")
@@ -119,7 +127,8 @@ class CompetitionQueryServiceImplTest {
         CompetitionProblemResp mockResp = new CompetitionProblemResp(problemInfos);
 
         when(competitionRepository.existsById(competitionId)).thenReturn(true);
-        when(competitionRepository.fetchCompetitionProblemsByCompetitionId(competitionId)).thenReturn(mockResp);
+        when(competitionRepository.fetchCompetitionProblemsByCompetitionId(
+            competitionId)).thenReturn(mockResp);
 
         // when
         CompetitionProblemResp result = competitionQueryService.fetchProblems(competitionId);
@@ -136,7 +145,8 @@ class CompetitionQueryServiceImplTest {
 
         assertThat(problem.choices()).hasSize(2);
         assertThat(problem.choices())
-            .extracting(CompetitionProblemResp.ProblemChoiceInfo::order, CompetitionProblemResp.ProblemChoiceInfo::content)
+            .extracting(CompetitionProblemResp.ProblemChoiceInfo::order,
+                CompetitionProblemResp.ProblemChoiceInfo::content)
             .containsExactlyInAnyOrder(
                 org.assertj.core.groups.Tuple.tuple(1, "보기 A"),
                 org.assertj.core.groups.Tuple.tuple(2, "보기 B")
@@ -162,5 +172,30 @@ class CompetitionQueryServiceImplTest {
             .hasMessageContaining(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage());
 
         verify(competitionRepository, never()).fetchCompetitionProblemsByCompetitionId(any());
+    }
+
+    @Test
+    @DisplayName("대회 랭킹 조회 - 정상적으로 반환되는 경우")
+    void fetchRankings_success() {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 2);
+        CompetitionRankingResp mockResp = new CompetitionRankingResp(
+            List.of(),
+            List.of(),
+            List.of()
+        );
+
+        when(competitionSummaryRepository.fetchRankings(today)).thenReturn(mockResp);
+
+        // when
+        CompetitionRankingResp result = competitionQueryService.fetchRankings(today);
+
+        // then
+        assertThat(result).isEqualTo(mockResp);
+        verify(competitionSummaryRepository).fetchRankings(today);
+
+        ArgumentCaptor<LocalDate> captor = ArgumentCaptor.forClass(LocalDate.class);
+        verify(competitionSummaryRepository, times(1)).fetchRankings(captor.capture());
+        assertThat(captor.getValue()).isEqualTo(today);
     }
 }
