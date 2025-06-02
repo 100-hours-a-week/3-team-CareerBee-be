@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.competition.controller;
 
 import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.competition.CompetitionSummaryFixture.createSummary;
 import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -16,6 +17,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
+import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.domain.problem.CompetitionProblem;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
@@ -361,5 +363,38 @@ class CompetitionControllerTest {
                 CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.message").value("오늘 대회 id 조회에 성공하였습니다."))
             .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("내 랭킹 조회 - 성공")
+    void fetchMemberCompetitionRanking_success() throws Exception {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 2);
+        LocalDate weekStart = today.with(java.time.DayOfWeek.MONDAY);
+        LocalDate weekEnd = weekStart.plusDays(6);
+        LocalDate monthStart = today.withDayOfMonth(1);
+        LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
+
+        em.persist(createSummary(testMember, (short) 4, 1000L, 1L, SummaryType.DAY, today, today));
+        em.persist(
+            createSummary(testMember, (short) 8, 2000L, 1L, SummaryType.WEEK, weekStart, weekEnd));
+        em.persist(createSummary(testMember, (short) 10, 3000L, 1L, SummaryType.MONTH, monthStart,
+            monthEnd));
+
+        em.flush();
+        em.clear();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/rankings")
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value("내 랭킹 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.day").value(1))
+            .andExpect(jsonPath("$.data.week").value(1))
+            .andExpect(jsonPath("$.data.month").value(1));
     }
 }

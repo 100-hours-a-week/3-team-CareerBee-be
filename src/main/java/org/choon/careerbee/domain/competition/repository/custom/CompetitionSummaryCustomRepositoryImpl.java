@@ -17,6 +17,7 @@ import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp.RankingInfo;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp.RankingInfoWithContinuous;
+import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.springframework.stereotype.Repository;
 
 @RequiredArgsConstructor
@@ -116,7 +117,29 @@ public class CompetitionSummaryCustomRepositoryImpl implements
         return new CompetitionRankingResp(daily, week, month);
     }
 
-    public int calculateMaxContinuousDaysByMemberId(Long memberId, LocalDateTime today) {
+    @Override
+    public MemberRankingResp fetchMemberRankingById(Long accessMemberId) {
+        Long dailyRanking = fetchLatestRanking(accessMemberId, SummaryType.DAY);
+        Long weeklyRanking = fetchLatestRanking(accessMemberId, SummaryType.WEEK);
+        Long monthlyRanking = fetchLatestRanking(accessMemberId, SummaryType.MONTH);
+
+        return new MemberRankingResp(dailyRanking, weeklyRanking, monthlyRanking);
+    }
+
+    private Long fetchLatestRanking(Long memberId, SummaryType type) {
+        return queryFactory
+            .select(competitionSummary.ranking)
+            .from(competitionSummary)
+            .where(
+                competitionSummary.member.id.eq(memberId),
+                competitionSummary.type.eq(type)
+            )
+            .orderBy(competitionSummary.periodEnd.desc())
+            .limit(1)
+            .fetchOne();
+    }
+
+    private int calculateMaxContinuousDaysByMemberId(Long memberId, LocalDateTime today) {
         LocalDateTime startOfMonth = today.withDayOfMonth(1).toLocalDate().atStartOfDay();
         LocalDateTime endOfMonth = today.withDayOfMonth(today.toLocalDate().lengthOfMonth())
             .toLocalDate()
@@ -132,11 +155,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .orderBy(competitionResult.createdAt.asc())
             .fetch()
             .stream()
-            .map(dateTime -> {
-                LocalDate date = dateTime.toLocalDate();
-                System.out.println("참여 날짜: " + date);  // ✅ 이거 반드시 찍어보세요
-                return date;
-            })
+            .map(LocalDateTime::toLocalDate)
             .collect(Collectors.toSet());
 
         int maxStreak = 0;
