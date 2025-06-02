@@ -11,6 +11,17 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  cloud:
+    aws:
+      s3:
+        credentials:
+          accessKey: sdifuasdiofuapsiodfuaopsidufpaosiduf
+          secretKey: qwpeiorupoerifgscvvujhakhfweoafoweoiu
+        bucket: testbucket
+      region:
+        static: ap-northeast-3
+      stack:
+        auto: false
 jwt:
   secret: asdjfkajsdlfkjlkadjlfkasjdefwerasdfkjasdlkfjasdlkjflkwjeflkjsadlfasdfewdf
   expiration_time:
