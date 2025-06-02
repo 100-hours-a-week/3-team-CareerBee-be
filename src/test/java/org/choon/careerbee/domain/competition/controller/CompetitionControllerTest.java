@@ -1,14 +1,16 @@
 package org.choon.careerbee.domain.competition.controller;
 
-import static org.choon.careerbee.fixture.CompetitionProblemFixture.createProblem;
-import static org.choon.careerbee.fixture.ProblemChoiceFixture.createProblemChoice;
+import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
@@ -22,8 +24,9 @@ import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.ProblemChoiceRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.choon.careerbee.fixture.CompetitionFixture;
 import org.choon.careerbee.fixture.MemberFixture;
+import org.choon.careerbee.fixture.competition.CompetitionFixture;
+import org.choon.careerbee.fixture.competition.RankingTestDataSupport;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -62,8 +65,12 @@ class CompetitionControllerTest {
     private ProblemChoiceRepository problemChoiceRepository;
 
     @Autowired
+    private EntityManager em;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
+    private RankingTestDataSupport testDataSupport;
     private String accessToken;
     private Member testMember;
     private Competition testCompetition;
@@ -71,7 +78,7 @@ class CompetitionControllerTest {
     @BeforeEach
     void setUp() {
         testMember = memberRepository.saveAndFlush(
-            MemberFixture.createMember("nick", "nick@a.com", 1L));
+            MemberFixture.createMember("nick", "nick@a.com", 5L));
         testCompetition = competitionRepository.saveAndFlush(
             CompetitionFixture.createCompetition(
                 LocalDateTime.of(2025, 5, 30, 20, 0, 0),
@@ -79,6 +86,8 @@ class CompetitionControllerTest {
             )
         );
         accessToken = "Bearer " + jwtUtil.createToken(testMember.getId(), TokenType.ACCESS_TOKEN);
+
+        testDataSupport = new RankingTestDataSupport(em);
     }
 
     @Test
@@ -267,12 +276,14 @@ class CompetitionControllerTest {
         problemChoiceRepository.save(createProblemChoice(problem, "보기 3", (short) 3));
 
         // when & then
-        mockMvc.perform(get("/api/v1/competitions/{competitionId}/problems", testCompetition.getId())
-                .header("Authorization", accessToken)
-                .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(
+                get("/api/v1/competitions/{competitionId}/problems", testCompetition.getId())
+                    .header("Authorization", accessToken)
+                    .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").value("대회 문제 조회에 성공하였습니다."))
-            .andExpect(jsonPath("$.httpStatusCode").value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.data.problems[0].title").value("문제 제목"))
             .andExpect(jsonPath("$.data.problems[0].choices.length()").value(3))
             .andExpect(jsonPath("$.data.problems[0].choices[1].content").value("보기 2"));
@@ -289,7 +300,31 @@ class CompetitionControllerTest {
                 .header("Authorization", accessToken)
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
-            .andExpect(jsonPath("$.httpStatusCode").value(CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
+            .andExpect(jsonPath("$.message").value(
+                CustomResponseStatus.COMPETITION_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.COMPETITION_NOT_EXIST.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("랭킹 조회 - 실제 데이터로 성공")
+    void fetchCompetitionRankings_success() throws Exception {
+        // given
+        testDataSupport.prepareRankingData(LocalDate.of(2025, 6, 2));
+
+        // when & then
+        mockMvc.perform(get("/api/v1/competitions/rankings")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message")
+                .value("랭킹조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.data").exists())
+            .andExpect(jsonPath("$.data.daily.length()").value(2))
+            .andExpect(jsonPath("$.data.week.length()").value(2))
+            .andExpect(jsonPath("$.data.month.length()").value(3))
+            .andExpect(jsonPath("$.data.week[0].continuous").value(2))
+            .andExpect(jsonPath("$.data.month[2].nickname").value("member2"));
     }
 }
