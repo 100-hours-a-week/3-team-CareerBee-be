@@ -22,6 +22,7 @@ public enum CustomResponseStatus {
     RESULT_ALREADY_SUBMIT(HttpStatus.CONFLICT.value(), "이미 제출하였습니다."),
 
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
+    EXTENSION_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "제공하지 않는 확장자입니다."),
 
     BAD_JWT(HttpStatus.BAD_REQUEST.value(), "잘못된 토큰입니다."),
     EXPIRED_JWT(HttpStatus.UNAUTHORIZED.value(), "만료된 토큰입니다."),
