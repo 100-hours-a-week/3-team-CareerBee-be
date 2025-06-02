@@ -1,9 +1,9 @@
 package org.choon.careerbee.domain.competition.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.choon.careerbee.fixture.CompetitionFixture.createCompetition;
-import static org.choon.careerbee.fixture.CompetitionProblemFixture.createProblem;
-import static org.choon.careerbee.fixture.ProblemChoiceFixture.createProblemChoice;
+import static org.choon.careerbee.fixture.competition.CompetitionFixture.createCompetition;
+import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
 
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
@@ -57,7 +57,8 @@ class CompetitionCustomRepositoryImplTest {
 
         // when
         CompetitionProblemResp result =
-            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(competition.getId());
+            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(
+                competition.getId());
 
         // then
         assertThat(result).isNotNull();
@@ -88,7 +89,8 @@ class CompetitionCustomRepositoryImplTest {
 
         // when
         CompetitionProblemResp result =
-            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(competition.getId());
+            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(
+                competition.getId());
 
         // then
         assertThat(result).isNotNull();
