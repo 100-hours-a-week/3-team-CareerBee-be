@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.competition.controller;
 
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
@@ -8,6 +9,7 @@ import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
 import org.choon.careerbee.domain.competition.service.CompetitionCommandService;
 import org.choon.careerbee.domain.competition.service.CompetitionQueryService;
 import org.springframework.http.ResponseEntity;
@@ -80,6 +82,17 @@ public class CompetitionController {
             response,
             CustomResponseStatus.SUCCESS,
             "대회 문제 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("competitions/rankings")
+    public ResponseEntity<CommonResponse<CompetitionRankingResp>> fetchCompetitionRankings() {
+        CompetitionRankingResp response = queryService.fetchRankings(LocalDate.now());
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "랭킹조회에 성공하였습니다."
         );
     }
 }

@@ -13,8 +13,10 @@ import jakarta.persistence.ManyToOne;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.choon.careerbee.common.entity.BaseEntity;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.member.entity.Member;
 
@@ -22,7 +24,7 @@ import org.choon.careerbee.domain.member.entity.Member;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class CompetitionSummary {
+public class CompetitionSummary extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,7 +41,7 @@ public class CompetitionSummary {
     private Long elapsedTime;
 
     @Column(nullable = false)
-    private Long rank;
+    private Long ranking;
 
     @Column(nullable = false, length = 5)
     @Enumerated(EnumType.STRING)
@@ -50,4 +52,32 @@ public class CompetitionSummary {
 
     @Column(name = "period_end", nullable = false)
     private LocalDate periodEnd;
+
+    @Builder
+    private CompetitionSummary(Member member, Short solvedCount, Long elapsedTime, Long ranking,
+        SummaryType type, LocalDate periodStart, LocalDate periodEnd) {
+        this.member = member;
+        this.solvedCount = solvedCount;
+        this.elapsedTime = elapsedTime;
+        this.ranking = ranking;
+        this.type = type;
+        this.periodStart = periodStart;
+        this.periodEnd = periodEnd;
+    }
+
+    public static CompetitionSummary of(
+        Member member, Short solvedCount, Long elapsedTime,
+        Long ranking,
+        SummaryType type, LocalDate periodStart, LocalDate periodEnd
+    ) {
+        return CompetitionSummary.builder()
+            .member(member)
+            .solvedCount(solvedCount)
+            .elapsedTime(elapsedTime)
+            .ranking(ranking)
+            .type(type)
+            .periodStart(periodStart)
+            .periodEnd(periodEnd)
+            .build();
+    }
 }
