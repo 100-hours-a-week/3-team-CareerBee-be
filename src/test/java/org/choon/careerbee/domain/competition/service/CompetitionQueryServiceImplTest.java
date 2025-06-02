@@ -16,6 +16,7 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
@@ -234,5 +235,27 @@ class CompetitionQueryServiceImplTest {
         assertThat(result).isNull();
 
         verify(competitionRepository).fetchCompetitionIdFromToday(today);
+    }
+
+    @Test
+    @DisplayName("내 랭킹 조회 - 정상적으로 반환되는 경우")
+    void fetchMemberCompetitionRankingById_success() {
+        // given
+        Long memberId = 123L;
+        MemberRankingResp mockResp = new MemberRankingResp(5L, 3L, 2L);
+
+        when(competitionSummaryRepository.fetchMemberRankingById(memberId)).thenReturn(mockResp);
+
+        // when
+        MemberRankingResp result = competitionQueryService.fetchMemberCompetitionRankingById(
+            memberId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.day()).isEqualTo(5L);
+        assertThat(result.week()).isEqualTo(3L);
+        assertThat(result.month()).isEqualTo(2L);
+
+        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId);
     }
 }
