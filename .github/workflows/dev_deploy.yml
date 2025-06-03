@@ -181,7 +181,7 @@ jobs:
                 -Dscouter.config=/home/ubuntu/scouter/agent.java/conf/scouter.conf \
                 -Dobj_name=careerbee-api \
                 -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
-        EOF
+         EOF
             
             aws s3 rm "${S3_BUCKET_INFRA}/ai/${DEPLOY_PATH}/" --recursive
 
