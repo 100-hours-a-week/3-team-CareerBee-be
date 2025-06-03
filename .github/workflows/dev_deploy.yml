@@ -141,6 +141,7 @@ jobs:
             if [ "\$STATUS" == "200" ]; then
               break
             fi
+            echo \$STATUS
             sleep 10
           done
 
