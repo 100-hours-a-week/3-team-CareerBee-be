@@ -34,7 +34,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
         FilterChain filterChain) throws ServletException, IOException {
-        log.info("come in filter");
         String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
 
         if (Objects.equals(resolveToken, "")) {
@@ -48,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (CustomException e) {
-            writeErrorResponse(response, CustomResponseStatus.LOGOUT_MEMBER);
+            writeErrorResponse(response, e.getCustomResponseStatus());
         } catch (ExpiredJwtException e) {
             writeErrorResponse(response, CustomResponseStatus.EXPIRED_JWT);
         } catch (JwtException | IllegalArgumentException e) {
