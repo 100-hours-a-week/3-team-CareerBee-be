@@ -13,6 +13,18 @@ spring:
       hibernate:
         format_sql: true
 
+  cloud:
+    aws:
+      s3:
+        credentials:
+          accessKey: ${AWS_S3_ACCESSKEY}
+          secretKey: ${AWS_S3_SECRETKEY}
+        bucket: ${AWS_S3_BUCKET}
+      region:
+        static: ${AWS_REGION}
+      stack:
+        auto: false
+
 jwt:
   secret: ${JWT_SECRETS}
   expiration_time:

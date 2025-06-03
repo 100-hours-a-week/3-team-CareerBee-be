@@ -1,15 +1,17 @@
 package org.choon.careerbee.domain.competition.repository.custom;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.choon.careerbee.fixture.CompetitionFixture.createCompetition;
-import static org.choon.careerbee.fixture.CompetitionProblemFixture.createProblem;
-import static org.choon.careerbee.fixture.ProblemChoiceFixture.createProblemChoice;
+import static org.choon.careerbee.fixture.competition.CompetitionFixture.createCompetition;
+import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
 
 import jakarta.transaction.Transactional;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.problem.CompetitionProblem;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,7 +59,8 @@ class CompetitionCustomRepositoryImplTest {
 
         // when
         CompetitionProblemResp result =
-            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(competition.getId());
+            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(
+                competition.getId());
 
         // then
         assertThat(result).isNotNull();
@@ -88,10 +91,45 @@ class CompetitionCustomRepositoryImplTest {
 
         // when
         CompetitionProblemResp result =
-            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(competition.getId());
+            competitionCustomRepository.fetchCompetitionProblemsByCompetitionId(
+                competition.getId());
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.problems()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준 대회 ID 조회 - 대회가 존재할 경우")
+    void fetchCompetitionIdFromToday_shouldReturnId_whenCompetitionExists() {
+        // given
+        LocalDateTime start = LocalDateTime.of(2025, 6, 2, 10, 0);
+        LocalDateTime end = LocalDateTime.of(2025, 6, 2, 12, 0);
+        Competition competition = createCompetition(start, end);
+        em.persist(competition);
+        em.flush();
+        em.clear();
+
+        // when
+        CompetitionIdResp result = competitionCustomRepository.fetchCompetitionIdFromToday(
+            LocalDate.of(2025, 6, 2));
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.competitionId()).isEqualTo(competition.getId());
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준 대회 ID 조회 - 대회가 존재하지 않을 경우 null 반환")
+    void fetchCompetitionIdFromToday_shouldReturnNull_whenNoCompetitionExists() {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 2);
+        // 대회 없음
+
+        // when
+        CompetitionIdResp result = competitionCustomRepository.fetchCompetitionIdFromToday(today);
+
+        // then
+        assertThat(result).isNull();
     }
 }

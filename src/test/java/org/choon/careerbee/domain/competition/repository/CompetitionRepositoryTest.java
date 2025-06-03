@@ -1,8 +1,8 @@
 package org.choon.careerbee.domain.competition.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.choon.careerbee.fixture.CompetitionFixture.createCompetition;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.choon.careerbee.fixture.competition.CompetitionFixture.createCompetition;
 
 import java.time.LocalDateTime;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;

@@ -114,19 +114,21 @@ class WishCompanyCustomRepositoryImplTest {
 
         // when
         int size = 2;
-        Long cursor = null; // 첫 페이지는 null
-        var result = wishCompanyCustomRepository.fetchWishCompaniesByMemberId(member.getId(), cursor, size);
+        Long cursor = null;
+        var result = wishCompanyCustomRepository.fetchWishCompaniesByMemberId(member.getId(),
+            cursor, size);
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.wishCompanies()).hasSizeLessThanOrEqualTo(size);
-        assertThat(result.hasNext()).isTrue(); // 3개 중 2개만 조회되었으므로 다음 페이지 존재
+        assertThat(result.hasNext()).isTrue();
 
         // 다음 페이지 요청
         Long nextCursor = result.nextCursor();
-        var nextResult = wishCompanyCustomRepository.fetchWishCompaniesByMemberId(member.getId(), nextCursor, size);
+        var nextResult = wishCompanyCustomRepository.fetchWishCompaniesByMemberId(member.getId(),
+            nextCursor, size);
 
         assertThat(nextResult.wishCompanies()).hasSizeLessThanOrEqualTo(size);
-        assertThat(nextResult.hasNext()).isFalse(); // 마지막 페이지
+        assertThat(nextResult.hasNext()).isFalse();
     }
 }
