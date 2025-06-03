@@ -138,14 +138,14 @@ jobs:
           set -e
           for i in $(seq 1 5); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://dev-api.careerbee.co.kr/health-check")
-            if [ "\$STATUS" == "200" ]; then
+            if [ "$STATUS" == "200" ]; then
               break
             fi
-            echo \$STATUS
+            echo $STATUS
             sleep 10
           done
 
-          if [ "\$STATUS" != "200" ]; then
+          if [ "$STATUS" != "200" ]; then
             LATEST_VALID_BACKUP=$(aws s3 ls "${S3_BUCKET_INFRA}/be/" | awk '{print $2}' | grep -v "^${DEPLOY_PATH}/$" | sort | tail -n 1 | sed 's#/$##')
             if [ -z "$LATEST_VALID_BACKUP" ]; then
               exit 1
