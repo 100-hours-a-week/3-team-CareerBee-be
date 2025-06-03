@@ -169,6 +169,10 @@ jobs:
                 -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
                 -DSENTRY_DSN="${SENTRY_DSN}" \
                 -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+                -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
+                -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
+                -DAWS_REGION="${AWS_DEFAULT_REGION}" \
+                -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
                 --add-opens java.base/java.lang=ALL-UNNAMED \
                 --add-exports java.base/sun.net=ALL-UNNAMED \
                 -Djdk.attach.allowAttachSelf=true \
@@ -176,7 +180,7 @@ jobs:
                 -Dscouter.config=/home/ubuntu/scouter/agent.java/conf/scouter.conf \
                 -Dobj_name=careerbee-api \
                 -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
-            EOF
+          EOF
             
             aws s3 rm "${S3_BUCKET_INFRA}/ai/${DEPLOY_PATH}/" --recursive
 
