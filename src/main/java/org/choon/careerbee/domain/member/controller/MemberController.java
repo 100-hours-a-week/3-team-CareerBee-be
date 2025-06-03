@@ -11,6 +11,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
+import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
@@ -62,6 +63,19 @@ public class MemberController {
         return CommonResponseEntity.ok(
             CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
             "이력 정보 수정이 완료되었습니다."
+        );
+    }
+
+    @PatchMapping("/resume")
+    public ResponseEntity<CommonResponse<ResumeDraftResp>> generateResumeDraft(
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        ResumeDraftResp response = commandService.generateResumeDraft(principalDetails.getId());
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "이력서 초안 생성에 성공하였습니다."
         );
     }
 }

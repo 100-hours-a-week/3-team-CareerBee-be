@@ -14,4 +14,10 @@ public class RestClientConfig {
             .baseUrl(props.getBaseUrl())
             .build();
     }
+
+    @Bean
+    public RestClient aiRestClient() {
+        return RestClient.builder()
+            .build();
+    }
 }

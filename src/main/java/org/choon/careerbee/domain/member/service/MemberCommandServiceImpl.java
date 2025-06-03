@@ -1,8 +1,11 @@
 package org.choon.careerbee.domain.member.service;
 
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
+import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
+import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.util.NicknameGenerator;
@@ -15,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberCommandServiceImpl implements MemberCommandService {
     private final MemberQueryService memberQueryService;
     private final MemberRepository memberRepository;
+    private final AiApiClient aiApiClient;
 
     @Override
     public Member forceJoin(OAuthInfoResponse oAuthInfo) {
@@ -41,5 +45,12 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             updateResumeReq.position(),
             updateResumeReq.additionalExperiences()
         );
+    }
+
+    @Override
+    public ResumeDraftResp generateResumeDraft(Long accessMemberId) {
+        Member validMember = memberQueryService.findById(accessMemberId);
+
+        return aiApiClient.requestResumeDraft(ResumeDraftReq.from(validMember));
     }
 }
