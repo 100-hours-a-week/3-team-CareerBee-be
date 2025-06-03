@@ -30,6 +30,7 @@ jobs:
           echo "::add-mask::$AWS_ACCESS_KEY_ID"
           echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
           echo "::add-mask::$AWS_DEFAULT_REGION"
+          echo "::add-mask::$S3_BUCKET_IMAGE"
           echo "::add-mask::$S3_BUCKET_INFRA"
           echo "::add-mask::$DB_URL"
           echo "::add-mask::$DB_USERNAME"
@@ -49,6 +50,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_ENV
           echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> $GITHUB_ENV
+          echo "S3_BUCKET_IMAGE=$S3_BUCKET_IMAGE" >> $GITHUB_ENV
           echo "S3_BUCKET_INFRA=$S3_BUCKET_INFRA" >> $GITHUB_ENV
           echo "DB_URL=$DB_URL" >> $GITHUB_ENV
           echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
@@ -118,6 +120,10 @@ jobs:
               -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
               -DSENTRY_DSN="${SENTRY_DSN}" \
               -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+              -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
+              -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
+              -DAWS_REGION="${AWS_DEFAULT_REGION}" \
+              -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
               -Djdk.attach.allowAttachSelf=true \
