@@ -95,6 +95,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     @Override
     public List<Company> findBySaraminNameIn(List<String> companyNames) {
         return companyRepository.findBySaraminNameIn(companyNames);
+    }
 
     @Override  
     public WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size) {
