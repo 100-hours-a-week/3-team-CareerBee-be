@@ -12,16 +12,15 @@ import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
-import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -66,7 +65,7 @@ public class MemberController {
         );
     }
 
-    @PatchMapping("/resume")
+    @PostMapping("/resume")
     public ResponseEntity<CommonResponse<ResumeDraftResp>> generateResumeDraft(
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {

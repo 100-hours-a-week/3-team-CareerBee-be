@@ -53,6 +53,10 @@ saramin:
     base-url: https://oapi.saramin.co.kr
     access-key: ${SARAMIN_SECRET_KEY}
 
+ai:
+  api:
+    base-url: https://dev-ai.careerbee.co.kr
+
 sentry:
   dsn: ${SENTRY_DSN}  # 필수: Sentry DSN을 환경변수로 주입
   environment: dev     # 선택: dev, prod 등 환경 구분
