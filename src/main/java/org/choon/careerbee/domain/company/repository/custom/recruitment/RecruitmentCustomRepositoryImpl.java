@@ -23,7 +23,7 @@ public class RecruitmentCustomRepositoryImpl implements
         }
 
         return queryFactory
-            .select(recruitment.id)
+            .select(recruitment.recruitingId)
             .from(recruitment)
             .where(recruitment.recruitingId.in(jobIds))
             .fetch();
