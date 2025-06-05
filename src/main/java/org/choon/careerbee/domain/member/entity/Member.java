@@ -82,6 +82,9 @@ public class Member extends BaseEntity {
     @Column(columnDefinition = "TIMESTAMP")
     private LocalDateTime withdrawnAt;
 
+    @Column(length = 30)
+    private String withdrawReason;
+
     @Column(nullable = false)
     private Integer points;
 
