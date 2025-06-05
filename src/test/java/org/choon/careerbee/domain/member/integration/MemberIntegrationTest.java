@@ -6,6 +6,8 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
+import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -55,5 +57,29 @@ class MemberIntegrationTest {
         assertThat(updated.getWorkPeriod()).isEqualTo(20);
         assertThat(updated.getPosition()).isEqualTo("백엔드");
         assertThat(updated.getAdditionalExperiences()).isEqualTo("메이플스토리 만들었음");
+    }
+
+    @Test
+    void testWithdraw_persistsToDatabase() {
+        // given
+        Member member = memberRepository.save(
+            createMember("testnick", "test@test.com", 999L)
+        );
+        String reason = "서비스 종료";
+        LocalDateTime withdrawAt = LocalDateTime.of(2025, 6, 6, 12, 0);
+
+        // when
+        member.withdraw(new WithdrawCommand(reason, withdrawAt));
+        em.flush();
+        em.clear();
+
+        // then : native query 를 직접 사용하여 @SqlRestriction 우회
+        Member withdrawn = (Member) em.createNativeQuery(
+                "SELECT * FROM member WHERE id = :id", Member.class
+            ).setParameter("id", member.getId())
+            .getSingleResult();
+
+        assertThat(withdrawn.getWithdrawReason()).isEqualTo(reason);
+        assertThat(withdrawn.getWithdrawnAt()).isEqualTo(withdrawAt);
     }
 }
