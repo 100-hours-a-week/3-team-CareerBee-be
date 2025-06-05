@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.member.controller;
 
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,12 +8,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
-import org.choon.careerbee.domain.auth.repository.TokenRepository;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.choon.careerbee.filter.jwt.JwtAuthenticationFilter;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,9 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -105,6 +101,64 @@ class MemberControllerTest {
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.httpStatusCode").value(404))
             .andExpect(jsonPath("$.message").value(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage()));
+    }
+
+    @Test
+    @DisplayName("내 정보 수정 - 정상 요청 시 204 No Content 반환")
+    void updateProfileInfo_success() throws Exception {
+        // given
+        UpdateProfileInfoReq req = new UpdateProfileInfoReq(
+            "https://img.example.com/profile.png",
+            "새닉네임",
+            "new_email@example.com"
+        );
+        String json = objectMapper.writeValueAsString(req);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/members")
+                .header("Authorization", "Bearer " + accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode").value(204))
+            .andExpect(jsonPath("$.message").value("내 정보 수정이 완료되었습니다."));
+    }
+
+    @Test
+    @DisplayName("내 정보 수정 - 인증 없이 요청 시 401 반환")
+    void updateProfileInfo_unauthorized_shouldReturn401() throws Exception {
+        UpdateProfileInfoReq req = new UpdateProfileInfoReq(
+            "https://img.example.com/profile.png", "newNick", "unauth@example.com"
+        );
+        String json = objectMapper.writeValueAsString(req);
+
+        mockMvc.perform(patch("/api/v1/members")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("내 정보 수정 - 중복 이메일이면 409 Conflict 반환")
+    void updateProfileInfo_duplicateEmail_shouldReturn409() throws Exception {
+        // given
+        memberRepository.saveAndFlush(createMember("testnickname", "duplicate@test.com", 2345L));
+        UpdateProfileInfoReq req = new UpdateProfileInfoReq(
+            "https://img.example.com/profile.png",
+            "new nickname",
+            "duplicate@test.com"
+        );
+        String json = objectMapper.writeValueAsString(req);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/members")
+                .header("Authorization", "Bearer " + accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.httpStatusCode").value(409))
+            .andExpect(jsonPath("$.message").value(CustomResponseStatus.EMAIL_ALREADY_EXIST.getMessage()));
     }
 
 }
