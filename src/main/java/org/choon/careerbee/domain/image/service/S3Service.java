@@ -7,13 +7,17 @@ import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.PresignedUrlReq;
+import org.choon.careerbee.domain.image.dto.response.GetPresignedUrlResp;
 import org.choon.careerbee.domain.image.dto.response.PresignedUrlResp;
 import org.choon.careerbee.domain.image.enums.SupportedExtension;
 import org.choon.careerbee.domain.image.enums.UploadType;
+import org.choon.careerbee.domain.member.dto.request.UploadCompleteReq;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @RequiredArgsConstructor
@@ -59,6 +63,27 @@ public class S3Service implements ImageService {
 
         return new PresignedUrlResp(
             uploadUrl.toString(), key
+        );
+    }
+
+    @Override
+    public GetPresignedUrlResp generateGetPresignedUrlByObjectKey(
+        UploadCompleteReq uploadCompleteReq
+    ) {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+            .bucket(bucket)
+            .key(uploadCompleteReq.objectKey())
+            .build();
+
+        GetObjectPresignRequest getPresignRequest = GetObjectPresignRequest.builder()
+            .getObjectRequest(getObjectRequest)
+            .signatureDuration(PRESIGNED_URL_EXPIRATION)
+            .build();
+
+        URL getUrl = s3Presigner.presignGetObject(getPresignRequest).url();
+
+        return new GetPresignedUrlResp(
+            getUrl.toString()
         );
     }
 
