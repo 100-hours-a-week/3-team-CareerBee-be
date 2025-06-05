@@ -14,6 +14,8 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingRes
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp.RankingInfo;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp.RankingInfoWithContinuousAndCorrectRate;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp.MemberDayRankInfo;
+import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp.MemberWeekAndMonthRankInfo;
 import org.springframework.stereotype.Repository;
 
 @RequiredArgsConstructor
@@ -108,16 +110,45 @@ public class CompetitionSummaryCustomRepositoryImpl implements
 
     @Override
     public MemberRankingResp fetchMemberRankingById(Long accessMemberId) {
-        Long dailyRanking = fetchLatestRanking(accessMemberId, SummaryType.DAY);
-        Long weeklyRanking = fetchLatestRanking(accessMemberId, SummaryType.WEEK);
-        Long monthlyRanking = fetchLatestRanking(accessMemberId, SummaryType.MONTH);
+        MemberDayRankInfo dailyRanking = fetchLatestRanking(accessMemberId, SummaryType.DAY);
+        MemberWeekAndMonthRankInfo weeklyRanking = fetchLatestWeekAndMonthRanking(
+            accessMemberId, SummaryType.WEEK
+        );
+        MemberWeekAndMonthRankInfo monthlyRanking = fetchLatestWeekAndMonthRanking(
+            accessMemberId, SummaryType.MONTH
+        );
 
         return new MemberRankingResp(dailyRanking, weeklyRanking, monthlyRanking);
     }
 
-    private Long fetchLatestRanking(Long memberId, SummaryType type) {
+    private MemberDayRankInfo fetchLatestRanking(
+        Long memberId, SummaryType type
+    ) {
         return queryFactory
-            .select(competitionSummary.ranking)
+            .select(Projections.constructor(
+                MemberDayRankInfo.class,
+                competitionSummary.ranking,
+                competitionSummary.elapsedTime,
+                competitionSummary.solvedCount))
+            .from(competitionSummary)
+            .where(
+                competitionSummary.member.id.eq(memberId),
+                competitionSummary.type.eq(type)
+            )
+            .orderBy(competitionSummary.periodEnd.desc())
+            .limit(1)
+            .fetchOne();
+    }
+
+    private MemberWeekAndMonthRankInfo fetchLatestWeekAndMonthRanking(
+        Long memberId, SummaryType type
+    ) {
+        return queryFactory
+            .select(Projections.constructor(
+                MemberWeekAndMonthRankInfo.class,
+                competitionSummary.ranking,
+                competitionSummary.maxContinuousDays,
+                competitionSummary.correctRate))
             .from(competitionSummary)
             .where(
                 competitionSummary.member.id.eq(memberId),
