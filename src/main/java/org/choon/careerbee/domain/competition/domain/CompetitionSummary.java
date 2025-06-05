@@ -47,6 +47,15 @@ public class CompetitionSummary extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private SummaryType type;
 
+    @Column(name = "max_continuous_day", nullable = false)
+    private Integer maxContinuousDays;
+
+    @Column(name = "participation_day", nullable = false)
+    private Integer participationDays;
+
+    @Column(name = "correct_rate", nullable = false)
+    private Double correctRate;
+
     @Column(name = "period_start", nullable = false)
     private LocalDate periodStart;
 
@@ -54,20 +63,25 @@ public class CompetitionSummary extends BaseEntity {
     private LocalDate periodEnd;
 
     @Builder
-    private CompetitionSummary(Member member, Short solvedCount, Long elapsedTime, Long ranking,
-        SummaryType type, LocalDate periodStart, LocalDate periodEnd) {
+    private CompetitionSummary(
+        Member member, Short solvedCount, Long elapsedTime,
+        Long ranking, Integer maxContinuousDays, Integer participationDays,
+        SummaryType type, LocalDate periodStart, LocalDate periodEnd
+    ) {
         this.member = member;
         this.solvedCount = solvedCount;
         this.elapsedTime = elapsedTime;
         this.ranking = ranking;
         this.type = type;
+        this.maxContinuousDays = maxContinuousDays;
+        this.participationDays = participationDays;
         this.periodStart = periodStart;
         this.periodEnd = periodEnd;
     }
 
     public static CompetitionSummary of(
         Member member, Short solvedCount, Long elapsedTime,
-        Long ranking,
+        Long ranking, Integer maxContinuousDays, Integer participationDays,
         SummaryType type, LocalDate periodStart, LocalDate periodEnd
     ) {
         return CompetitionSummary.builder()
@@ -76,6 +90,8 @@ public class CompetitionSummary extends BaseEntity {
             .elapsedTime(elapsedTime)
             .ranking(ranking)
             .type(type)
+            .maxContinuousDays(maxContinuousDays)
+            .participationDays(participationDays)
             .periodStart(periodStart)
             .periodEnd(periodEnd)
             .build();
