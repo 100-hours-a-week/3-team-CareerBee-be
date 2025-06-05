@@ -56,10 +56,9 @@ public class S3Service implements ImageService {
             .build();
 
         URL uploadUrl = s3Presigner.presignPutObject(presignRequest).url();
-        String objectUrl = "https://" + bucket + ".s3.amazonaws.com/" + key;
 
         return new PresignedUrlResp(
-            uploadUrl.toString(), objectUrl, PRESIGNED_URL_EXPIRATION.getSeconds()
+            uploadUrl.toString(), key
         );
     }
 
