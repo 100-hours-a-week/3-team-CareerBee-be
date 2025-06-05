@@ -150,8 +150,7 @@ class AuthControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").value("로그인에 성공하였습니다."))
             .andExpect(jsonPath("$.httpStatusCode").value(200))
-            .andExpect(jsonPath("$.data.accessToken").exists())
-            .andExpect(jsonPath("$.data.userInfo").exists());
+            .andExpect(jsonPath("$.data.accessToken").exists());
 
         long countAfter = memberRepository.count();
         assertThat(countBefore + 1).isEqualTo(countAfter);
@@ -183,8 +182,7 @@ class AuthControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message").value("로그인에 성공하였습니다."))
             .andExpect(jsonPath("$.httpStatusCode").value(200))
-            .andExpect(jsonPath("$.data.accessToken").exists())
-            .andExpect(jsonPath("$.data.userInfo").exists());
+            .andExpect(jsonPath("$.data.accessToken").exists());
 
         long countAfter = memberRepository.count();
         assertThat(countBefore).isEqualTo(countAfter);
