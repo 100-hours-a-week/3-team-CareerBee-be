@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp.RankingInfo;
-import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp.RankingInfoWithContinuous;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp.RankingInfoWithContinuousAndCorrectRate;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.springframework.stereotype.Repository;
 
@@ -67,12 +67,12 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .limit(10)
             .fetch();
 
-        List<RankingInfoWithContinuous> week = rawWeekResults.stream()
+        List<RankingInfoWithContinuousAndCorrectRate> week = rawWeekResults.stream()
             .map(tuple -> {
                 Long memberId = tuple.get(member.id);
                 int continuous = calculateMaxContinuousDaysByMemberId(memberId,
                     today.atStartOfDay());
-                return new RankingInfoWithContinuous(
+                return new RankingInfoWithContinuousAndCorrectRate(
                     tuple.get(member.nickname),
                     tuple.get(member.imgUrl),
                     tuple.get(member.imgUrl),
@@ -100,11 +100,11 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .limit(10)
             .fetch();
 
-        List<RankingInfoWithContinuous> month = rawMonthResults.stream()
+        List<RankingInfoWithContinuousAndCorrectRate> month = rawMonthResults.stream()
             .map(tuple -> {
                 Long memberId = tuple.get(member.id);
 
-                return new RankingInfoWithContinuous(
+                return new RankingInfoWithContinuousAndCorrectRate(
                     tuple.get(member.nickname),
                     tuple.get(member.imgUrl),
                     tuple.get(member.imgUrl),

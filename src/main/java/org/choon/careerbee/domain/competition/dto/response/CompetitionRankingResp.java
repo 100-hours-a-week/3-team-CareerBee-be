@@ -4,8 +4,8 @@ import java.util.List;
 
 public record CompetitionRankingResp(
     List<RankingInfo> daily,
-    List<RankingInfoWithContinuous> week,
-    List<RankingInfoWithContinuous> month
+    List<RankingInfoWithContinuousAndCorrectRate> week,
+    List<RankingInfoWithContinuousAndCorrectRate> month
 ) {
 
     public record RankingInfo(
@@ -18,12 +18,12 @@ public record CompetitionRankingResp(
 
     }
 
-    public record RankingInfoWithContinuous(
+    public record RankingInfoWithContinuousAndCorrectRate(
         String nickname,
         String badgeUrl,
         String profileUrl,
         int continuous,
-        short solvedCount
+        double correctRate
     ) {
 
     }
