@@ -30,6 +30,7 @@ jobs:
           echo "::add-mask::$AWS_ACCESS_KEY_ID"
           echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
           echo "::add-mask::$AWS_DEFAULT_REGION"
+          echo "::add-mask::$S3_BUCKET_IMAGE"
           echo "::add-mask::$S3_BUCKET_INFRA"
           echo "::add-mask::$DB_URL"
           echo "::add-mask::$DB_USERNAME"
@@ -49,6 +50,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_ENV
           echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> $GITHUB_ENV
+          echo "S3_BUCKET_IMAGE=$S3_BUCKET_IMAGE" >> $GITHUB_ENV
           echo "S3_BUCKET_INFRA=$S3_BUCKET_INFRA" >> $GITHUB_ENV
           echo "DB_URL=$DB_URL" >> $GITHUB_ENV
           echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
@@ -118,6 +120,10 @@ jobs:
               -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
               -DSENTRY_DSN="${SENTRY_DSN}" \
               -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+              -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
+              -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
+              -DAWS_REGION="${AWS_DEFAULT_REGION}" \
+              -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
               -Djdk.attach.allowAttachSelf=true \
@@ -126,6 +132,62 @@ jobs:
               -Dobj_name=careerbee-api \
               -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
           EOF
+
+      - name: Health check and rollback if needed
+        run: |
+          set -e
+          for i in $(seq 1 5); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://dev-api.careerbee.co.kr/health-check")
+            if [ "$STATUS" == "200" ]; then
+              break
+            fi
+            echo $STATUS
+            sleep 10
+          done
+
+          if [ "$STATUS" != "200" ]; then
+            LATEST_VALID_BACKUP=$(aws s3 ls "${S3_BUCKET_INFRA}/be/" | awk '{print $2}' | grep -v "^${DEPLOY_PATH}/$" | sort | tail -n 1 | sed 's#/$##')
+            if [ -z "$LATEST_VALID_BACKUP" ]; then
+              exit 1
+            fi
+
+            ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "ubuntu@${AWS_SERVER_IP}" <<EOF
+              set -e
+              pkill -f 'careerbee-api.jar' || true
+
+              mkdir -p ~/release ~/logs
+              aws s3 cp ${S3_BUCKET_INFRA}/be/${LATEST_VALID_BACKUP}/careerbee-api.jar ~/release/careerbee-api.jar
+
+              nohup java \
+                -Dspring.profiles.active=dev \
+                -DDB_URL="${DB_URL}" \
+                -DDB_USERNAME="${DB_USERNAME}" \
+                -DDB_PASSWORD="${DB_PASSWORD}" \
+                -DJWT_SECRETS="${JWT_SECRETS}" \
+                -DKAKAO_CLIENT_ID="${KAKAO_CLIENT_ID}" \
+                -DKAKAO_PROD_REDIRECT_URI="${KAKAO_PROD_REDIRECT_URI}" \
+                -DKAKAO_DEV_REDIRECT_URI="${KAKAO_DEV_REDIRECT_URI}" \
+                -DKAKAO_LOCAL_REDIRECT_URI="${KAKAO_LOCAL_REDIRECT_URI}" \
+                -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
+                -DSENTRY_DSN="${SENTRY_DSN}" \
+                -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+                -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
+                -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
+                -DAWS_REGION="${AWS_DEFAULT_REGION}" \
+                -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
+                --add-opens java.base/java.lang=ALL-UNNAMED \
+                --add-exports java.base/sun.net=ALL-UNNAMED \
+                -Djdk.attach.allowAttachSelf=true \
+                -javaagent:/home/ubuntu/scouter/agent.java/scouter.agent.jar \
+                -Dscouter.config=/home/ubuntu/scouter/agent.java/conf/scouter.conf \
+                -Dobj_name=careerbee-api \
+                -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
+          EOF
+            
+            aws s3 rm "${S3_BUCKET_INFRA}/ai/${DEPLOY_PATH}/" --recursive
+
+            exit 1
+          fi
 
       - name: Notify Discord on Success
         if: success()
