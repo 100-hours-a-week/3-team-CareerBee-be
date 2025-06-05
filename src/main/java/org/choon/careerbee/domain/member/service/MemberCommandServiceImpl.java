@@ -3,6 +3,8 @@ package org.choon.careerbee.domain.member.service;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
@@ -43,6 +45,18 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             updateResumeReq.workPeriod(),
             updateResumeReq.position(),
             updateResumeReq.additionalExperiences()
+        );
+    }
+
+    @Override
+    public void updateProfileInfo(UpdateProfileInfoReq updateProfileInfoReq, Long accessMemberId) {
+        memberQueryService.checkEmailExist(updateProfileInfoReq.newEmail());
+
+        Member validMember = memberQueryService.findById(accessMemberId);
+        validMember.updateProfileInfo(new UpdateProfileCommand(
+            updateProfileInfoReq.newProfileUrl(),
+            updateProfileInfoReq.newEmail(),
+            updateProfileInfoReq.newNickname())
         );
     }
 

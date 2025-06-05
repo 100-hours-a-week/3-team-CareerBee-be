@@ -19,6 +19,7 @@ import org.choon.careerbee.common.entity.BaseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
 import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
@@ -130,6 +131,12 @@ public class Member extends BaseEntity {
         this.workPeriod = workPeriod;
         this.position = position;
         this.additionalExperiences = additionalExperiences;
+    }
+
+    public void updateProfileInfo(UpdateProfileCommand command) {
+        this.imgUrl = command.profileImgUrl();
+        this.email = command.email();
+        this.nickname = command.nickname();
     }
 
     public void withdraw(WithdrawCommand command) {

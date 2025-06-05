@@ -10,6 +10,7 @@ import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
@@ -63,6 +64,19 @@ public class MemberController {
         return CommonResponseEntity.ok(
             CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
             "이력 정보 수정이 완료되었습니다."
+        );
+    }
+
+    @PatchMapping
+    public ResponseEntity<CommonResponse<Void>> updateProfileInfo(
+        @RequestBody UpdateProfileInfoReq updateProfileInfoReq,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.updateProfileInfo(updateProfileInfoReq, principalDetails.getId());
+
+        return CommonResponseEntity.ok(
+            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            "내 정보 수정이 완료되었습니다."
         );
     }
 
