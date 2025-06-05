@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -180,25 +181,26 @@ class CompetitionQueryServiceImplTest {
     @DisplayName("대회 랭킹 조회 - 정상적으로 반환되는 경우")
     void fetchRankings_success() {
         // given
-        LocalDate today = LocalDate.of(2025, 6, 2);
+        LocalDateTime today = LocalDateTime.of(2025, 6, 2, 23, 59, 59);
+        LocalDate todayLd = LocalDate.of(today.getYear(), today.getMonth(), today.getDayOfMonth());
         CompetitionRankingResp mockResp = new CompetitionRankingResp(
             List.of(),
             List.of(),
             List.of()
         );
 
-        when(competitionSummaryRepository.fetchRankings(today)).thenReturn(mockResp);
+        when(competitionSummaryRepository.fetchRankings(todayLd)).thenReturn(mockResp);
 
         // when
         CompetitionRankingResp result = competitionQueryService.fetchRankings(today);
 
         // then
         assertThat(result).isEqualTo(mockResp);
-        verify(competitionSummaryRepository).fetchRankings(today);
+        verify(competitionSummaryRepository).fetchRankings(todayLd);
 
         ArgumentCaptor<LocalDate> captor = ArgumentCaptor.forClass(LocalDate.class);
         verify(competitionSummaryRepository, times(1)).fetchRankings(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(today);
+        assertThat(captor.getValue()).isEqualTo(todayLd);
     }
 
     @Test
@@ -242,7 +244,16 @@ class CompetitionQueryServiceImplTest {
     void fetchMemberCompetitionRankingById_success() {
         // given
         Long memberId = 123L;
-        MemberRankingResp mockResp = new MemberRankingResp(5L, 3L, 2L);
+        MemberRankingResp.MemberDayRankInfo dayRank =
+            new MemberRankingResp.MemberDayRankInfo(5L, 1234L, (short) 3);
+
+        MemberRankingResp.MemberWeekAndMonthRankInfo weekRank =
+            new MemberRankingResp.MemberWeekAndMonthRankInfo(3L, 7, 0.75);
+
+        MemberRankingResp.MemberWeekAndMonthRankInfo monthRank =
+            new MemberRankingResp.MemberWeekAndMonthRankInfo(2L, 15, 0.88);
+
+        MemberRankingResp mockResp = new MemberRankingResp(dayRank, weekRank, monthRank);
 
         when(competitionSummaryRepository.fetchMemberRankingById(memberId)).thenReturn(mockResp);
 
@@ -252,9 +263,9 @@ class CompetitionQueryServiceImplTest {
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.day()).isEqualTo(5L);
-        assertThat(result.week()).isEqualTo(3L);
-        assertThat(result.month()).isEqualTo(2L);
+        assertThat(result.daily().rank()).isEqualTo(5L);
+        assertThat(result.week().rank()).isEqualTo(3L);
+        assertThat(result.month().rank()).isEqualTo(2L);
 
         verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId);
     }

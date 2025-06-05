@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.competition.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -46,8 +47,9 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    public CompetitionRankingResp fetchRankings(LocalDate today) {
-        return competitionSummaryRepository.fetchRankings(today);
+    public CompetitionRankingResp fetchRankings(LocalDateTime today) {
+        return competitionSummaryRepository.fetchRankings(
+            LocalDate.of(today.getYear(), today.getMonth(), today.getDayOfMonth()));
     }
 
     @Override
