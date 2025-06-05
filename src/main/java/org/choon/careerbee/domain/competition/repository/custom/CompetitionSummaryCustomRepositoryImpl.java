@@ -1,6 +1,5 @@
 package org.choon.careerbee.domain.competition.repository.custom;
 
-import static org.choon.careerbee.domain.competition.domain.QCompetitionResult.competitionResult;
 import static org.choon.careerbee.domain.competition.domain.QCompetitionSummary.competitionSummary;
 import static org.choon.careerbee.domain.member.entity.QMember.member;
 
@@ -8,10 +7,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
@@ -53,8 +49,9 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .select(
                 member.id,
                 member.nickname,
-                member.imgUrl,
-                competitionSummary.solvedCount
+                member.imgUrl, // Todo : 추후 badge url도 가져와야함
+                competitionSummary.correctRate,
+                competitionSummary.maxContinuousDays
             )
             .from(competitionSummary)
             .join(competitionSummary.member, member)
@@ -68,18 +65,13 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> week = rawWeekResults.stream()
-            .map(tuple -> {
-                Long memberId = tuple.get(member.id);
-                int continuous = calculateMaxContinuousDaysByMemberId(memberId,
-                    today.atStartOfDay());
-                return new RankingInfoWithContinuousAndCorrectRate(
-                    tuple.get(member.nickname),
-                    tuple.get(member.imgUrl),
-                    tuple.get(member.imgUrl),
-                    continuous,
-                    tuple.get(competitionSummary.solvedCount)
-                );
-            })
+            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+                tuple.get(member.nickname),
+                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
+                tuple.get(member.imgUrl),
+                tuple.get(competitionSummary.maxContinuousDays),
+                tuple.get(competitionSummary.correctRate)
+            ))
             .toList();
 
         List<Tuple> rawMonthResults = queryFactory
@@ -87,7 +79,8 @@ public class CompetitionSummaryCustomRepositoryImpl implements
                 member.id,
                 member.nickname,
                 member.imgUrl,
-                competitionSummary.solvedCount
+                competitionSummary.correctRate,
+                competitionSummary.maxContinuousDays
             )
             .from(competitionSummary)
             .join(competitionSummary.member, member)
@@ -101,17 +94,13 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> month = rawMonthResults.stream()
-            .map(tuple -> {
-                Long memberId = tuple.get(member.id);
-
-                return new RankingInfoWithContinuousAndCorrectRate(
-                    tuple.get(member.nickname),
-                    tuple.get(member.imgUrl),
-                    tuple.get(member.imgUrl),
-                    calculateMaxContinuousDaysByMemberId(memberId, today.atStartOfDay()),
-                    tuple.get(competitionSummary.solvedCount)
-                );
-            })
+            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+                tuple.get(member.nickname),
+                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
+                tuple.get(member.imgUrl),
+                tuple.get(competitionSummary.maxContinuousDays),
+                tuple.get(competitionSummary.correctRate)
+            ))
             .toList();
 
         return new CompetitionRankingResp(daily, week, month);
@@ -137,41 +126,5 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .orderBy(competitionSummary.periodEnd.desc())
             .limit(1)
             .fetchOne();
-    }
-
-    private int calculateMaxContinuousDaysByMemberId(Long memberId, LocalDateTime today) {
-        LocalDateTime startOfMonth = today.withDayOfMonth(1).toLocalDate().atStartOfDay();
-        LocalDateTime endOfMonth = today.withDayOfMonth(today.toLocalDate().lengthOfMonth())
-            .toLocalDate()
-            .atTime(23, 59, 59);
-
-        Set<LocalDate> participatedDays = queryFactory
-            .select(competitionResult.createdAt)
-            .from(competitionResult)
-            .where(
-                competitionResult.member.id.eq(memberId),
-                competitionResult.createdAt.goe(startOfMonth),
-                competitionResult.createdAt.loe(endOfMonth))
-            .orderBy(competitionResult.createdAt.asc())
-            .fetch()
-            .stream()
-            .map(LocalDateTime::toLocalDate)
-            .collect(Collectors.toSet());
-
-        int maxStreak = 0;
-        int currentStreak = 0;
-        LocalDate checkDate = startOfMonth.toLocalDate();
-
-        while (!checkDate.isAfter(endOfMonth.toLocalDate())) {
-            if (participatedDays.contains(checkDate)) {
-                currentStreak++;
-                maxStreak = Math.max(maxStreak, currentStreak);
-            } else {
-                currentStreak = 0;
-            }
-            checkDate = checkDate.plusDays(1);
-        }
-
-        return maxStreak;
     }
 }
