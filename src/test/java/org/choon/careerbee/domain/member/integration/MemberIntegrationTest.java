@@ -30,7 +30,8 @@ class MemberIntegrationTest {
     private EntityManager em;
 
     @Test
-    void testDirtyChecking() {
+    @DisplayName("이력 정보 수정 - 자격증 수, 프로젝트 수, 전공, 회사명, 기간, 직무, 추가 경험이 DB에 반영된다")
+    void updateResumeInfo_shouldPersistAllFields() {
         // given
         Member member = memberRepository.save(
             createMember("testnick", "test@test.com", 123L)
@@ -85,7 +86,8 @@ class MemberIntegrationTest {
     }
 
     @Test
-    void testWithdraw_persistsToDatabase() {
+    @DisplayName("회원 탈퇴 - 탈퇴 사유와 탈퇴 일시가 DB에 정상 반영된다")
+    void withdraw_shouldPersistWithdrawReasonAndTime() {
         // given
         Member member = memberRepository.save(
             createMember("testnick", "test@test.com", 999L)
