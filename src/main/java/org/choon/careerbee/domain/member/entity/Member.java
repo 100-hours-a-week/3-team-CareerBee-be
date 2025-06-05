@@ -16,8 +16,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
-import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
+import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.entity.enums.RoleType;
@@ -128,5 +130,13 @@ public class Member extends BaseEntity {
         this.workPeriod = workPeriod;
         this.position = position;
         this.additionalExperiences = additionalExperiences;
+    }
+
+    public void withdraw(WithdrawCommand command) {
+        if (this.withdrawnAt != null) {
+            throw new CustomException(CustomResponseStatus.MEMBER_ALREADY_WITHDRAWAL);
+        }
+        this.withdrawReason = command.reason();
+        this.withdrawnAt = command.requestedAt();
     }
 }
