@@ -19,23 +19,22 @@ import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.jwt.TokenClaimInfo;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
 import org.choon.careerbee.domain.auth.entity.Token;
-import org.choon.careerbee.domain.auth.dto.response.TokenAndUserInfo;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
-import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
+import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProvider;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProviderFactory;
-import org.choon.careerbee.domain.member.entity.Member;
-import org.choon.careerbee.domain.member.service.MemberQueryService;
-import org.choon.careerbee.util.jwt.JwtUtil;
-import org.choon.careerbee.util.jwt.TokenGenerator;
 import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoInfoResponse;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoInfoResponse.KakaoAccount;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoLoginParams;
+import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
+import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.choon.careerbee.util.jwt.JwtUtil;
+import org.choon.careerbee.util.jwt.TokenGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -135,13 +134,11 @@ class AuthServiceImplTest {
             .thenReturn(Optional.of(new Token(member, TokenStatus.LIVE, "refresh-token")));
 
         // when
-        TokenAndUserInfo result = authService.login(params, "http://localhost:5173");
+        AuthTokens result = authService.login(params, "http://localhost:5173");
 
         // then
-        assertThat(result.authTokens().accessToken()).isEqualTo("access-token");
-        assertThat(result.authTokens().refreshToken()).isEqualTo("refresh-token");
-        assertThat(result.userInfo().userPoint()).isEqualTo(0);
-        assertThat(result.userInfo().hasNewAlarm()).isFalse();
+        assertThat(result.accessToken()).isEqualTo("access-token");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token");
 
         ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
         ArgumentCaptor<TokenStatus> statusCaptor = ArgumentCaptor.forClass(TokenStatus.class);
@@ -182,11 +179,11 @@ class AuthServiceImplTest {
             Optional.empty());
 
         // when
-        TokenAndUserInfo result = authService.login(params, "http://localhost:5173");
+        AuthTokens result = authService.login(params, "http://localhost:5173");
 
         // then
-        assertThat(result.authTokens().accessToken()).isEqualTo("access-token-new");
-        assertThat(result.authTokens().refreshToken()).isEqualTo("refresh-token-new");
+        assertThat(result.accessToken()).isEqualTo("access-token-new");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token-new");
 
         ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
         verify(tokenRepository).save(tokenCaptor.capture());
@@ -221,11 +218,11 @@ class AuthServiceImplTest {
             Optional.empty());
 
         // when
-        TokenAndUserInfo result = authService.login(params, "http://localhost:5173");
+        AuthTokens result = authService.login(params, "http://localhost:5173");
 
         // then
-        assertThat(result.authTokens().accessToken()).isEqualTo("access-token-exist");
-        assertThat(result.authTokens().refreshToken()).isEqualTo("refresh-token-exist");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token-exist");
+        assertThat(result.accessToken()).isEqualTo("access-token-exist");
 
         ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
         verify(tokenRepository).save(tokenCaptor.capture());
