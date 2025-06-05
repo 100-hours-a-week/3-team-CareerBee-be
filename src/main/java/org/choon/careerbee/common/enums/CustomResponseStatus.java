@@ -34,6 +34,7 @@ public enum CustomResponseStatus {
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "유효한 리프레시 토큰이 존재하지 않습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST.value(), "유효하지 않은 입력값 입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "내부 서버 오류입니다."),
+    AI_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "AI 서버 오류입니다."),
     ;
 
     private final int httpStatusCode;
@@ -44,8 +45,4 @@ public enum CustomResponseStatus {
         this.message = message;
     }
 
-    public CustomResponseStatus withMessage(String customMessage) {
-        this.message = customMessage;
-        return this;
-    }
 }

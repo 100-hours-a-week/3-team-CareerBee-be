@@ -10,6 +10,8 @@ import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
+import org.choon.careerbee.domain.member.dto.request.UploadCompleteReq;
+import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
@@ -75,6 +77,19 @@ public class MemberController {
             response,
             CustomResponseStatus.SUCCESS,
             "이력서 초안 생성에 성공하였습니다."
+        );
+    }
+
+    @PostMapping("members/resume/complete-upload")
+    public ResponseEntity<CommonResponse<ExtractResumeResp>> extractResumeInfo(
+        @RequestBody UploadCompleteReq uploadCompleteReq
+    ) {
+        ExtractResumeResp response = commandService.extractResumeInfoFromAi(uploadCompleteReq);
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "이력서 정보 추출에 성공하였습니다."
         );
     }
 }

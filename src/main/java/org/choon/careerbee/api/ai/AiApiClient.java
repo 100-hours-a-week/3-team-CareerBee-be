@@ -20,7 +20,9 @@ import org.springframework.web.client.RestClient;
 @Slf4j
 public class AiApiClient {
 
-    @Qualifier("aiRestClient")
+    private final ObjectMapper objectMapper = new ObjectMapper()
+        .enable(SerializationFeature.INDENT_OUTPUT);
+
     private final RestClient aiRestClient;
 
     public AiApiClient(
