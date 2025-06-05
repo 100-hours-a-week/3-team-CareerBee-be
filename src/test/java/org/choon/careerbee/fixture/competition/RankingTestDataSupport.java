@@ -65,20 +65,42 @@ public class RankingTestDataSupport {
         LocalDate monthStart = today.withDayOfMonth(1);
         LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
 
-        em.merge(createSummary(member2, (short) 5, 2000L, 2L, SummaryType.DAY, today, today));
-        em.merge(createSummary(member3, (short) 5, 1500L, 1L, SummaryType.DAY, today, today));
+        em.merge(createSummary(
+            member2, (short) 5, 2000L,
+            2L, 1, 80.0,
+            SummaryType.DAY, today, today
+        ));
+        em.merge(createSummary(
+            member3, (short) 5, 1500L,
+            1L, 2, 75.0,
+            SummaryType.DAY, today, today
+        ));
 
-        em.merge(
-            createSummary(member1, (short) 6, 2000L, 1L, SummaryType.WEEK, weekStart, weekEnd));
-        em.merge(
-            createSummary(member3, (short) 10, 3000L, 2L, SummaryType.WEEK, weekStart, weekEnd));
+        em.merge(createSummary(
+            member1, (short) 6, 2000L,
+            1L, 4, 88.0,
+            SummaryType.WEEK, weekStart, weekEnd
+        ));
+        em.merge(createSummary(
+            member3, (short) 10, 3000L,
+            2L, 6, 88.0,
+            SummaryType.WEEK, weekStart, weekEnd
+        ));
 
-        em.merge(
-            createSummary(member1, (short) 6, 2000L, 1L, SummaryType.MONTH, monthStart, monthEnd));
-        em.merge(
-            createSummary(member3, (short) 10, 3000L, 2L, SummaryType.MONTH, monthStart, monthEnd));
-        em.merge(
-            createSummary(member2, (short) 5, 2000L, 3L, SummaryType.MONTH, monthStart, monthEnd));
+        em.merge(createSummary(
+            member1, (short) 6, 2000L,
+            1L, 22, 99.9,
+            SummaryType.MONTH, monthStart, monthEnd
+        ));
+        em.merge(createSummary(
+            member3, (short) 10, 3000L,
+            2L, 12, 79.0,
+            SummaryType.MONTH, monthStart, monthEnd));
+        em.merge(createSummary(
+            member2, (short) 5, 2000L,
+            3L, 18, 88.0,
+            SummaryType.MONTH, monthStart, monthEnd
+        ));
 
         em.flush();
         em.clear();
@@ -98,4 +120,5 @@ public class RankingTestDataSupport {
             .setParameter("id", result.getId())
             .executeUpdate();
     }
+
 }

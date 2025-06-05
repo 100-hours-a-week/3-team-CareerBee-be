@@ -53,7 +53,7 @@ class CompetitionSummaryCustomRepositoryImplTest {
 
         // then
         assertThat(result.daily()).hasSize(2);
-        assertThat(result.week().get(0).continuous()).isEqualTo(2);
+        assertThat(result.week().get(0).continuous()).isEqualTo(4);
         assertThat(result.month()).hasSize(3);
     }
 
@@ -82,11 +82,23 @@ class CompetitionSummaryCustomRepositoryImplTest {
         LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
 
         // 가장 최신 summary 데이터 생성
-        em.merge(createSummary(member, (short) 5, 1200L, 1L, SummaryType.DAY, today, today));
-        em.merge(
-            createSummary(member, (short) 10, 3000L, 2L, SummaryType.WEEK, weekStart, weekEnd));
-        em.merge(
-            createSummary(member, (short) 15, 4000L, 3L, SummaryType.MONTH, monthStart, monthEnd));
+        em.persist(
+            createSummary(
+                member, (short) 4, 1000L,
+                1L, 1, 90.0,
+                SummaryType.DAY, today, today)
+        );
+        em.persist(
+            createSummary(
+                member, (short) 8, 2000L,
+                2L, 5, 70.0,
+                SummaryType.WEEK, weekStart, weekEnd)
+        );
+        em.persist(
+            createSummary(member, (short) 10, 3000L,
+                3L, 18, 70.6,
+                SummaryType.MONTH, monthStart, monthEnd)
+        );
         em.flush();
         em.clear();
 
@@ -96,8 +108,8 @@ class CompetitionSummaryCustomRepositoryImplTest {
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.day()).isEqualTo(1L);
-        assertThat(result.week()).isEqualTo(2L);
-        assertThat(result.month()).isEqualTo(3L);
+        assertThat(result.daily().rank()).isEqualTo(1L);
+        assertThat(result.week().rank()).isEqualTo(2L);
+        assertThat(result.month().rank()).isEqualTo(3L);
     }
 }
