@@ -6,7 +6,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -16,6 +15,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.api.CompanyApiClient;
 import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp;
+import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp.Job;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.entity.recruitment.Recruitment;
@@ -69,61 +69,26 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     }
 
     @Override
-    public void updateCompanyRecruiting() {
-        SaraminRecruitingResp apiResp = companyApiClient.searchAllRecruitment();
+    public void updateCompanyRecruiting(String keyword) {
+        SaraminRecruitingResp apiResp = companyApiClient.searchAllRecruitment(keyword);
         log.info("1️⃣ 전체 공고 개수 : {}", apiResp.jobs().job().size());
 
         persistNewRecruitmentsAndNotify(apiResp, false);
     }
 
     @Override
-    public void updateCompanyOpenRecruiting() {
-        SaraminRecruitingResp apiResp = companyApiClient.searchOpenRecruitment();
+    public void updateCompanyOpenRecruiting(String keyword) {
+        SaraminRecruitingResp apiResp = companyApiClient.searchOpenRecruitment(keyword);
         log.info("2️⃣ 공채 공고 개수 : {}", apiResp.jobs().job().size());
 
         persistNewRecruitmentsAndNotify(apiResp, true);
     }
 
-    private void persistNewRecruitmentsAndNotify(SaraminRecruitingResp apiResp,
-        boolean isOpenRecruitment) {
-        for (SaraminRecruitingResp.Job job : apiResp.jobs().job()) {
-            if (job.active() == RECRUITING_STATUS_CLOSED) {
-                continue; // 마감된 공고라면 continue
-            }
-
-            Optional<Company> optCompany =
-                companyQueryService.findBySaraminName(job.company().detail().name());
-
-            if (optCompany.isEmpty() || recruitmentRepository.existsByRecruitingId(job.id())) {
-                continue; // 매칭 안된 회사 스킵
-            }
-
-            Company company = optCompany.get();
-            company.changeRecruitingStatus(RecruitingStatus.ONGOING);
-
-            recruitmentRepository.save(Recruitment.from(
-                company,
-                job.id(),
-                job.url(),
-                job.position().title(),
-                parseSaraminDate(job.postingDate()),
-                parseSaraminDate(job.expirationDate())
-            ));
-
-            if (isOpenRecruitment) {
-                // Todo : 공채의 경우 알림 발송 로직 구현
-                // 1. 알림 생성
-                // 2. 해당 기업을 관심기업으로 등록한 유저들 조회
-                // 3. 생성한 알림을 유저들에게 발송
-            }
-        }
-    }
-
-    private void optimizationPersistNewRecruitmentsAndNotify(
+    private void persistNewRecruitmentsAndNotify(
         SaraminRecruitingResp apiResp,
         boolean isOpenRecruitment
     ) {
-        List<SaraminRecruitingResp.Job> jobs = apiResp.jobs().job();
+        List<Job> jobs = apiResp.jobs().job();
 
         // 1. ID, 회사명 추출
         List<String> companyNames = jobs.stream()
@@ -140,7 +105,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Map<String, Company> companyMap = companies.stream()
             .collect(Collectors.toMap(Company::getSaraminName, Function.identity()));
 
-        // 이미 등록된 공고 ID만 꺼내오기 (엔티티가 아닌 ID만)
+        // 이미 등록된 공고 ID만 꺼내오기
         Set<Long> existingIds = recruitmentRepository
             .findRecruitingIdByRecruitingIdIn(jobIds)
             .stream().collect(Collectors.toSet());
@@ -153,10 +118,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
             }
 
             Company company = companyMap.get(job.company().detail().name());
-            if (company == null) {
-                continue;
-            }
-            if (existingIds.contains(job.id())) {
+            if (company == null || existingIds.contains(job.id())) {
                 continue;
             }
 
