@@ -11,9 +11,12 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 30
 
   cloud:
     aws:
@@ -47,6 +50,11 @@ server:
     session:
       cookie:
         domain: ${COOKIE_DOMAIN}
+
+saramin:
+  api:
+    base-url: https://oapi.saramin.co.kr
+    access-key: ${SARAMIN_SECRET_KEY}
 
 sentry:
   dsn: ${SENTRY_DSN}  # 필수: Sentry DSN을 환경변수로 주입
