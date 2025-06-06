@@ -2,6 +2,7 @@ package org.choon.careerbee.interceptor.logging;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.metrics.QueryCountInspector;
@@ -35,10 +36,15 @@ public class LoggingInterceptor implements HandlerInterceptor {
         final Object handler, final Exception ex
     ) {
         Counter counter = queryCountInspector.getQueryCount();
+        if (counter == null) {
+            log.warn("Query Counter 가 설정되지 않았습니다. preHandle()이 호출되지 않았거나 다른 스레드에서 실행되었습니다.");
+            return;
+        }
         final double duration = (System.currentTimeMillis() - counter.getTime()) / 1000.0;
         final long queryCount = counter.getCount();
 
-        log.info(QUERY_COUNT_LOG_FORMAT,
+        log.info(
+            QUERY_COUNT_LOG_FORMAT,
             response.getStatus(), request.getMethod(), request.getRequestURI(),
             duration, queryCount
         );
