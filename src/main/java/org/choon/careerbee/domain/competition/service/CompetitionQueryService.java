@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.competition.service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
@@ -16,9 +15,9 @@ public interface CompetitionQueryService {
 
     CompetitionProblemResp fetchProblems(Long competitionId);
 
-    CompetitionRankingResp fetchRankings(LocalDateTime today);
+    CompetitionRankingResp fetchRankings(LocalDate today);
 
     CompetitionIdResp fetchCompetitionIdBy(LocalDate today);
 
-    MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId);
+    MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId, LocalDate today);
 }

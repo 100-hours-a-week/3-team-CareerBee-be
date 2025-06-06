@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.competition.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -181,26 +182,25 @@ class CompetitionQueryServiceImplTest {
     @DisplayName("대회 랭킹 조회 - 정상적으로 반환되는 경우")
     void fetchRankings_success() {
         // given
-        LocalDateTime today = LocalDateTime.of(2025, 6, 2, 23, 59, 59);
-        LocalDate todayLd = LocalDate.of(today.getYear(), today.getMonth(), today.getDayOfMonth());
+        LocalDate today = LocalDate.of(2025, 6, 2);
         CompetitionRankingResp mockResp = new CompetitionRankingResp(
             List.of(),
             List.of(),
             List.of()
         );
 
-        when(competitionSummaryRepository.fetchRankings(todayLd)).thenReturn(mockResp);
+        when(competitionSummaryRepository.fetchRankings(today)).thenReturn(mockResp);
 
         // when
         CompetitionRankingResp result = competitionQueryService.fetchRankings(today);
 
         // then
         assertThat(result).isEqualTo(mockResp);
-        verify(competitionSummaryRepository).fetchRankings(todayLd);
+        verify(competitionSummaryRepository).fetchRankings(today);
 
         ArgumentCaptor<LocalDate> captor = ArgumentCaptor.forClass(LocalDate.class);
         verify(competitionSummaryRepository, times(1)).fetchRankings(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(todayLd);
+        assertThat(captor.getValue()).isEqualTo(today);
     }
 
     @Test
@@ -255,11 +255,12 @@ class CompetitionQueryServiceImplTest {
 
         MemberRankingResp mockResp = new MemberRankingResp(dayRank, weekRank, monthRank);
 
-        when(competitionSummaryRepository.fetchMemberRankingById(memberId)).thenReturn(mockResp);
+        when(competitionSummaryRepository.fetchMemberRankingById(anyLong(), any(LocalDate.class))).thenReturn(mockResp);
 
         // when
         MemberRankingResp result = competitionQueryService.fetchMemberCompetitionRankingById(
-            memberId);
+            memberId, LocalDate.now()
+        );
 
         // then
         assertThat(result).isNotNull();
@@ -267,6 +268,6 @@ class CompetitionQueryServiceImplTest {
         assertThat(result.week().rank()).isEqualTo(3L);
         assertThat(result.month().rank()).isEqualTo(2L);
 
-        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId);
+        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId, LocalDate.now());
     }
 }
