@@ -73,29 +73,6 @@ jobs:
           echo "${SSH_KEY_BASE64}" | base64 --decode > "${SSH_KEY}"
           chmod 600 "${SSH_KEY}"
 
-      - name: Create .env file
-        run: |
-          echo "SSH_KEY=$SSH_KEY" >> .env
-          echo "SSH_KEY_BASE64=$SSH_KEY_BASE64" >> .env
-          echo "AWS_SERVER_IP=$AWS_SERVER_IP" >> .env
-          echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
-          echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
-          echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> .env
-          echo "S3_BUCKET_IMAGE=$S3_BUCKET_IMAGE" >> .env
-          echo "S3_BUCKET_INFRA=$S3_BUCKET_INFRA" >> .env
-          echo "DB_URL=$DB_URL" >> .env
-          echo "DB_USERNAME=$DB_USERNAME" >> .env
-          echo "DB_PASSWORD=$DB_PASSWORD" >> .env
-          echo "JWT_SECRETS=$JWT_SECRETS" >> .env
-          echo "KAKAO_CLIENT_ID=$KAKAO_CLIENT_ID" >> .env
-          echo "KAKAO_PROD_REDIRECT_URI=$KAKAO_PROD_REDIRECT_URI" >> .env
-          echo "KAKAO_DEV_REDIRECT_URI=$KAKAO_DEV_REDIRECT_URI" >> .env
-          echo "KAKAO_LOCAL_REDIRECT_URI=$KAKAO_LOCAL_REDIRECT_URI" >> .env
-          echo "COOKIE_DOMAIN=$COOKIE_DOMAIN" >> .env
-          echo "SENTRY_DSN=$SENTRY_DSN" >> .env
-          echo "SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN" >> .env
-          echo "SARAMIN_SECRET_KEY=$SARAMIN_SECRET_KEY" >> .env
-
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -138,7 +115,22 @@ jobs:
 
             nohup java \
               -Dspring.profiles.active=dev \
-              -DSENTRY_DSN="$SENTRY_DSN" \
+              -DDB_URL="${DB_URL}" \
+              -DDB_USERNAME="${DB_USERNAME}" \
+              -DDB_PASSWORD="${DB_PASSWORD}" \
+              -DJWT_SECRETS="${JWT_SECRETS}" \
+              -DKAKAO_CLIENT_ID="${KAKAO_CLIENT_ID}" \
+              -DKAKAO_PROD_REDIRECT_URI="${KAKAO_PROD_REDIRECT_URI}" \
+              -DKAKAO_DEV_REDIRECT_URI="${KAKAO_DEV_REDIRECT_URI}" \
+              -DKAKAO_LOCAL_REDIRECT_URI="${KAKAO_LOCAL_REDIRECT_URI}" \
+              -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
+              -DSENTRY_DSN="${SENTRY_DSN}" \
+              -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+              -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
+              -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
+              -DAWS_REGION="${AWS_DEFAULT_REGION}" \
+              -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
+              -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
               -Djdk.attach.allowAttachSelf=true \
@@ -178,7 +170,22 @@ jobs:
 
               nohup java \
                 -Dspring.profiles.active=dev \
-                -DSENTRY_DSN="$SENTRY_DSN" \
+                -DDB_URL="${DB_URL}" \
+                -DDB_USERNAME="${DB_USERNAME}" \
+                -DDB_PASSWORD="${DB_PASSWORD}" \
+                -DJWT_SECRETS="${JWT_SECRETS}" \
+                -DKAKAO_CLIENT_ID="${KAKAO_CLIENT_ID}" \
+                -DKAKAO_PROD_REDIRECT_URI="${KAKAO_PROD_REDIRECT_URI}" \
+                -DKAKAO_DEV_REDIRECT_URI="${KAKAO_DEV_REDIRECT_URI}" \
+                -DKAKAO_LOCAL_REDIRECT_URI="${KAKAO_LOCAL_REDIRECT_URI}" \
+                -DCOOKIE_DOMAIN="${COOKIE_DOMAIN}" \
+                -DSENTRY_DSN="${SENTRY_DSN}" \
+                -DSENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN}" \
+                -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
+                -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
+                -DAWS_REGION="${AWS_DEFAULT_REGION}" \
+                -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
+                -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
                 --add-opens java.base/java.lang=ALL-UNNAMED \
                 --add-exports java.base/sun.net=ALL-UNNAMED \
                 -Djdk.attach.allowAttachSelf=true \
