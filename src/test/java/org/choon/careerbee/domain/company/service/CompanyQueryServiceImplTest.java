@@ -31,6 +31,7 @@ import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -418,5 +419,47 @@ class CompanyQueryServiceImplTest {
         verify(memberRepository, times(1)).findById(invalidMemberId);
         verifyNoInteractions(wishCompanyRepository);
     }
+
+    @Test
+    @DisplayName("관심 회사 목록 조회 - repository 호출 및 결과 반환")
+    void fetchWishCompanies_shouldCallRepositoryAndReturnResponse() {
+        // given
+        Long memberId = 1L;
+        Long cursor = 100L;
+        int size = 10;
+
+        CompanySummaryInfo company1 = new CompanySummaryInfo(
+            101L, "회사A", "https://logo.a", 12L, List.of(new CompanySummaryInfo.Keyword("복지"))
+        );
+        CompanySummaryInfo company2 = new CompanySummaryInfo(
+            102L, "회사B", "https://logo.b", 7L, List.of(new CompanySummaryInfo.Keyword("자율출퇴근"))
+        );
+
+        WishCompaniesResp mockResp = new WishCompaniesResp(List.of(company1, company2), 200L, true);
+
+        when(wishCompanyRepository.fetchWishCompaniesByMemberId(memberId, cursor, size))
+            .thenReturn(mockResp);
+
+        // when
+        WishCompaniesResp actual = companyQueryService.fetchWishCompanies(memberId, cursor, size);
+
+        // then
+        assertThat(actual).isEqualTo(mockResp);
+        assertThat(actual.wishCompanies()).hasSize(2);
+        assertThat(actual.nextCursor()).isEqualTo(200L);
+        assertThat(actual.hasNext()).isTrue();
+
+        ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Long> cursorCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
+
+        verify(wishCompanyRepository, times(1))
+            .fetchWishCompaniesByMemberId(idCaptor.capture(), cursorCaptor.capture(), sizeCaptor.capture());
+
+        assertThat(idCaptor.getValue()).isEqualTo(memberId);
+        assertThat(cursorCaptor.getValue()).isEqualTo(cursor);
+        assertThat(sizeCaptor.getValue()).isEqualTo(size);
+    }
+
 
 }

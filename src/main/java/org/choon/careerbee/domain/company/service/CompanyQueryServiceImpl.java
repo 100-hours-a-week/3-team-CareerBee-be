@@ -1,5 +1,7 @@
 package org.choon.careerbee.domain.company.service;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -16,6 +18,7 @@ import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
@@ -82,6 +85,21 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public Company findById(Long companyId) {
         return companyRepository.findById(companyId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
+    }
+
+    @Override
+    public Optional<Company> findBySaraminName(String name) {
+        return companyRepository.findBySaraminName(name);
+    }
+
+    @Override
+    public List<Company> findBySaraminNameIn(List<String> companyNames) {
+        return companyRepository.findBySaraminNameIn(companyNames);
+    }
+
+    @Override  
+    public WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size) {
+        return wishCompanyRepository.fetchWishCompaniesByMemberId(id, cursor, size);
     }
 
     private String escapeLike(String keyword) {

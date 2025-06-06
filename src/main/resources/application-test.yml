@@ -8,9 +8,23 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 30
+  cloud:
+    aws:
+      s3:
+        credentials:
+          accessKey: sdifuasdiofuapsiodfuaopsidufpaosiduf
+          secretKey: qwpeiorupoerifgscvvujhakhfweoafoweoiu
+        bucket: testbucket
+      region:
+        static: ap-northeast-3
+      stack:
+        auto: false
 jwt:
   secret: asdjfkajsdlfkjlkadjlfkasjdefwerasdfkjasdlkfjasdlkjflkwjeflkjsadlfasdfewdf
   expiration_time:
@@ -31,3 +45,8 @@ server:
     session:
       cookie:
         domain: https://test.co.kr
+
+saramin:
+  api:
+    base-url: https://oapi.saramin.co.kr
+    access-key: 1231242342504

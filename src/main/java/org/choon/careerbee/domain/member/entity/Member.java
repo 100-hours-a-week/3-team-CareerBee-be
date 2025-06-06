@@ -17,6 +17,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
+import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.entity.enums.RoleType;
@@ -59,6 +61,9 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private Integer certificationCount;
 
+    @Column(nullable = false)
+    private Integer projectCount;
+
     @Column(length = 9)
     @Enumerated(EnumType.STRING)
     private MajorType majorType;
@@ -98,9 +103,34 @@ public class Member extends BaseEntity {
         this.provider = oAuthProvider;
         this.providerId = providerId;
         this.certificationCount = 0;
+        this.projectCount = 0;
         this.role = RoleType.ROLE_MEMBER;
         this.points = 0;
         this.progress = 0;
         this.workPeriod = 0;
+    }
+
+    public void updateResumeInfo(
+        int certificationCount,
+        int projectCount,
+        MajorType majorType,
+        String companyName,
+        int workPeriod,
+        String position,
+        String additionalExperiences
+    ) {
+        this.certificationCount = certificationCount;
+        this.projectCount = projectCount;
+        this.majorType = majorType;
+        this.companyName = companyName;
+        this.workPeriod = workPeriod;
+        this.position = position;
+        this.additionalExperiences = additionalExperiences;
+    }
+
+    public void updateProfileInfo(UpdateProfileCommand command) {
+        this.imgUrl = command.profileImgUrl();
+        this.email = command.email();
+        this.nickname = command.nickname();
     }
 }

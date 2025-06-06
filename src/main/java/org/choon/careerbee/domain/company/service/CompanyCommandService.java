@@ -5,4 +5,8 @@ public interface CompanyCommandService {
     void registWishCompany(Long accessMemberId, Long companyId);
 
     void deleteWishCompany(Long accessMemberId, Long companyId);
+
+    void updateCompanyRecruiting(String keyword);
+
+    void updateCompanyOpenRecruiting(String keyword);
 }

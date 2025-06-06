@@ -8,8 +8,10 @@ import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class MemberQueryServiceImpl implements MemberQueryService {
 
@@ -35,4 +37,12 @@ public class MemberQueryServiceImpl implements MemberQueryService {
         return memberRepository.findById(memberId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
     }
+
+    @Override
+    public void checkEmailExist(String email) {
+        if (memberRepository.existsByEmail(email)) {
+            throw new CustomException(CustomResponseStatus.EMAIL_ALREADY_EXIST);
+        }
+    }
+
 }

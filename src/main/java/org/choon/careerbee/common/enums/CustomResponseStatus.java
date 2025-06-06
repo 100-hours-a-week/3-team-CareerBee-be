@@ -10,6 +10,7 @@ public enum CustomResponseStatus {
     ACCESS_DENIED(HttpStatus.FORBIDDEN.value(), "권한이 없습니다."),
 
     MEMBER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 회원입니다."),
+    EMAIL_ALREADY_EXIST(HttpStatus.CONFLICT.value(), "이미 존재하는 이메일입니다."),
 
     INVALID_LATITUDE_ERROR(HttpStatus.BAD_REQUEST.value(), "위도를 정확하게 입력해주세요 : 34~44"),
     INVALID_LONGITUDE_ERROR(HttpStatus.BAD_REQUEST.value(), "경도를 정확하게 입력해주세요 : 124~134"),
@@ -17,7 +18,12 @@ public enum CustomResponseStatus {
     WISH_ALREADY_EXIST(HttpStatus.CONFLICT.value(), "이미 관심기업에 등록되어 있습니다."),
     WISH_COMPANY_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "존재하지 않는 관심기업 입니다."),
 
+    COMPETITION_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 대회입니다."),
+    COMPETITION_ALREADY_JOIN(HttpStatus.CONFLICT.value(), "이미 참여한 대회입니다."),
+    RESULT_ALREADY_SUBMIT(HttpStatus.CONFLICT.value(), "이미 제출하였습니다."),
+
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
+    EXTENSION_NOT_EXIST(HttpStatus.BAD_REQUEST.value(), "제공하지 않는 확장자입니다."),
 
     BAD_JWT(HttpStatus.BAD_REQUEST.value(), "잘못된 토큰입니다."),
     EXPIRED_JWT(HttpStatus.UNAUTHORIZED.value(), "만료된 토큰입니다."),
