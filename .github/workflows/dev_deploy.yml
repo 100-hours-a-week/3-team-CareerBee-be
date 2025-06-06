@@ -138,6 +138,7 @@ jobs:
 
             nohup java \
               -Dspring.profiles.active=dev \
+              -DSENTRY_DSN="$SENTRY_DSN" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
               -Djdk.attach.allowAttachSelf=true \
@@ -177,6 +178,7 @@ jobs:
 
               nohup java \
                 -Dspring.profiles.active=dev \
+                -DSENTRY_DSN="$SENTRY_DSN" \
                 --add-opens java.base/java.lang=ALL-UNNAMED \
                 --add-exports java.base/sun.net=ALL-UNNAMED \
                 -Djdk.attach.allowAttachSelf=true \
