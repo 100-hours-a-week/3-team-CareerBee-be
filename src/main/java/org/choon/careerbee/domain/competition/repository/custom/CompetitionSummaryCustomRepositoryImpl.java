@@ -7,6 +7,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
@@ -109,20 +110,22 @@ public class CompetitionSummaryCustomRepositoryImpl implements
     }
 
     @Override
-    public MemberRankingResp fetchMemberRankingById(Long accessMemberId) {
-        MemberDayRankInfo dailyRanking = fetchLatestRanking(accessMemberId, SummaryType.DAY);
-        MemberWeekAndMonthRankInfo weeklyRanking = fetchLatestWeekAndMonthRanking(
-            accessMemberId, SummaryType.WEEK
+    public MemberRankingResp fetchMemberRankingById(Long accessMemberId, LocalDate today) {
+        MemberDayRankInfo dailyRanking = fetchDailyRankingByDate(
+            accessMemberId, SummaryType.DAY, today
         );
-        MemberWeekAndMonthRankInfo monthlyRanking = fetchLatestWeekAndMonthRanking(
-            accessMemberId, SummaryType.MONTH
+        MemberWeekAndMonthRankInfo weeklyRanking = fetchWeekAndMonthRankingByDate(
+            accessMemberId, SummaryType.WEEK, today
+        );
+        MemberWeekAndMonthRankInfo monthlyRanking = fetchWeekAndMonthRankingByDate(
+            accessMemberId, SummaryType.MONTH, today
         );
 
         return new MemberRankingResp(dailyRanking, weeklyRanking, monthlyRanking);
     }
 
-    private MemberDayRankInfo fetchLatestRanking(
-        Long memberId, SummaryType type
+    private MemberDayRankInfo fetchDailyRankingByDate(
+        Long memberId, SummaryType type, LocalDate today
     ) {
         return queryFactory
             .select(Projections.constructor(
@@ -133,15 +136,16 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .from(competitionSummary)
             .where(
                 competitionSummary.member.id.eq(memberId),
-                competitionSummary.type.eq(type)
+                competitionSummary.type.eq(type),
+                competitionSummary.periodStart.loe(today),
+                competitionSummary.periodEnd.goe(today)
             )
             .orderBy(competitionSummary.periodEnd.desc())
-            .limit(1)
             .fetchOne();
     }
 
-    private MemberWeekAndMonthRankInfo fetchLatestWeekAndMonthRanking(
-        Long memberId, SummaryType type
+    private MemberWeekAndMonthRankInfo fetchWeekAndMonthRankingByDate(
+        Long memberId, SummaryType type, LocalDate today
     ) {
         return queryFactory
             .select(Projections.constructor(
@@ -152,10 +156,11 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .from(competitionSummary)
             .where(
                 competitionSummary.member.id.eq(memberId),
-                competitionSummary.type.eq(type)
+                competitionSummary.type.eq(type),
+                competitionSummary.periodStart.loe(today),
+                competitionSummary.periodEnd.goe(today)
             )
             .orderBy(competitionSummary.periodEnd.desc())
-            .limit(1)
             .fetchOne();
     }
 }

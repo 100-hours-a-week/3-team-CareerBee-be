@@ -84,3 +84,6 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+careerbee:
+  allow-date-param: false

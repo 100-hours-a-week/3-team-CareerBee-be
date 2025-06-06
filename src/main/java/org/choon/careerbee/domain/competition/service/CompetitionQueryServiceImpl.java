@@ -47,9 +47,8 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    public CompetitionRankingResp fetchRankings(LocalDateTime today) {
-        return competitionSummaryRepository.fetchRankings(
-            LocalDate.of(today.getYear(), today.getMonth(), today.getDayOfMonth()));
+    public CompetitionRankingResp fetchRankings(LocalDate today) {
+        return competitionSummaryRepository.fetchRankings(today);
     }
 
     @Override
@@ -58,7 +57,7 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    public MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId) {
-        return competitionSummaryRepository.fetchMemberRankingById(accessMemberId);
+    public MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId, LocalDate today) {
+        return competitionSummaryRepository.fetchMemberRankingById(accessMemberId, today);
     }
 }

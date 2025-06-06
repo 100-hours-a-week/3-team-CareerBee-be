@@ -317,7 +317,7 @@ class CompetitionControllerTest {
         // when & then
         mockMvc.perform(get("/api/v1/competitions/rankings")
                 .accept(MediaType.APPLICATION_JSON)
-                .param("date", "2025-06-02T23:59:59")
+                .param("date", "2025-06-02")
             )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message")
@@ -400,7 +400,9 @@ class CompetitionControllerTest {
         // when & then
         mockMvc.perform(get("/api/v1/members/competitions/rankings")
                 .header("Authorization", accessToken)
-                .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON)
+                .param("date", "2025-06-02")
+            )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
