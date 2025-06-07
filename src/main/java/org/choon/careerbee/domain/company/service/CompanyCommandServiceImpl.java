@@ -71,7 +71,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     @Override
     public void updateCompanyRecruiting(String keyword) {
         SaraminRecruitingResp apiResp = companyApiClient.searchAllRecruitment(keyword);
-        log.info("1️⃣ 전체 공고 개수 : {}", apiResp.jobs().job().size());
+        log.info("전체 공고 개수 : {}", apiResp.jobs().job().size());
 
         persistNewRecruitmentsAndNotify(apiResp, false);
     }
@@ -79,7 +79,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     @Override
     public void updateCompanyOpenRecruiting(String keyword) {
         SaraminRecruitingResp apiResp = companyApiClient.searchOpenRecruitment(keyword);
-        log.info("2️⃣ 공채 공고 개수 : {}", apiResp.jobs().job().size());
+        log.info("공채 공고 개수 : {}", apiResp.jobs().job().size());
 
         persistNewRecruitmentsAndNotify(apiResp, true);
     }
