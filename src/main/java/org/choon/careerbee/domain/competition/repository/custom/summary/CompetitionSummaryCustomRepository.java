@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.competition.repository.custom;
+package org.choon.careerbee.domain.competition.repository.custom.summary;
 
 import java.time.LocalDate;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;

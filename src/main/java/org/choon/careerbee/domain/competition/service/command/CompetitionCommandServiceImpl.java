@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.competition.service;
+package org.choon.careerbee.domain.competition.service.command;
 
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
