@@ -133,6 +133,13 @@ public class Member extends BaseEntity {
         this.additionalExperiences = additionalExperiences;
     }
 
+    public static Member ofId(Long memberId) {
+        Member member= new Member();
+        member.id = memberId;
+
+        return member;
+    }
+
     public void updateProfileInfo(UpdateProfileCommand command) {
         this.imgUrl = command.profileImgUrl();
         this.email = command.email();
