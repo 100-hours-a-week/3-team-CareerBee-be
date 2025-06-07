@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -22,6 +21,7 @@ import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
+import org.choon.careerbee.domain.competition.service.query.CompetitionQueryServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

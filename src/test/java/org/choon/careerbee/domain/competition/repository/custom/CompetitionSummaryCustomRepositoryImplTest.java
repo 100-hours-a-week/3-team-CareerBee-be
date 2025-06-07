@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.repository.custom.summary.CompetitionSummaryCustomRepositoryImpl;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.fixture.competition.RankingTestDataSupport;
 import org.junit.jupiter.api.BeforeEach;
