@@ -43,6 +43,8 @@ jobs:
           echo "::add-mask::$COOKIE_DOMAIN"
           echo "::add-mask::$SENTRY_DSN"
           echo "::add-mask::$SENTRY_AUTH_TOKEN"
+          echo "::add-mask::$SARAMIN_SECRET_KEY"
+          
 
           echo "SSH_KEY=$SSH_KEY" >> $GITHUB_ENV
           echo "SSH_KEY_BASE64=$SSH_KEY_BASE64" >> $GITHUB_ENV
@@ -63,6 +65,7 @@ jobs:
           echo "COOKIE_DOMAIN=$COOKIE_DOMAIN" >> $GITHUB_ENV
           echo "SENTRY_DSN=$SENTRY_DSN" >> $GITHUB_ENV
           echo "SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN" >> $GITHUB_ENV
+          echo "SARAMIN_SECRET_KEY=$SARAMIN_SECRET_KEY" >> $GITHUB_ENV
           
       - name: Restore SSH Key
         run: |
@@ -100,11 +103,15 @@ jobs:
 
       - name: Deploy to EC2 and restart Spring Boot
         run: |
+          echo "EC2 서버와 연결할 수 없음." > failure_reason.txt
           ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "ubuntu@${AWS_SERVER_IP}" <<EOF
             set -e
             pkill -f 'careerbee-api.jar' || true
 
-            mkdir -p ~/release ~/logs
+            mkdir -p ~/release
+            sudo touch /var/log/backend.log
+            sudo chown -R ubuntu:ubuntu /var/log/backend.log
+
             aws s3 cp ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/careerbee-api.jar ~/release/careerbee-api.jar
 
             nohup java \
@@ -124,14 +131,17 @@ jobs:
               -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
               -DAWS_REGION="${AWS_DEFAULT_REGION}" \
               -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
+              -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
               -Djdk.attach.allowAttachSelf=true \
               -javaagent:/home/ubuntu/scouter/agent.java/scouter.agent.jar \
               -Dscouter.config=/home/ubuntu/scouter/agent.java/conf/scouter.conf \
               -Dobj_name=careerbee-api \
-              -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
+              -jar ~/release/careerbee-api.jar > /var/log/backend.log 2>&1 &
           EOF
+
+          rm -f failure_reason.txt
 
       - name: Health check and rollback if needed
         run: |
@@ -146,6 +156,8 @@ jobs:
           done
 
           if [ "$STATUS" != "200" ]; then
+            echo "헬스 체크 실패. 상태 코드: $STATUS" > failure_reason.txt
+
             LATEST_VALID_BACKUP=$(aws s3 ls "${S3_BUCKET_INFRA}/be/" | awk '{print $2}' | grep -v "^${DEPLOY_PATH}/$" | sort | tail -n 1 | sed 's#/$##')
             if [ -z "$LATEST_VALID_BACKUP" ]; then
               exit 1
@@ -155,7 +167,10 @@ jobs:
               set -e
               pkill -f 'careerbee-api.jar' || true
 
-              mkdir -p ~/release ~/logs
+              mkdir -p ~/release
+              sudo touch /var/log/backend.log
+              sudo chown -R ubuntu:ubuntu /var/log/backend.log
+
               aws s3 cp ${S3_BUCKET_INFRA}/be/${LATEST_VALID_BACKUP}/careerbee-api.jar ~/release/careerbee-api.jar
 
               nohup java \
@@ -175,16 +190,17 @@ jobs:
                 -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
                 -DAWS_REGION="${AWS_DEFAULT_REGION}" \
                 -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
+                -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
                 --add-opens java.base/java.lang=ALL-UNNAMED \
                 --add-exports java.base/sun.net=ALL-UNNAMED \
                 -Djdk.attach.allowAttachSelf=true \
                 -javaagent:/home/ubuntu/scouter/agent.java/scouter.agent.jar \
                 -Dscouter.config=/home/ubuntu/scouter/agent.java/conf/scouter.conf \
                 -Dobj_name=careerbee-api \
-                -jar ~/release/careerbee-api.jar > ~/logs/backend.log 2>&1 &
+                -jar ~/release/careerbee-api.jar > /var/log/backend.log 2>&1 &
           EOF
             
-            aws s3 rm "${S3_BUCKET_INFRA}/ai/${DEPLOY_PATH}/" --recursive
+            aws s3 rm "${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/" --recursive
 
             exit 1
           fi
@@ -234,10 +250,16 @@ jobs:
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           TIMESTAMP="${{ github.event.head_commit.timestamp }}"
           
+          if [ -f failure_reason.txt ]; then
+            FAILURE_REASON=$(cat failure_reason.txt)
+          else
+            FAILURE_REASON="워크플로 로그를 확인해 주세요."
+          fi
+
           DESCRIPTION="**Repository:** \`${REPO}\`
           **Branch:** \`${BRANCH}\`
           **Commit:** \`${COMMIT_MSG}\`
-          
+          **실패 사유:** \`${FAILURE_REASON}\`
           
           [🔗 실행 로그 보기](${RUN_URL})"
           

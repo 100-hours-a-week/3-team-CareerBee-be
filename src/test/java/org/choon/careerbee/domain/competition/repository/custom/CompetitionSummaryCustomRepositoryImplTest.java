@@ -104,7 +104,7 @@ class CompetitionSummaryCustomRepositoryImplTest {
 
         // when
         Long memberId = member.getId();
-        var result = competitionSummaryCustomRepository.fetchMemberRankingById(memberId);
+        var result = competitionSummaryCustomRepository.fetchMemberRankingById(memberId, today);
 
         // then
         assertThat(result).isNotNull();

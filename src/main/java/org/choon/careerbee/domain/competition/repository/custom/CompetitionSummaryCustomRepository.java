@@ -8,5 +8,5 @@ public interface CompetitionSummaryCustomRepository {
 
     CompetitionRankingResp fetchRankings(LocalDate today);
 
-    MemberRankingResp fetchMemberRankingById(Long accessMemberId);
+    MemberRankingResp fetchMemberRankingById(Long accessMemberId, LocalDate today);
 }
