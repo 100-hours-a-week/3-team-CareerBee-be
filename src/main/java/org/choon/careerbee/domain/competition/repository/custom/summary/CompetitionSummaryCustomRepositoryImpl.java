@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.competition.repository.custom;
+package org.choon.careerbee.domain.competition.repository.custom.summary;
 
 import static org.choon.careerbee.domain.competition.domain.QCompetitionSummary.competitionSummary;
 import static org.choon.careerbee.domain.member.entity.QMember.member;
@@ -7,7 +7,6 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;

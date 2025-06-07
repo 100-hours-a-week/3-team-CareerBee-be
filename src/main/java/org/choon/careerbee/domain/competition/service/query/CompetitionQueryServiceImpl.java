@@ -1,7 +1,6 @@
-package org.choon.careerbee.domain.competition.service;
+package org.choon.careerbee.domain.competition.service.query;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;

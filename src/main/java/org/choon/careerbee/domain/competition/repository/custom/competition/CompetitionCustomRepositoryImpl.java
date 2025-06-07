@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.competition.repository.custom;
+package org.choon.careerbee.domain.competition.repository.custom.competition;
 
 import static org.choon.careerbee.domain.competition.domain.QCompetition.competition;
 import static org.choon.careerbee.domain.competition.domain.problem.QCompetitionProblem.competitionProblem;
