@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.member.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
@@ -11,17 +12,17 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
+import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
-import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -76,6 +77,19 @@ public class MemberController {
         return CommonResponseEntity.ok(
             CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
             "내 정보 수정이 완료되었습니다."
+        );
+    }
+
+    @DeleteMapping
+    public ResponseEntity<CommonResponse<Void>> withdrawal(
+        @RequestBody WithdrawalReq withdrawalReq,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.withdrawal(withdrawalReq, principalDetails.getId(), LocalDateTime.now());
+
+        return CommonResponseEntity.ok(
+            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            "회원 탈퇴가 완료되었습니다."
         );
     }
 }

@@ -6,6 +6,8 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
+import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
@@ -28,7 +30,8 @@ class MemberIntegrationTest {
     private EntityManager em;
 
     @Test
-    void testDirtyChecking() {
+    @DisplayName("이력 정보 수정 - 자격증 수, 프로젝트 수, 전공, 회사명, 기간, 직무, 추가 경험이 DB에 반영된다")
+    void updateResumeInfo_shouldPersistAllFields() {
         // given
         Member member = memberRepository.save(
             createMember("testnick", "test@test.com", 123L)
@@ -80,5 +83,30 @@ class MemberIntegrationTest {
         assertThat(updated.getImgUrl()).isEqualTo(command.profileImgUrl());
         assertThat(updated.getEmail()).isEqualTo(command.email());
         assertThat(updated.getNickname()).isEqualTo(command.nickname());
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 - 탈퇴 사유와 탈퇴 일시가 DB에 정상 반영된다")
+    void withdraw_shouldPersistWithdrawReasonAndTime() {
+        // given
+        Member member = memberRepository.save(
+            createMember("testnick", "test@test.com", 999L)
+        );
+        String reason = "서비스 종료";
+        LocalDateTime withdrawAt = LocalDateTime.of(2025, 6, 6, 12, 0);
+
+        // when
+        member.withdraw(new WithdrawCommand(reason, withdrawAt));
+        em.flush();
+        em.clear();
+
+        // then : native query 를 직접 사용하여 @SqlRestriction 우회
+        Member withdrawn = (Member) em.createNativeQuery(
+                "SELECT * FROM member WHERE id = :id", Member.class
+            ).setParameter("id", member.getId())
+            .getSingleResult();
+
+        assertThat(withdrawn.getWithdrawReason()).isEqualTo(reason);
+        assertThat(withdrawn.getWithdrawnAt()).isEqualTo(withdrawAt);
     }
 }
