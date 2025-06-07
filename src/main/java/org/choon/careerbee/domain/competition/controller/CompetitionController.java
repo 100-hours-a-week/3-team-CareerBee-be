@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.competition.controller;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
@@ -13,8 +12,8 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipat
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
-import org.choon.careerbee.domain.competition.service.CompetitionCommandService;
-import org.choon.careerbee.domain.competition.service.CompetitionQueryService;
+import org.choon.careerbee.domain.competition.service.command.CompetitionCommandService;
+import org.choon.careerbee.domain.competition.service.query.CompetitionQueryService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
