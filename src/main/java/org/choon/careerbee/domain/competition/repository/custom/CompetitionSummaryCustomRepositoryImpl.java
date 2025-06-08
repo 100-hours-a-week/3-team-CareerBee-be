@@ -28,6 +28,10 @@ public class CompetitionSummaryCustomRepositoryImpl implements
 
     @Override
     public CompetitionRankingResp fetchRankings(LocalDate today) {
+        LocalDate dailyEnd  = latestDailyEnd(today);
+        LocalDate weekEnd   = currentPeriodEnd(SummaryType.WEEK,  today);
+        LocalDate monthEnd  = currentPeriodEnd(SummaryType.MONTH, today);
+
         List<RankingInfo> daily = queryFactory
             .select(Projections.constructor(
                 RankingInfo.class,
@@ -35,76 +39,18 @@ public class CompetitionSummaryCustomRepositoryImpl implements
                 member.imgUrl,
                 member.imgUrl,
                 competitionSummary.elapsedTime,
-                competitionSummary.solvedCount
-            ))
+                competitionSummary.solvedCount))
             .from(competitionSummary)
             .join(competitionSummary.member, member)
             .where(
                 competitionSummary.type.eq(SummaryType.DAY),
-                competitionSummary.periodStart.loe(today),
-                competitionSummary.periodEnd.goe(today)
-            )
+                competitionSummary.periodEnd.eq(dailyEnd))
             .orderBy(competitionSummary.ranking.asc())
             .limit(10)
             .fetch();
 
-        List<Tuple> rawWeekResults = queryFactory
-            .select(
-                member.id,
-                member.nickname,
-                member.imgUrl, // Todo : 추후 badge url도 가져와야함
-                competitionSummary.correctRate,
-                competitionSummary.maxContinuousDays
-            )
-            .from(competitionSummary)
-            .join(competitionSummary.member, member)
-            .where(
-                competitionSummary.type.eq(SummaryType.WEEK),
-                competitionSummary.periodStart.loe(today),
-                competitionSummary.periodEnd.goe(today)
-            )
-            .orderBy(competitionSummary.ranking.asc())
-            .limit(10)
-            .fetch();
-
-        List<RankingInfoWithContinuousAndCorrectRate> week = rawWeekResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
-                tuple.get(member.nickname),
-                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
-                tuple.get(member.imgUrl),
-                tuple.get(competitionSummary.maxContinuousDays),
-                tuple.get(competitionSummary.correctRate)
-            ))
-            .toList();
-
-        List<Tuple> rawMonthResults = queryFactory
-            .select(
-                member.id,
-                member.nickname,
-                member.imgUrl,
-                competitionSummary.correctRate,
-                competitionSummary.maxContinuousDays
-            )
-            .from(competitionSummary)
-            .join(competitionSummary.member, member)
-            .where(
-                competitionSummary.type.eq(SummaryType.MONTH),
-                competitionSummary.periodStart.loe(today),
-                competitionSummary.periodEnd.goe(today)
-            )
-            .orderBy(competitionSummary.ranking.asc())
-            .limit(10)
-            .fetch();
-
-        List<RankingInfoWithContinuousAndCorrectRate> month = rawMonthResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
-                tuple.get(member.nickname),
-                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
-                tuple.get(member.imgUrl),
-                tuple.get(competitionSummary.maxContinuousDays),
-                tuple.get(competitionSummary.correctRate)
-            ))
-            .toList();
+        List<RankingInfoWithContinuousAndCorrectRate> week = fetchRankBySummaryTypeAndPeriodEnd(SummaryType.WEEK, weekEnd);
+        List<RankingInfoWithContinuousAndCorrectRate> month = fetchRankBySummaryTypeAndPeriodEnd(SummaryType.MONTH, monthEnd);
 
         return new CompetitionRankingResp(daily, week, month);
     }
@@ -112,7 +58,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
     @Override
     public MemberRankingResp fetchMemberRankingById(Long accessMemberId, LocalDate today) {
         MemberDayRankInfo dailyRanking = fetchDailyRankingByDate(
-            accessMemberId, SummaryType.DAY, today
+            accessMemberId, today
         );
         MemberWeekAndMonthRankInfo weeklyRanking = fetchWeekAndMonthRankingByDate(
             accessMemberId, SummaryType.WEEK, today
@@ -125,7 +71,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
     }
 
     private MemberDayRankInfo fetchDailyRankingByDate(
-        Long memberId, SummaryType type, LocalDate today
+        Long memberId, LocalDate today
     ) {
         return queryFactory
             .select(Projections.constructor(
@@ -136,10 +82,9 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .from(competitionSummary)
             .where(
                 competitionSummary.member.id.eq(memberId),
-                competitionSummary.type.eq(type),
+                competitionSummary.type.eq(SummaryType.DAY),
                 competitionSummary.periodStart.loe(today),
-                competitionSummary.periodEnd.goe(today)
-            )
+                competitionSummary.periodEnd.goe(today))
             .orderBy(competitionSummary.periodEnd.desc())
             .fetchOne();
     }
@@ -158,9 +103,50 @@ public class CompetitionSummaryCustomRepositoryImpl implements
                 competitionSummary.member.id.eq(memberId),
                 competitionSummary.type.eq(type),
                 competitionSummary.periodStart.loe(today),
-                competitionSummary.periodEnd.goe(today)
-            )
+                competitionSummary.periodEnd.goe(today))
             .orderBy(competitionSummary.periodEnd.desc())
             .fetchOne();
+    }
+
+    private LocalDate latestDailyEnd(LocalDate now) {
+        return queryFactory
+            .select(competitionSummary.periodEnd.max())
+            .from(competitionSummary)
+            .where(
+                competitionSummary.type.eq(SummaryType.DAY),
+                competitionSummary.periodEnd.loe(now))
+            .fetchOne();
+    }
+
+    private LocalDate currentPeriodEnd(SummaryType type, LocalDate now) {
+        return queryFactory
+            .select(competitionSummary.periodEnd)
+            .from(competitionSummary)
+            .where(
+                competitionSummary.type.eq(type),
+                competitionSummary.periodStart.loe(now),
+                competitionSummary.periodEnd.goe(now))
+            .fetchFirst();
+    }
+
+    private List<RankingInfoWithContinuousAndCorrectRate> fetchRankBySummaryTypeAndPeriodEnd(SummaryType summaryType, LocalDate periodEnd) {
+        if (periodEnd == null) return List.of();
+
+        return queryFactory
+            .select(Projections.constructor(
+                RankingInfoWithContinuousAndCorrectRate.class,
+                member.nickname,
+                member.imgUrl, // TODO : 추후 badge url로 변경
+                member.imgUrl,
+                competitionSummary.maxContinuousDays,
+                competitionSummary.correctRate))
+            .from(competitionSummary)
+            .join(competitionSummary.member, member)
+            .where(
+                competitionSummary.type.eq(summaryType),
+                competitionSummary.periodEnd.eq(periodEnd))
+            .orderBy(competitionSummary.ranking.asc())
+            .limit(10)
+            .fetch();
     }
 }
