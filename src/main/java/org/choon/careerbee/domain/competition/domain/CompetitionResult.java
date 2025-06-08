@@ -8,6 +8,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +23,12 @@ import org.choon.careerbee.domain.member.entity.Member;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Table(
+    name = "comeptition_result",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"competition_id", "member_id"})
+    }
+)
 public class CompetitionResult extends BaseEntity {
 
     @Id
