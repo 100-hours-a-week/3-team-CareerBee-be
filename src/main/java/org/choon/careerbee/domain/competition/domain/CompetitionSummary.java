@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
+import org.choon.careerbee.domain.competition.dto.request.TempSummaryInfo;
 import org.choon.careerbee.domain.member.entity.Member;
 
 @Entity
@@ -99,5 +100,16 @@ public class CompetitionSummary extends BaseEntity {
             .periodStart(periodStart)
             .periodEnd(periodEnd)
             .build();
+    }
+
+    public void updateSummary(TempSummaryInfo summaryInfo) {
+        this.solvedCount = summaryInfo.solvedSum().shortValue();
+        this.elapsedTime = summaryInfo.timeSum();
+        this.correctRate = summaryInfo.correctRate();
+        this.maxContinuousDays = summaryInfo.maxStreak();
+    }
+
+    public void updateRank(Long newRank) {
+        this.ranking = newRank;
     }
 }
