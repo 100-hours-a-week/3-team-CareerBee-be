@@ -12,6 +12,7 @@ import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.choon.careerbee.util.TimeProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CompetitionCommandServiceImpl implements CompetitionCommandService {
 
+    private final TimeProvider timeProvider;
     private final CompetitionRepository competitionRepository;
     private final CompetitionParticipantRepository competitionParticipantRepository;
     private final CompetitionResultRepository competitionResultRepository;
@@ -50,11 +52,15 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
         Competition validCompetition = competitionRepository.findById(competitionId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST));
 
+        if (!validCompetition.canSubmit(timeProvider.now())) {
+            throw new CustomException(CustomResponseStatus.COMPETITION_SUBMISSION_CLOSED);
+        }
+
         Member validMember = memberQueryService.findById(accessMemberId);
 
-        if (competitionResultRepository
-            .existsByMemberIdAndCompetitionId(accessMemberId, competitionId)
-        ) {
+        if (competitionResultRepository.existsByMemberIdAndCompetitionId(
+            accessMemberId, competitionId
+        )) {
             throw new CustomException(CustomResponseStatus.RESULT_ALREADY_SUBMIT);
         }
 

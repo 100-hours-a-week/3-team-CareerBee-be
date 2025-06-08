@@ -42,4 +42,12 @@ public class Competition extends BaseEntity {
             .endDateTime(endDateTime)
             .build();
     }
+
+    public boolean canSubmit(LocalDateTime submitAt) {
+        if (!submitAt.isBefore(startDateTime) && !submitAt.isAfter(endDateTime)) {
+            return true;
+        }
+
+        return false;
+    }
 }
