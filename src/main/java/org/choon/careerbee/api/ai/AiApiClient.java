@@ -8,6 +8,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
+import org.choon.careerbee.domain.member.dto.response.AiResumeDraftResp;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,7 +33,7 @@ public class AiApiClient {
     }
 
     public ResumeDraftResp requestResumeDraft(ResumeDraftReq resumeDraftReq) {
-        ResumeDraftResp body = aiRestClient
+        AiResumeDraftResp body = aiRestClient
             .post()
             .uri(uriBuilder -> uriBuilder
                 .path("/resume/draft")
@@ -40,14 +41,13 @@ public class AiApiClient {
             .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .body(resumeDraftReq)
             .retrieve()
-            .body(ResumeDraftResp.class);
+            .body(AiResumeDraftResp.class);
 
-        logJson("[1️⃣] 이력서 초안 생성 응답 : \n{}", body);
-
-        return body;
+        return new ResumeDraftResp(body.data().toString());
     }
 
     public ExtractResumeResp requestExtractResume(ExtractResumeReq extractResumeReq) {
+        log.info("요청 객체 :  {}", extractResumeReq);
         ExtractResumeResp body = aiRestClient
             .post()
             .uri(uriBuilder -> uriBuilder
@@ -57,8 +57,10 @@ public class AiApiClient {
             .body(extractResumeReq)
             .exchange((req, resp) -> {
                 if (resp.getStatusCode().is4xxClientError()) {
+                    log.error("[4xx] ai 서버 에러!! : {}", resp.getBody());
                     throw new CustomException(CustomResponseStatus.EXTENSION_NOT_EXIST);
                 } else if (resp.getStatusCode().is5xxServerError()) {
+                    log.error("[5xx] ai 서버 에러!! : {}", resp.getBody());
                     throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
                 } else {
                     ObjectMapper objectMapper1 = new ObjectMapper();

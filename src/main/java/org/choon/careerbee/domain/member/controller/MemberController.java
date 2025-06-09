@@ -80,7 +80,7 @@ public class MemberController {
         );
     }
 
-    @PostMapping("members/resume/complete-upload")
+    @PostMapping("resume/complete-upload")
     public ResponseEntity<CommonResponse<ExtractResumeResp>> extractResumeInfo(
         @RequestBody UploadCompleteReq uploadCompleteReq
     ) {
