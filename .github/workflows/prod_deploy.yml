@@ -11,6 +11,8 @@ jobs:
     env:
       COMMIT_HASH: ${{ github.sha }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      ECR_REPOSITORY: ${{ secrets.PROD_ECR_URI }}
+      ECR_REGION: ap-northeast-2
 
     steps:
       - name: Checkout code
@@ -25,10 +27,13 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      - name: Set timestamp-based path (Asia/Seoul)
+      - name: Set timestamp-based image tag (Asia/Seoul)
         run: |
-          TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
-          echo "DEPLOY_PATH=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
+          TIMESTAMP=$(TZ='Asia/Seoul' date +%Y%m%d-%H%M%S)
+          echo "IMAGE_TAG=${TIMESTAMP}-${COMMIT_HASH}" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -37,23 +42,29 @@ jobs:
           aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
-      - name: Upload build to S3
-        run: |
-          mkdir -p ./deploy
-          cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
-          echo "Uploading to: s3://${{ secrets.PROD_S3_BUCKET_NAME }}/artifacts/be/$DEPLOY_PATH"
-          aws s3 cp ./deploy "s3://${{ secrets.PROD_S3_BUCKET_NAME }}/artifacts/be/$DEPLOY_PATH/" --recursive
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Setup SSH key
+      - name: Build and push Docker image to ECR
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.PROD_EC2_HOST }} >> ~/.ssh/known_hosts
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Trigger remote deploy script on EC2
+      - name: Trigger deploy via SSM (docker-compose pull && up)
         run: |
-          ssh ${{ secrets.PROD_EC2_USER }}@${{ secrets.PROD_EC2_HOST }} "bash ~/release/deploy-be.sh $DEPLOY_PATH"
+          aws ssm send-command \
+            --instance-ids "${{ secrets.PROD_EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy Backend Docker Compose" \
+            --parameters 'commands=[
+              "cd ~/docker",
+              "sed -i \"s|image: .*/.*:.*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}|\" docker-compose.yml",
+              "docker-compose pull backend",
+              "docker-compose up -d backend"
+            ]' \
+            --region ${{ env.ECR_REGION }}
 
       - name: Notify Discord on Success
         if: success()
