@@ -22,13 +22,13 @@ public class CompanyApiClient {
         this.props = props;
     }
 
-    public SaraminRecruitingResp searchAllRecruitment() {
+    public SaraminRecruitingResp searchAllRecruitment(String keyword) {
         return saraminRestClient
             .get()
             .uri(uriBuilder -> uriBuilder
                 .path("/job-search")
                 .queryParam("access-key", props.getAccessKey())
-                .queryParam("keywords", "it") // 검색 키워드
+                .queryParam("keywords", keyword) // 검색 키워드
                 .queryParam("loc_cd", 102180) // 근무지/지역조건
                 .queryParam("job_mid_cd", 2) // 상위 직무 코드
                 .queryParam("count", 110) // 검색 결과 수
@@ -39,13 +39,13 @@ public class CompanyApiClient {
             .body(SaraminRecruitingResp.class);
     }
 
-    public SaraminRecruitingResp searchOpenRecruitment() {
+    public SaraminRecruitingResp searchOpenRecruitment(String keyword) {
         return saraminRestClient
             .get()
             .uri(uriBuilder -> uriBuilder
                 .path("/job-search")
                 .queryParam("access-key", props.getAccessKey())
-                .queryParam("keywords", "it") // 검색 키워드
+                .queryParam("keywords", keyword) // 검색 키워드
                 .queryParam("bbs_gb", 1) // 공채구분
                 .queryParam("loc_cd", 102180) // 근무지/지역조건
                 .queryParam("job_mid_cd", 2) // 상위 직무 코드

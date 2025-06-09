@@ -316,7 +316,9 @@ class CompetitionControllerTest {
 
         // when & then
         mockMvc.perform(get("/api/v1/competitions/rankings")
-                .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON)
+                .param("date", "2025-06-02")
+            )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.message")
                 .value("랭킹조회에 성공하였습니다."))
@@ -326,7 +328,7 @@ class CompetitionControllerTest {
             .andExpect(jsonPath("$.data.daily.length()").value(2))
             .andExpect(jsonPath("$.data.week.length()").value(2))
             .andExpect(jsonPath("$.data.month.length()").value(3))
-            .andExpect(jsonPath("$.data.week[0].continuous").value(2))
+            .andExpect(jsonPath("$.data.week[0].continuous").value(4))
             .andExpect(jsonPath("$.data.month[2].nickname").value("member2"));
     }
 
@@ -375,11 +377,22 @@ class CompetitionControllerTest {
         LocalDate monthStart = today.withDayOfMonth(1);
         LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
 
-        em.persist(createSummary(testMember, (short) 4, 1000L, 1L, SummaryType.DAY, today, today));
+        em.persist(createSummary(
+            testMember, (short) 4, 1000L,
+            1L, 1, 90.0,
+            SummaryType.DAY, today, today)
+        );
         em.persist(
-            createSummary(testMember, (short) 8, 2000L, 1L, SummaryType.WEEK, weekStart, weekEnd));
-        em.persist(createSummary(testMember, (short) 10, 3000L, 1L, SummaryType.MONTH, monthStart,
-            monthEnd));
+            createSummary(
+                testMember, (short) 8, 2000L,
+                1L, 5, 70.0,
+                SummaryType.WEEK, weekStart, weekEnd)
+        );
+        em.persist(
+            createSummary(testMember, (short) 10, 3000L,
+                1L, 18, 70.6,
+                SummaryType.MONTH, monthStart, monthEnd)
+        );
 
         em.flush();
         em.clear();
@@ -387,14 +400,22 @@ class CompetitionControllerTest {
         // when & then
         mockMvc.perform(get("/api/v1/members/competitions/rankings")
                 .header("Authorization", accessToken)
-                .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON)
+                .param("date", "2025-06-02")
+            )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.message")
                 .value("내 랭킹 조회에 성공하였습니다."))
-            .andExpect(jsonPath("$.data.day").value(1))
-            .andExpect(jsonPath("$.data.week").value(1))
-            .andExpect(jsonPath("$.data.month").value(1));
+            .andExpect(jsonPath("$.data.daily.rank").value(1))
+            .andExpect(jsonPath("$.data.daily.elapsedTime").value(1000))
+            .andExpect(jsonPath("$.data.daily.solvedCount").value(4))
+            .andExpect(jsonPath("$.data.week.rank").value(1))
+            .andExpect(jsonPath("$.data.week.continuous").value(5))
+            .andExpect(jsonPath("$.data.week.correctRate").value(70.0))
+            .andExpect(jsonPath("$.data.month.rank").value(1))
+            .andExpect(jsonPath("$.data.month.continuous").value(18))
+            .andExpect(jsonPath("$.data.month.correctRate").value(70.6));
     }
 }

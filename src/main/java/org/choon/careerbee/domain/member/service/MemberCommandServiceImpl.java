@@ -1,12 +1,17 @@
 package org.choon.careerbee.domain.member.service;
 
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.image.service.ImageService;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
+import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
+import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.dto.request.UploadCompleteReq;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
@@ -51,6 +56,24 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             updateResumeReq.position(),
             updateResumeReq.additionalExperiences()
         );
+    }
+
+    @Override
+    public void updateProfileInfo(UpdateProfileInfoReq updateProfileInfoReq, Long accessMemberId) {
+        memberQueryService.checkEmailExist(updateProfileInfoReq.newEmail());
+
+        Member validMember = memberQueryService.findById(accessMemberId);
+        validMember.updateProfileInfo(new UpdateProfileCommand(
+            updateProfileInfoReq.newProfileUrl(),
+            updateProfileInfoReq.newEmail(),
+            updateProfileInfoReq.newNickname())
+        );
+    }
+
+    @Override
+    public void withdrawal(WithdrawalReq withdrawalReq, Long accessMemberId, LocalDateTime withdrawAt) {
+        Member validMember = memberQueryService.findById(accessMemberId);
+        validMember.withdraw(new WithdrawCommand(withdrawalReq.withdrawReason(), withdrawAt));
     }
 
     @Override

@@ -6,7 +6,7 @@ public interface CompanyCommandService {
 
     void deleteWishCompany(Long accessMemberId, Long companyId);
 
-    void updateCompanyRecruiting();
+    void updateCompanyRecruiting(String keyword);
 
-    void updateCompanyOpenRecruiting();
+    void updateCompanyOpenRecruiting(String keyword);
 }

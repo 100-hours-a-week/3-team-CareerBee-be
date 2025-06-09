@@ -62,7 +62,7 @@ public class CompetitionSummary extends BaseEntity {
     @Builder
     private CompetitionSummary(
         Member member, Short solvedCount, Long elapsedTime,
-        Long ranking, Integer maxContinuousDays,
+        Long ranking, Integer maxContinuousDays, Double correctRate,
         SummaryType type, LocalDate periodStart, LocalDate periodEnd
     ) {
         this.member = member;
@@ -71,13 +71,14 @@ public class CompetitionSummary extends BaseEntity {
         this.ranking = ranking;
         this.type = type;
         this.maxContinuousDays = maxContinuousDays;
+        this.correctRate = correctRate;
         this.periodStart = periodStart;
         this.periodEnd = periodEnd;
     }
 
     public static CompetitionSummary of(
         Member member, Short solvedCount, Long elapsedTime,
-        Long ranking, Integer maxContinuousDays,
+        Long ranking, Integer maxContinuousDays, Double correctRate,
         SummaryType type, LocalDate periodStart, LocalDate periodEnd
     ) {
         return CompetitionSummary.builder()
@@ -87,6 +88,7 @@ public class CompetitionSummary extends BaseEntity {
             .ranking(ranking)
             .type(type)
             .maxContinuousDays(maxContinuousDays)
+            .correctRate(correctRate)
             .periodStart(periodStart)
             .periodEnd(periodEnd)
             .build();

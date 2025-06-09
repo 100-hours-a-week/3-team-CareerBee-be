@@ -19,5 +19,5 @@ public interface CompetitionQueryService {
 
     CompetitionIdResp fetchCompetitionIdBy(LocalDate today);
 
-    MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId);
+    MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId, LocalDate today);
 }

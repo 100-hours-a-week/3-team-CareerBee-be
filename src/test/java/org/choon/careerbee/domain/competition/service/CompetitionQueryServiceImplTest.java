@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.competition.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -242,20 +244,30 @@ class CompetitionQueryServiceImplTest {
     void fetchMemberCompetitionRankingById_success() {
         // given
         Long memberId = 123L;
-        MemberRankingResp mockResp = new MemberRankingResp(5L, 3L, 2L);
+        MemberRankingResp.MemberDayRankInfo dayRank =
+            new MemberRankingResp.MemberDayRankInfo(5L, 1234L, (short) 3);
 
-        when(competitionSummaryRepository.fetchMemberRankingById(memberId)).thenReturn(mockResp);
+        MemberRankingResp.MemberWeekAndMonthRankInfo weekRank =
+            new MemberRankingResp.MemberWeekAndMonthRankInfo(3L, 7, 0.75);
+
+        MemberRankingResp.MemberWeekAndMonthRankInfo monthRank =
+            new MemberRankingResp.MemberWeekAndMonthRankInfo(2L, 15, 0.88);
+
+        MemberRankingResp mockResp = new MemberRankingResp(dayRank, weekRank, monthRank);
+
+        when(competitionSummaryRepository.fetchMemberRankingById(anyLong(), any(LocalDate.class))).thenReturn(mockResp);
 
         // when
         MemberRankingResp result = competitionQueryService.fetchMemberCompetitionRankingById(
-            memberId);
+            memberId, LocalDate.now()
+        );
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.day()).isEqualTo(5L);
-        assertThat(result.week()).isEqualTo(3L);
-        assertThat(result.month()).isEqualTo(2L);
+        assertThat(result.daily().rank()).isEqualTo(5L);
+        assertThat(result.week().rank()).isEqualTo(3L);
+        assertThat(result.month().rank()).isEqualTo(2L);
 
-        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId);
+        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId, LocalDate.now());
     }
 }

@@ -8,9 +8,12 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 30
   cloud:
     aws:
       s3:
@@ -47,6 +50,9 @@ saramin:
   api:
     base-url: https://oapi.saramin.co.kr
     access-key: 1231242342504
+
+careerbee:
+  allow-date-param: true
 
 ai:
   api:

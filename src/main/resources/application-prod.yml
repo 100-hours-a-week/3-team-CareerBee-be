@@ -11,9 +11,12 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 30
 
   cloud:
     aws:
@@ -85,3 +88,6 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+careerbee:
+  allow-date-param: false

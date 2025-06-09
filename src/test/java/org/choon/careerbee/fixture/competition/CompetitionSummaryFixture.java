@@ -10,10 +10,12 @@ public class CompetitionSummaryFixture {
 
     public static CompetitionSummary createSummary(
         Member member, Short solvedCount, Long elapsedTime,
-        Long ranking,
+        Long ranking, Integer maxContinuousDays, Double correctRate,
         SummaryType type, LocalDate periodStart, LocalDate periodEnd
     ) {
-        return CompetitionSummary.of(member, solvedCount, elapsedTime, ranking, type, periodStart,
-            periodEnd);
+        return CompetitionSummary.of(
+            member, solvedCount, elapsedTime,
+            ranking, maxContinuousDays, correctRate,
+            type, periodStart, periodEnd);
     }
 }

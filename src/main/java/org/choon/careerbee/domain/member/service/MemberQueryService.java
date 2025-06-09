@@ -14,4 +14,6 @@ public interface MemberQueryService {
     MyInfoResp getMyInfoByMemberId(Long memberId);
 
     Member findById(Long memberId);
+
+    void checkEmailExist(String email);
 }
