@@ -48,6 +48,7 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         Member validMember = memberQueryService.findById(accessMemberId);
 
         validMember.updateResumeInfo(
+            updateResumeReq.psTier(),
             updateResumeReq.certificationCount(),
             updateResumeReq.projectCount(),
             updateResumeReq.majorType(),

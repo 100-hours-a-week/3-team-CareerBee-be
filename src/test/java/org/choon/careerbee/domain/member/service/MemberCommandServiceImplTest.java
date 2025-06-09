@@ -6,8 +6,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import java.time.LocalDateTime;
+import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -35,6 +35,7 @@ class MemberCommandServiceImplTest {
         Long accessMemberId = 1L;
 
         UpdateResumeReq req = new UpdateResumeReq(
+            "BR1",
             2,
             3,
             MajorType.MAJOR,
@@ -52,6 +53,7 @@ class MemberCommandServiceImplTest {
 
         // then
         verify(mockMember, times(1)).updateResumeInfo(
+            req.psTier(),
             req.certificationCount(),
             req.projectCount(),
             req.majorType(),
@@ -86,9 +88,9 @@ class MemberCommandServiceImplTest {
         verify(mockMember, times(1)).updateProfileInfo(
             argThat(command ->
                 command.email().equals(req.newEmail()) &&
-                command.nickname().equals(req.newNickname()) &&
-                command.profileImgUrl().equals(req.newProfileUrl())
-        ));
+                    command.nickname().equals(req.newNickname()) &&
+                    command.profileImgUrl().equals(req.newProfileUrl())
+            ));
     }
 
     @Test
@@ -112,7 +114,7 @@ class MemberCommandServiceImplTest {
         verify(mockMember, times(1)).withdraw(
             argThat(command ->
                 command.reason().equals(reason) &&
-                command.requestedAt().equals(withdrawAt))
+                    command.requestedAt().equals(withdrawAt))
         );
     }
 }

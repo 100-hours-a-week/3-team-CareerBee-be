@@ -7,8 +7,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
-import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
+import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -39,6 +39,7 @@ class MemberIntegrationTest {
 
         // when
         member.updateResumeInfo(
+            "BR1",
             3,
             2,
             MajorType.MAJOR,
@@ -53,6 +54,7 @@ class MemberIntegrationTest {
         // then
         Member updated = memberRepository.findById(member.getId()).orElseThrow();
 
+        assertThat(updated.getPsTier()).isEqualTo("BR1");
         assertThat(updated.getCertificationCount()).isEqualTo(3);
         assertThat(updated.getProjectCount()).isEqualTo(2);
         assertThat(updated.getMajorType()).isEqualTo(MajorType.MAJOR);
