@@ -61,7 +61,7 @@ public class CompanyController {
     )
     @GetMapping("/{companyId}/summary")
     public ResponseEntity<CommonResponse<CompanySummaryInfo>> fetchCompaniesSummary(
-        @PathVariable Long companyId
+        @PathVariable("companyId") Long companyId
     ) {
         CompanySummaryInfo response = queryService.fetchCompanySummary(companyId);
 
@@ -80,7 +80,7 @@ public class CompanyController {
     @GetMapping("/{companyId}")
     public ResponseEntity<CommonResponse<CompanyDetailResp>> fetchCompanyDetail(
         @Parameter(description = "기업 ID", example = "1")
-        @PathVariable Long companyId
+        @PathVariable("companyId") Long companyId
     ) {
         CompanyDetailResp response = queryService.fetchCompanyDetail(companyId);
 
@@ -118,7 +118,7 @@ public class CompanyController {
     @GetMapping("/{companyId}/locations")
     public ResponseEntity<CommonResponse<CompanyMarkerInfo>> fetchCompanyLocationInfo(
         @Parameter(description = "기업 ID", example = "1")
-        @PathVariable Long companyId
+        @PathVariable("companyId") Long companyId
     ) {
         CompanyMarkerInfo response = queryService.fetchCompanyLocation(companyId);
 
