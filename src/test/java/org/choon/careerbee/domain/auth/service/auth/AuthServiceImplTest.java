@@ -121,6 +121,7 @@ class AuthServiceImplTest {
         KakaoInfoResponse oAuthInfo = new KakaoInfoResponse();
         KakaoAccount kakaoAccount = new KakaoAccount();
         ReflectionTestUtils.setField(kakaoAccount, "email", "test@kakao.com");
+        ReflectionTestUtils.setField(oAuthInfo, "id", 123L);
         ReflectionTestUtils.setField(oAuthInfo, "kakaoAccount", kakaoAccount);
 
         Member member = createMember("testnick", "test@test.com", 123L);
@@ -128,7 +129,7 @@ class AuthServiceImplTest {
 
         when(requestOAuthInfoService.request(params, "http://localhost:5173"))
             .thenReturn(oAuthInfo);
-        when(memberRepository.findByEmail("test@kakao.com")).thenReturn(Optional.of(member));
+        when(memberRepository.findByProviderId(123L)).thenReturn(Optional.of(member));
         when(jwtUtil.createToken(1L, TokenType.ACCESS_TOKEN)).thenReturn("access-token");
         when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE))
             .thenReturn(Optional.of(new Token(member, TokenStatus.LIVE, "refresh-token")));
@@ -162,6 +163,7 @@ class AuthServiceImplTest {
         KakaoInfoResponse oAuthInfo = new KakaoInfoResponse();
         KakaoAccount kakaoAccount = new KakaoAccount();
         ReflectionTestUtils.setField(kakaoAccount, "email", "new@kakao.com");
+        ReflectionTestUtils.setField(oAuthInfo, "id", 999L);
         ReflectionTestUtils.setField(oAuthInfo, "kakaoAccount", kakaoAccount);
 
         Member newMember = createMember("newnick", "new@kakao.com", 999L);
@@ -169,7 +171,7 @@ class AuthServiceImplTest {
 
         when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
             oAuthInfo);
-        when(memberRepository.findByEmail("new@kakao.com")).thenReturn(Optional.empty());
+        when(memberRepository.findByProviderId(999L)).thenReturn(Optional.empty());
         when(memberCommandService.forceJoin(oAuthInfo)).thenReturn(newMember);
         when(jwtUtil.createToken(newMember.getId(), TokenType.ACCESS_TOKEN)).thenReturn(
             "access-token-new");
@@ -204,6 +206,7 @@ class AuthServiceImplTest {
         KakaoInfoResponse oAuthInfo = new KakaoInfoResponse();
         KakaoAccount kakaoAccount = new KakaoAccount();
         ReflectionTestUtils.setField(kakaoAccount, "email", "exist@kakao.com");
+        ReflectionTestUtils.setField(oAuthInfo, "id", 777L);
         ReflectionTestUtils.setField(oAuthInfo, "kakaoAccount", kakaoAccount);
 
         Member member = createMember("existnick", "exist@kakao.com", 777L);
@@ -211,7 +214,7 @@ class AuthServiceImplTest {
 
         when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
             oAuthInfo);
-        when(memberRepository.findByEmail("exist@kakao.com")).thenReturn(Optional.of(member));
+        when(memberRepository.findByProviderId(777L)).thenReturn(Optional.of(member));
         when(jwtUtil.createToken(3L, TokenType.ACCESS_TOKEN)).thenReturn("access-token-exist");
         when(jwtUtil.createToken(3L, TokenType.REFRESH_TOKEN)).thenReturn("refresh-token-exist");
         when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE)).thenReturn(

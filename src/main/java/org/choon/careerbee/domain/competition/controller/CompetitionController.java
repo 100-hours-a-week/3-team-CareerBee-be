@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.competition.controller;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
@@ -41,7 +40,7 @@ public class CompetitionController {
 
     @PostMapping("competitions/{competitionId}")
     public ResponseEntity<CommonResponse<Void>> joinCompetition(
-        @PathVariable Long competitionId,
+        @PathVariable("competitionId") Long competitionId,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
         commandService.joinCompetition(competitionId, principalDetails.getId());
@@ -54,7 +53,7 @@ public class CompetitionController {
 
     @PostMapping("competitions/{competitionId}/results")
     public ResponseEntity<CommonResponse<Void>> submitCompetitionResult(
-        @PathVariable Long competitionId,
+        @PathVariable("competitionId") Long competitionId,
         @RequestBody CompetitionResultSubmitReq submitReq,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
@@ -68,7 +67,7 @@ public class CompetitionController {
 
     @GetMapping("members/competitions/{competitionId}")
     public ResponseEntity<CommonResponse<CompetitionParticipationResp>> checkCompetitionParticipation(
-        @PathVariable Long competitionId,
+        @PathVariable("competitionId") Long competitionId,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
         CompetitionParticipationResp response = queryService.checkCompetitionParticipationById(
@@ -84,7 +83,7 @@ public class CompetitionController {
 
     @GetMapping("competitions/{competitionId}/problems")
     public ResponseEntity<CommonResponse<CompetitionProblemResp>> fetchCompetitionProblems(
-        @PathVariable Long competitionId
+        @PathVariable("competitionId") Long competitionId
     ) {
         CompetitionProblemResp response = queryService.fetchProblems(competitionId);
 
