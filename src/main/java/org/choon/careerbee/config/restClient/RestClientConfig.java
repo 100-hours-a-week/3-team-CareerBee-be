@@ -1,5 +1,6 @@
 package org.choon.careerbee.config.restClient;
 
+import org.choon.careerbee.api.ai.AiApiProperties;
 import org.choon.careerbee.domain.company.api.SaraminApiProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,13 @@ public class RestClientConfig {
 
     @Bean
     public RestClient saraminRestClient(SaraminApiProperties props) {
+        return RestClient.builder()
+            .baseUrl(props.getBaseUrl())
+            .build();
+    }
+
+    @Bean
+    public RestClient aiRestClient(AiApiProperties props) {
         return RestClient.builder()
             .baseUrl(props.getBaseUrl())
             .build();

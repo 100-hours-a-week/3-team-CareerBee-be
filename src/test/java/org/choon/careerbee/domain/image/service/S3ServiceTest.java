@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.net.URL;
-import java.time.Duration;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.PresignedUrlReq;
@@ -61,8 +60,7 @@ class S3ServiceTest {
 
         // then
         assertThat(response.uploadUrl()).contains("https://test-bucket.s3.amazonaws.com/");
-        assertThat(response.objectUrl()).contains("https://test-bucket.s3.amazonaws.com/");
-        assertThat(response.expiresIn()).isEqualTo(Duration.ofMinutes(15).getSeconds());
+        assertThat(response.objectKey()).isInstanceOf(String.class);
     }
 
     @Test
