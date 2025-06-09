@@ -21,6 +21,7 @@ public class MemberCustomRepositoryImpl implements MemberCustomRepository {
             .select(Projections.constructor(
                 MyInfoResp.class,
                 member.nickname,
+                member.email,
                 member.imgUrl,
                 member.imgUrl, // Todo : badge 엔티티 추가 후 해당 뱃지 이미지로 변경
                 member.imgUrl, // Todo : 프로필 프레임 추가 후 변경
