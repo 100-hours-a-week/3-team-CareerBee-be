@@ -54,7 +54,7 @@ public class AuthController {
     @GetMapping("/oauth")
     public ResponseEntity<CommonResponse<OAuthLoginUrlResp>> getOAuthLoginUrl(
         @Parameter(name = "type", description = "소셜 로그인 타입 (ex: KAKAO, GOOGLE)", required = true)
-        @RequestParam(value = "type") String type,
+        @RequestParam(name = "type", value = "type") String type,
         @RequestHeader(value = "Origin") String origin
     ) {
         OAuthLoginUrlResp response = authService.getOAuthLoginUrl(type, origin);

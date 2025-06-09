@@ -43,7 +43,7 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
             .select(
                 Projections.constructor(
                     CompanySummaryInfo.class,
-                    wishCompany.id,
+                    wishCompany.company.id,
                     company.name,
                     company.logoUrl,
                     wishCompany.id.count(),

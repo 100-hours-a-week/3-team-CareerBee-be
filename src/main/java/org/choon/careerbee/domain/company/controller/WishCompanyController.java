@@ -42,7 +42,7 @@ public class WishCompanyController {
     @PostMapping("/{companyId}")
     public ResponseEntity<CommonResponse<Void>> registWishCompany(
         @Parameter(description = "관심 등록할 기업 ID", example = "1")
-        @PathVariable Long companyId,
+        @PathVariable("companyId") Long companyId,
 
         @Parameter(hidden = true)
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -64,7 +64,7 @@ public class WishCompanyController {
     @DeleteMapping("/{companyId}")
     public ResponseEntity<CommonResponse<Void>> deleteWishCompany(
         @Parameter(description = "삭제할 관심 기업 ID", example = "1")
-        @PathVariable Long companyId,
+        @PathVariable("companyId") Long companyId,
 
         @Parameter(hidden = true)
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -86,7 +86,7 @@ public class WishCompanyController {
     @GetMapping("/{companyId}")
     public ResponseEntity<CommonResponse<CheckWishCompanyResp>> checkWishCompany(
         @Parameter(description = "확인할 기업 ID", example = "1")
-        @PathVariable Long companyId,
+        @PathVariable("companyId") Long companyId,
 
         @Parameter(hidden = true)
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -123,8 +123,8 @@ public class WishCompanyController {
 
     @GetMapping()
     public ResponseEntity<CommonResponse<WishCompaniesResp>> fetchWishCompanies(
-        @RequestParam(required = false) Long cursor,
-        @RequestParam(defaultValue = "5") int size,
+        @RequestParam(name = "cursor", required = false) Long cursor,
+        @RequestParam(name = "size", defaultValue = "5") int size,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
         WishCompaniesResp response = queryService.fetchWishCompanies(

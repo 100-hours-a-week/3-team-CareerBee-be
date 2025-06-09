@@ -9,9 +9,11 @@ import org.choon.careerbee.common.exception.CustomException;
 @Getter
 public enum SupportedExtension {
     JPG("jpg", "image/jpeg"),
+    JPEG("jpeg", "image/jpeg"),
     PNG("png", "image/png"),
     WEBP("webp", "image/webp"),
     HEIC("heic", "image/heic"),
+    SVG("svg", "image/image/svg+xml"),
     PDF("pdf", "application/pdf");
 
     private final String ext;
