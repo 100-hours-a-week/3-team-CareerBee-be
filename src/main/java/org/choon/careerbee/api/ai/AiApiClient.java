@@ -3,12 +3,14 @@ package org.choon.careerbee.api.ai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.response.AiResumeDraftResp;
+import org.choon.careerbee.domain.member.dto.response.AiResumeExtractResp;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,7 +50,7 @@ public class AiApiClient {
 
     public ExtractResumeResp requestExtractResume(ExtractResumeReq extractResumeReq) {
         log.info("요청 객체 :  {}", extractResumeReq);
-        ExtractResumeResp body = aiRestClient
+        AiResumeExtractResp body = aiRestClient
             .post()
             .uri(uriBuilder -> uriBuilder
                 .path("/resume/extract")
@@ -56,23 +58,23 @@ public class AiApiClient {
             .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .body(extractResumeReq)
             .exchange((req, resp) -> {
+                String responseBody = new String(resp.getBody().readAllBytes(),
+                    StandardCharsets.UTF_8);
+
                 if (resp.getStatusCode().is4xxClientError()) {
-                    log.error("[4xx] ai 서버 에러!! : {}", resp.getBody());
+                    log.error("[4xx] ai 서버 에러!! : {}", responseBody);
                     throw new CustomException(CustomResponseStatus.EXTENSION_NOT_EXIST);
                 } else if (resp.getStatusCode().is5xxServerError()) {
-                    log.error("[5xx] ai 서버 에러!! : {}", resp.getBody());
+                    log.error("[5xx] ai 서버 에러!! : {}", responseBody);
                     throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
                 } else {
-                    ObjectMapper objectMapper1 = new ObjectMapper();
-                    logJson("[1️⃣] 이력서 정보 추출 응답", resp.getBody().toString());
-
-                    return objectMapper1.readValue(resp.getBody(), ExtractResumeResp.class);
+                    logJson("[1️⃣] 이력서 정보 추출 응답", responseBody);
+                    return objectMapper.readValue(responseBody, AiResumeExtractResp.class);
                 }
             });
 
         logJson("[2️⃣] 최종 이력서 정보 추출 응답", body);
-
-        return body;
+        return objectMapper.convertValue(body.data(), ExtractResumeResp.class);
     }
 
     private void logJson(String label, Object body) {
