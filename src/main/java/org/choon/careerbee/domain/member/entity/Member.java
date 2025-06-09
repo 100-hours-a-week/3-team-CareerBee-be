@@ -116,6 +116,7 @@ public class Member extends BaseEntity {
     }
 
     public void updateResumeInfo(
+        PreferredJob preferredJob,
         String psTier,
         int certificationCount,
         int projectCount,
@@ -125,6 +126,7 @@ public class Member extends BaseEntity {
         String position,
         String additionalExperiences
     ) {
+        this.preferredJob = preferredJob;
         this.psTier = psTier;
         this.certificationCount = certificationCount;
         this.projectCount = projectCount;

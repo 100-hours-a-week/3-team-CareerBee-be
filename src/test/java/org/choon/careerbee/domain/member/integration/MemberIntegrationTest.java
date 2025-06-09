@@ -11,6 +11,7 @@ import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
 import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
+import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ class MemberIntegrationTest {
 
         // when
         member.updateResumeInfo(
+            PreferredJob.BACKEND,
             "BR1",
             3,
             2,
@@ -54,6 +56,7 @@ class MemberIntegrationTest {
         // then
         Member updated = memberRepository.findById(member.getId()).orElseThrow();
 
+        assertThat(updated.getPreferredJob()).isEqualTo(PreferredJob.BACKEND);
         assertThat(updated.getPsTier()).isEqualTo("BR1");
         assertThat(updated.getCertificationCount()).isEqualTo(3);
         assertThat(updated.getProjectCount()).isEqualTo(2);

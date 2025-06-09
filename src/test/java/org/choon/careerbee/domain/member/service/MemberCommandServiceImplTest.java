@@ -12,6 +12,7 @@ import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
+import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,7 @@ class MemberCommandServiceImplTest {
         Long accessMemberId = 1L;
 
         UpdateResumeReq req = new UpdateResumeReq(
+            PreferredJob.BACKEND,
             "BR1",
             2,
             3,
@@ -53,6 +55,7 @@ class MemberCommandServiceImplTest {
 
         // then
         verify(mockMember, times(1)).updateResumeInfo(
+            req.preferredJob(),
             req.psTier(),
             req.certificationCount(),
             req.projectCount(),

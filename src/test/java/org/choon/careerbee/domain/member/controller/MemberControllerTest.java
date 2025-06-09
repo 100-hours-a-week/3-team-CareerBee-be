@@ -14,6 +14,7 @@ import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
+import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +61,7 @@ class MemberControllerTest {
     void updateResumeInfo_success() throws Exception {
         // given
         UpdateResumeReq req = new UpdateResumeReq(
+            PreferredJob.BACKEND,
             "BR1",
             2,
             3,
@@ -91,7 +93,7 @@ class MemberControllerTest {
         String invalidToken = jwtUtil.createToken(invalidMemberId, TokenType.ACCESS_TOKEN);
 
         UpdateResumeReq req = new UpdateResumeReq(
-            "BR1", 1, 1, MajorType.MAJOR, "카카오", 12, "백엔드", "인턴 경험 있음"
+            PreferredJob.BACKEND, "BR1", 1, 1, MajorType.MAJOR, "카카오", 12, "백엔드", "인턴 경험 있음"
         );
         String json = objectMapper.writeValueAsString(req);
 
