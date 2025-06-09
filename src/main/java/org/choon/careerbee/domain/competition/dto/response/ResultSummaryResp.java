@@ -7,9 +7,11 @@ public record ResultSummaryResp(
     Long participationDays
 ) {
 
+    private static final int PROBLEM_CHOICE_COUNT = 5;
+
     public Double correctRate() {
         return participationDays == 0
             ? 0
-            : (double) solvedSum / (participationDays * 4);
+            : (double) solvedSum / (participationDays * PROBLEM_CHOICE_COUNT);
     }
 }
