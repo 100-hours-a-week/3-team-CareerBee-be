@@ -61,11 +61,7 @@ public class AuthServiceImpl implements AuthService {
         // Todo : 추후(Redis로 변경)에는 Member 엔티티 보단 memberId만 있으면 되므로 리팩토링시 변경 코드
         // Todo : forceJoin의 리턴타입도 Long으로 저장된 member의 id를 리턴해줘야함.
         Member member = memberRepository.findByProviderId(oAuthInfo.getProviderId())
-            .orElseGet(() -> {
-                log.info("provider Id : {}", oAuthInfo.getProviderId());
-                log.info("조회된 멤버가 없기 때문에 강제 회원가입 시작");
-                return memberCommandService.forceJoin(oAuthInfo);
-            });
+            .orElseGet(() -> memberCommandService.forceJoin(oAuthInfo));
 
         String accessToken = jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
 
