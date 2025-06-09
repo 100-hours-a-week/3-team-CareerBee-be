@@ -4,12 +4,8 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -41,6 +37,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         List<DailyResultSummaryResp> dailyResultSummaryList = resultRepository
             .fetchResultSummaryOfDaily(now);
         if (dailyResultSummaryList.isEmpty()) {
+            log.info("[일일 집계] 집계할 데이터가 존재하지 않습니다.");
             return;
         }
 
@@ -71,6 +68,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         List<ResultSummaryResp> resultSummaryList = resultRepository
             .fetchResultSummaryByPeriod(summaryPeriod);
         if (resultSummaryList.isEmpty()) {
+            log.info("[주간, 월간 집계] 집계할 데이터가 존재하지 않습니다. 타입 : {}", summaryType);
             return;
         }
 
@@ -89,7 +87,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         Map<Long, Integer> maxStreakMap = dateSummaryResps.stream()
             .collect(Collectors.groupingBy(
                 DateSummaryResp::memberId,
-                Collectors.mapping(DateSummaryResp::participationDate, Collectors.toList())))
+                Collectors.mapping(DateSummaryResp::createdDateOnly, Collectors.toList())))
             .entrySet().stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
@@ -126,7 +124,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         for (TempSummaryInfo tempSummaryInfo : tempSummaryInfos) {
             CompetitionSummary competitionSummary = existSummaryMap.get(tempSummaryInfo.memberId());
 
-            if (competitionSummary == null){
+            if (competitionSummary == null) {
                 competitionSummaryToInsert.add(CompetitionSummary.of(
                     Member.ofId(tempSummaryInfo.memberId()),
                     tempSummaryInfo.solvedSum().shortValue(),
