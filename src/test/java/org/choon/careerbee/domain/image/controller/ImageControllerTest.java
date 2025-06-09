@@ -73,8 +73,7 @@ class ImageControllerTest {
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.data.uploadUrl").isString())
-            .andExpect(jsonPath("$.data.objectUrl").isString())
-            .andExpect(jsonPath("$.data.expiresIn").value(900));
+            .andExpect(jsonPath("$.data.objectKey").isString());
     }
 
     @Test

@@ -1,6 +1,5 @@
 package org.choon.careerbee.domain.company.api;
 
-import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
@@ -9,13 +8,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
-@RequiredArgsConstructor
 public class CompanyApiClient {
 
-    @Qualifier("saraminRestClient")
     private final RestClient saraminRestClient;
 
     private final SaraminApiProperties props;
+
+    public CompanyApiClient(
+        @Qualifier("saraminRestClient") RestClient saraminRestClient,
+        SaraminApiProperties props
+    ) {
+        this.saraminRestClient = saraminRestClient;
+        this.props = props;
+    }
 
     public SaraminRecruitingResp searchAllRecruitment(String keyword) {
         return saraminRestClient

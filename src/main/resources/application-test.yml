@@ -53,3 +53,7 @@ saramin:
 
 careerbee:
   allow-date-param: true
+
+ai:
+  api:
+    base-url: https://dev-ai.careerbee.co.kr
