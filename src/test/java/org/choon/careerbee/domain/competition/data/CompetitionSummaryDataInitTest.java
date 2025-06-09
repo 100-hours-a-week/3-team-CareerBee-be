@@ -4,7 +4,6 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.competition.CompetitionFixture.createCompetition;
 import static org.choon.careerbee.fixture.competition.CompetitionResultFixture.createCompetitionResult;
 
-import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,36 +48,32 @@ public class CompetitionSummaryDataInitTest {
     void initCompetitionResults() {
 
         /* 1) 멤버 9명 */
-        List<Member> members = IntStream.rangeClosed(1, 9)
+        List<Member> members = IntStream.rangeClosed(1, 10)
             .mapToObj(i -> memberRepository.save(
                 createMember("testNick" + i, "test" + i + "@test.com", (long) i)))
             .toList();
 
         /* 2) 대회 8회 (6/2 - 6/8, 18:00-18:10) */
-        List<Competition> comps = IntStream.rangeClosed(2, 8)
-            .mapToObj(d -> competitionRepository.save(
-                createCompetition(
-                    LocalDateTime.of(2025, 6, d, 18, 0),
-                    LocalDateTime.of(2025, 6, d, 18, 10))))
-            .toList();
+        Competition competition = competitionRepository.save(
+            createCompetition(
+                LocalDateTime.of(2025, 6, 9, 13, 0),
+                LocalDateTime.of(2025, 6, 9, 13, 10)));
 
-        /* 3) CompetitionResult 삽입 ─ 공식: solved = (mIdx + cIdx) % 5 / elapsed = 300+m*10+c */
+        /* 3) CompetitionResult 삽입 */
+        List<Integer> solvedList = List.of(3, 3, 3, 4, 4, 5, 5, 2, 1, 2);
+        List<Integer> elapsedList = List.of(240000, 240050, 190000, 300000, 310000, 400000, 420000,
+            200000, 100000, 200003);
+
         List<CompetitionResult> results = new ArrayList<>();
+        for (int i = 0; i < members.size(); i++) {
+            Member member = members.get(i);
+            int solved = solvedList.get(i);
+            int elapsed = elapsedList.get(i);
 
-        for (int ci = 0; ci < comps.size(); ci++) {
-            Competition comp = comps.get(ci);
-            int cIdx = ci + 2;                           // 2~9
-            for (int mi = 0; mi < members.size(); mi++) {
-                Member mem = members.get(mi);
-                int mIdx = mi + 1;                       // 1~9
-
-                short solved = (short) ((mIdx + cIdx) % 5);        // 0~4
-                int elapsed = 300 + mIdx * 10 + cIdx;             // 312~399
-
-                results.add(createCompetitionResult(
-                    comp, mem, new CompetitionResultSubmitReq(solved, elapsed)
-                ));
-            }
+            CompetitionResultSubmitReq submitReq = new CompetitionResultSubmitReq((short) solved,
+                elapsed);
+            CompetitionResult result = createCompetitionResult(competition, member, submitReq);
+            results.add(result);
         }
         competitionResultRepository.saveAll(results);
 
