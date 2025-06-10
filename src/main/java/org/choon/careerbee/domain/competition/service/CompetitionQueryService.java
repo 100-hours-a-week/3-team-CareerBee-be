@@ -5,6 +5,7 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 
@@ -23,4 +24,6 @@ public interface CompetitionQueryService {
     MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId, LocalDate today);
 
     MemberLiveRankingResp fetchMemberLiveRanking(Long accessMemberId, LocalDate today);
+
+    LiveRankingResp fetchLiveRanking(LocalDate today);
 }

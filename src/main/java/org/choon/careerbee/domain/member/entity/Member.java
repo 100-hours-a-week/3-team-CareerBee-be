@@ -32,9 +32,11 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @SQLRestriction("withdrawn_at is NULL")
-@Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"provider", "provider_id"})
-})
+@Table(
+    name = "member",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"provider", "provider_id"})
+    })
 public class Member extends BaseEntity {
 
     @Id
