@@ -102,8 +102,7 @@ class MemberCommandServiceImplTest {
 
         UpdateProfileInfoReq req = new UpdateProfileInfoReq(
             "https://example.com/profile.png",
-            "new_email@test.com",
-            "새닉네임"
+            "new Nickname"
         );
 
         Member mockMember = mock(Member.class);
@@ -113,12 +112,10 @@ class MemberCommandServiceImplTest {
         memberCommandService.updateProfileInfo(req, accessMemberId);
 
         // then
-        verify(memberQueryService, times(1)).checkEmailExist(req.newEmail());
         verify(memberQueryService, times(1)).findById(accessMemberId);
         verify(mockMember, times(1)).updateProfileInfo(
             argThat(command ->
-                command.email().equals(req.newEmail()) &&
-                    command.nickname().equals(req.newNickname()) &&
+                command.nickname().equals(req.newNickname()) &&
                     command.profileImgUrl().equals(req.newProfileUrl())
             ));
     }

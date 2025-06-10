@@ -66,12 +66,9 @@ public class MemberCommandServiceImpl implements MemberCommandService {
 
     @Override
     public void updateProfileInfo(UpdateProfileInfoReq updateProfileInfoReq, Long accessMemberId) {
-        memberQueryService.checkEmailExist(updateProfileInfoReq.newEmail());
-
         Member validMember = memberQueryService.findById(accessMemberId);
         validMember.updateProfileInfo(new UpdateProfileCommand(
             updateProfileInfoReq.newProfileUrl(),
-            updateProfileInfoReq.newEmail(),
             updateProfileInfoReq.newNickname())
         );
     }
