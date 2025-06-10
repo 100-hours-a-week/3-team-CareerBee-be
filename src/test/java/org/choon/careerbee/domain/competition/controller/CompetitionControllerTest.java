@@ -16,6 +16,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.competition.domain.Competition;
@@ -482,6 +484,57 @@ class CompetitionControllerTest {
                 .value(CustomResponseStatus.RANKING_NOT_EXIST.getMessage()))
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.RANKING_NOT_EXIST.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("실시간 내 랭킹 조회 - 데이터가 존재하지 않을 경우 예외")
+    void fetchLiveRanking_success() throws Exception {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 10);
+
+        Competition competition = competitionRepository.save(createCompetition(
+            LocalDateTime.of(2025, 6, 10, 13, 0, 0),
+            LocalDateTime.of(2025, 6, 10, 13, 30, 0)
+        ));
+
+        Map<String, CompetitionResultSubmitReq> userResults = new HashMap<>();
+        userResults.put("유저1", new CompetitionResultSubmitReq((short) 5, 120000));
+        userResults.put("유저2", new CompetitionResultSubmitReq((short) 5, 130000));
+        userResults.put("유저3", new CompetitionResultSubmitReq((short) 5, 150000));
+        userResults.put("유저4", new CompetitionResultSubmitReq((short) 4, 110000));
+        userResults.put("유저5", new CompetitionResultSubmitReq((short) 4, 140000));
+        userResults.put("유저6", new CompetitionResultSubmitReq((short) 3, 100000));
+        userResults.put("유저7", new CompetitionResultSubmitReq((short) 3, 110000));
+        userResults.put("유저8", new CompetitionResultSubmitReq((short) 2, 90000));
+        userResults.put("유저9", new CompetitionResultSubmitReq((short) 2, 95000));
+        userResults.put("유저10", new CompetitionResultSubmitReq((short) 1, 50000));
+        userResults.put("유저11", new CompetitionResultSubmitReq((short) 1, 70000));
+        userResults.put("유저12", new CompetitionResultSubmitReq((short) 0, 10000));
+
+        // 저장
+        Map<String, Member> savedMembers = new HashMap<>();
+        userResults.forEach((name, result) -> {
+            Member member = memberRepository.saveAndFlush(
+                createMember(name, name.toLowerCase() + "@test.com", (long) name.hashCode()));
+            savedMembers.put(name, member);
+            em.persist(createCompetitionResult(competition, member, result));
+        });
+
+        // when & then
+        mockMvc.perform(get("/api/v1/competitions/rankings/live")
+                .header("Authorization", accessToken)
+                .param("date", "2025-06-10")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value("실시간 랭킹 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.rankings").isArray())
+            .andExpect(jsonPath("$.data.rankings[0].rank").value(1L))
+            .andExpect(jsonPath("$.data.rankings[0].nickname").value("유저1"))
+            .andExpect(jsonPath("$.data.rankings[0].elapsedTime").value(120000))
+            .andExpect(jsonPath("$.data.rankings[0].solvedCount").value(5));
     }
 
 }
