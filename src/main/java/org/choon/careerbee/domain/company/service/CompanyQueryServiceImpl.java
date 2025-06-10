@@ -15,6 +15,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Co
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
@@ -97,9 +98,20 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
         return companyRepository.findBySaraminNameIn(companyNames);
     }
 
-    @Override  
+    @Override
     public WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size) {
         return wishCompanyRepository.fetchWishCompaniesByMemberId(id, cursor, size);
+    }
+
+    @Override
+    public WishCompanyProgressResp fetchWishCompanyProgress(
+        Long companyId,
+        Long accessMemberId
+    ) {
+        return wishCompanyRepository.fetchWishCompanyAndMemberProgress(
+            companyId,
+            accessMemberId
+        ).orElseThrow(() -> new CustomException(CustomResponseStatus.WISH_COMPANY_NOT_FOUND));
     }
 
     private String escapeLike(String keyword) {

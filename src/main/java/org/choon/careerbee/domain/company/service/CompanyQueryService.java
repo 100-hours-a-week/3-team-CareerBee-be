@@ -11,6 +11,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Co
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 
@@ -38,4 +39,6 @@ public interface CompanyQueryService {
     List<Company> findBySaraminNameIn(List<String> companyNames);
 
     WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size);
+
+    WishCompanyProgressResp fetchWishCompanyProgress(Long wishCompanyId, Long accessMemberId);
 }
