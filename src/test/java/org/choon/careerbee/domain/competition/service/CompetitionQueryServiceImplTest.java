@@ -18,6 +18,8 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp.RankerInfo;
 import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
@@ -325,6 +327,35 @@ class CompetitionQueryServiceImplTest {
             .hasMessageContaining(CustomResponseStatus.RANKING_NOT_EXIST.getMessage());
 
         verify(competitionResultRepository).fetchMemberLiveRankingByDate(memberId, today);
+    }
+
+    @Test
+    @DisplayName("실시간 랭킹 조회 - 정상적으로 실시간 랭킹 조회")
+    void fetchLiveRanking_success() {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 10);
+        LiveRankingResp mockResp = new LiveRankingResp(
+            List.of(
+                new RankerInfo(1L, "user1", "url1", "url1", 123000, (short) 5),
+                new RankerInfo(2L, "user2", "url2", "url2", 123001, (short) 4),
+                new RankerInfo(3L, "user3", "url3", "url3", 123002, (short) 3),
+                new RankerInfo(4L, "user4", "url4", "url4", 123003, (short) 3),
+                new RankerInfo(5L, "user5", "url5", "url5", 123004, (short) 2)
+            )
+        );
+        when(competitionResultRepository.fetchLiveRankingByDate(today)).thenReturn(mockResp);
+
+        // when
+        LiveRankingResp result = competitionQueryService.fetchLiveRanking(today);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.rankings().size()).isEqualTo(5L);
+        assertThat(result.rankings().getFirst().rank()).isEqualTo(1L);
+        assertThat(result.rankings().getFirst().nickname()).isEqualTo("user1");
+        assertThat(result.rankings().getFirst().elapsedTime()).isEqualTo(123000);
+        assertThat(result.rankings().getFirst().solvedCount()).isEqualTo((short) 5);
+        verify(competitionResultRepository).fetchLiveRankingByDate(today);
     }
 
 }
