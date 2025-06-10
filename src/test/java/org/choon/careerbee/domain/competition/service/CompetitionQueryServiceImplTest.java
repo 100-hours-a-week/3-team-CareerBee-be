@@ -10,17 +10,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,9 @@ class CompetitionQueryServiceImplTest {
 
     @Mock
     private CompetitionSummaryRepository competitionSummaryRepository;
+
+    @Mock
+    private CompetitionResultRepository competitionResultRepository;
 
 
     @Test
@@ -255,7 +260,8 @@ class CompetitionQueryServiceImplTest {
 
         MemberRankingResp mockResp = new MemberRankingResp(dayRank, weekRank, monthRank);
 
-        when(competitionSummaryRepository.fetchMemberRankingById(anyLong(), any(LocalDate.class))).thenReturn(mockResp);
+        when(competitionSummaryRepository.fetchMemberRankingById(anyLong(),
+            any(LocalDate.class))).thenReturn(mockResp);
 
         // when
         MemberRankingResp result = competitionQueryService.fetchMemberCompetitionRankingById(
@@ -268,6 +274,57 @@ class CompetitionQueryServiceImplTest {
         assertThat(result.week().rank()).isEqualTo(3L);
         assertThat(result.month().rank()).isEqualTo(2L);
 
-        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId, LocalDate.now());
+        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId,
+            LocalDate.now());
     }
+
+    @Test
+    @DisplayName("실시간 내 랭킹 조회 - 정상 응답 반환")
+    void fetchMemberLiveRanking_success() {
+        // given
+        Long memberId = 123L;
+        LocalDate today = LocalDate.of(2025, 6, 10);
+
+        MemberLiveRankingResp mockResp = new MemberLiveRankingResp(
+            7L,
+            123234,
+            (short) 3
+        );
+
+        when(competitionResultRepository.fetchMemberLiveRankingByDate(memberId, today))
+            .thenReturn(Optional.of(mockResp));
+
+        // when
+        MemberLiveRankingResp result = competitionQueryService.fetchMemberLiveRanking(
+            memberId, today
+        );
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.rank()).isEqualTo(7L);
+        assertThat(result.solvedCount()).isEqualTo((short) 3);
+        assertThat(result.elapsedTime()).isEqualTo(123234);
+
+        verify(competitionResultRepository, times(1)).fetchMemberLiveRankingByDate(memberId, today);
+    }
+
+    @Test
+    @DisplayName("실시간 내 랭킹 조회 - 데이터 없을 경우 예외 발생")
+    void fetchMemberLiveRanking_notFound_throwsException() {
+        // given
+        Long memberId = 456L;
+        LocalDate today = LocalDate.of(2025, 6, 10);
+
+        when(competitionResultRepository.fetchMemberLiveRankingByDate(memberId, today))
+            .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() ->
+            competitionQueryService.fetchMemberLiveRanking(memberId, today)
+        ).isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.RANKING_NOT_EXIST.getMessage());
+
+        verify(competitionResultRepository).fetchMemberLiveRankingByDate(memberId, today);
+    }
+
 }

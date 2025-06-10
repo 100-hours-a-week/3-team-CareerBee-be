@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.competition.service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -9,9 +8,11 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     private final CompetitionRepository competitionRepository;
     private final CompetitionParticipantRepository competitionParticipantRepository;
     private final CompetitionSummaryRepository competitionSummaryRepository;
+    private final CompetitionResultRepository competitionResultRepository;
 
     @Override
     public CompetitionParticipationResp checkCompetitionParticipationById(
@@ -57,7 +59,18 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    public MemberRankingResp fetchMemberCompetitionRankingById(Long accessMemberId, LocalDate today) {
+    public MemberRankingResp fetchMemberCompetitionRankingById(
+        Long accessMemberId, LocalDate today
+    ) {
         return competitionSummaryRepository.fetchMemberRankingById(accessMemberId, today);
+    }
+
+    @Override
+    public MemberLiveRankingResp fetchMemberLiveRanking(
+        Long accessMemberId, LocalDate today
+    ) {
+        return competitionResultRepository.fetchMemberLiveRankingByDate(
+            accessMemberId, today
+        ).orElseThrow(() -> new CustomException(CustomResponseStatus.RANKING_NOT_EXIST));
     }
 }

@@ -1,6 +1,9 @@
 package org.choon.careerbee.domain.competition.controller;
 
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.choon.careerbee.fixture.competition.CompetitionFixture.createCompetition;
 import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.competition.CompetitionResultFixture.createCompetitionResult;
 import static org.choon.careerbee.fixture.competition.CompetitionSummaryFixture.createSummary;
 import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -23,11 +26,10 @@ import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmi
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionProblemRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.ProblemChoiceRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.choon.careerbee.fixture.MemberFixture;
-import org.choon.careerbee.fixture.competition.CompetitionFixture;
 import org.choon.careerbee.fixture.competition.RankingTestDataSupport;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +57,9 @@ class CompetitionControllerTest {
     private MemberRepository memberRepository;
 
     @Autowired
+    private CompetitionResultRepository competitionResultRepository;
+
+    @Autowired
     private CompetitionRepository competitionRepository;
 
     @Autowired
@@ -80,9 +85,9 @@ class CompetitionControllerTest {
     @BeforeEach
     void setUp() {
         testMember = memberRepository.saveAndFlush(
-            MemberFixture.createMember("nick", "nick@a.com", 5L));
+            createMember("nick", "nick@a.com", 5L));
         testCompetition = competitionRepository.saveAndFlush(
-            CompetitionFixture.createCompetition(
+            createCompetition(
                 LocalDateTime.of(2025, 5, 30, 20, 0, 0),
                 LocalDateTime.of(2025, 5, 30, 20, 10, 0)
             )
@@ -338,7 +343,7 @@ class CompetitionControllerTest {
         // given
         LocalDateTime now = LocalDateTime.now();
         Competition todayCompetition = competitionRepository.saveAndFlush(
-            CompetitionFixture.createCompetition(
+            createCompetition(
                 now.withHour(10).withMinute(0),
                 now.withHour(23).withMinute(0)
             )
@@ -418,4 +423,65 @@ class CompetitionControllerTest {
             .andExpect(jsonPath("$.data.month.continuous").value(18))
             .andExpect(jsonPath("$.data.month.correctRate").value(70.6));
     }
+
+    @Test
+    @DisplayName("실시간 내 랭킹 조회 - 성공")
+    void fetchMemberLiveRanking_success() throws Exception {
+        // given
+        Member me = memberRepository.saveAndFlush(createMember("유저1", "user1@test.com", 1L));
+        Member member2 = memberRepository.saveAndFlush(createMember("유저2", "user2@test.com", 2L));
+        Member member3 = memberRepository.saveAndFlush(createMember("유저3", "user3@test.com", 3L));
+
+        Competition todayCompetition = competitionRepository.saveAndFlush(createCompetition(
+            LocalDateTime.of(2025, 6, 10, 13, 0, 0),
+            LocalDateTime.of(2025, 6, 10, 13, 10, 0)
+        ));
+
+        competitionResultRepository.saveAndFlush(createCompetitionResult(todayCompetition, me,
+            new CompetitionResultSubmitReq((short) 3, 100000)));
+        competitionResultRepository.saveAndFlush(createCompetitionResult(todayCompetition, member2,
+            new CompetitionResultSubmitReq((short) 3, 90000)));
+        competitionResultRepository.saveAndFlush(createCompetitionResult(todayCompetition, member3,
+            new CompetitionResultSubmitReq((short) 4, 200000)));
+
+        String token = "Bearer " + jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/rankings/live")
+                .header("Authorization", token)
+                .param("date", "2025-06-10")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value("실시간 내 랭킹 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.rank").value(3))
+            .andExpect(jsonPath("$.data.solvedCount").value(3))
+            .andExpect(jsonPath("$.data.elapsedTime").value(100000));
+    }
+
+    @Test
+    @DisplayName("실시간 내 랭킹 조회 - 데이터가 존재하지 않을 경우 예외")
+    void fetchMemberLiveRanking_notFound() throws Exception {
+        // given
+        Member me = memberRepository.saveAndFlush(createMember("유저1", "user1@test.com", 1L));
+        String token = "Bearer " + jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
+
+        // flush without any result data intentionally
+        em.flush();
+        em.clear();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/rankings/live")
+                .header("Authorization", token)
+                .param("date", "2025-06-10")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.RANKING_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.RANKING_NOT_EXIST.getHttpStatusCode()));
+    }
+
 }
