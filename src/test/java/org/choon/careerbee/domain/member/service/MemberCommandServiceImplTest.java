@@ -1,6 +1,10 @@
 package org.choon.careerbee.domain.member.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -13,9 +17,11 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
+import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,45 +32,66 @@ class MemberCommandServiceImplTest {
     @Mock
     private MemberQueryService memberQueryService;
 
+    @Mock
+    ResumeProgressPolicy progressPolicy;
+
     @InjectMocks
     private MemberCommandServiceImpl memberCommandService;
 
     @Test
-    @DisplayName("이력 정보 업데이트 - 정상 수행 시 Member의 updateResumeInfo 호출")
+    @DisplayName("이력 정보 업데이트 → 필드·progress 반영 확인")
     void updateResumeInfo_shouldCallMemberUpdate() {
         // given
         Long accessMemberId = 1L;
 
         UpdateResumeReq req = new UpdateResumeReq(
-            PreferredJob.BACKEND,
-            "BR1",
-            2,
-            3,
-            MajorType.MAJOR,
-            "스타트업",
-            12,
-            "백엔드 개발자",
-            "추가 경험 내용"
+            PreferredJob.BACKEND, "GL3", 4, 2,
+            MajorType.MAJOR, "스타트업", 12,
+            "백엔드 개발자", "추가 경험"
         );
 
-        Member mockMember = mock(Member.class);
+        Member mockMember = createMember("nickname", "test@test.com", 13L);
         when(memberQueryService.findById(accessMemberId)).thenReturn(mockMember);
+        when(progressPolicy.calculate(mockMember)).thenReturn(320);
 
         // when
         memberCommandService.updateResumeInfo(req, accessMemberId);
 
         // then
-        verify(mockMember, times(1)).updateResumeInfo(
-            req.preferredJob(),
-            req.psTier(),
-            req.certificationCount(),
-            req.projectCount(),
-            req.majorType(),
-            req.companyName(),
-            req.workPeriod(),
-            req.position(),
-            req.additionalExperiences()
+        assertAll(
+            () -> assertThat(mockMember.getPreferredJob()).isEqualTo(PreferredJob.BACKEND),
+            () -> assertThat(mockMember.getPsTier()).isEqualTo("GL3"),
+            () -> assertThat(mockMember.getProjectCount()).isEqualTo(2),
+            () -> assertThat(mockMember.getProgress()).isEqualTo(320)    // 계산 결과
         );
+    }
+
+    @Test
+    @DisplayName("이력 정보 업데이트 → Member 메서드 호출·순서 확인")
+    void updateResumeInfo_callsMemberMethodsInOrder() {
+        // given
+        Member mockMember = mock(Member.class);
+        when(memberQueryService.findById(1L)).thenReturn(mockMember);
+
+        UpdateResumeReq req = new UpdateResumeReq(
+            PreferredJob.BACKEND, "GL3", 4, 2,
+            MajorType.MAJOR, "스타트업", 12,
+            "백엔드 개발자", "추가 경험"
+        );
+
+        // when
+        memberCommandService.updateResumeInfo(req, 1L);
+
+        // then
+        InOrder order = inOrder(mockMember);
+        order.verify(mockMember)
+            .updateResumeInfo(
+                req.preferredJob(), req.psTier(), req.certificationCount(),
+                req.projectCount(), req.majorType(), req.companyName(),
+                req.workPeriod(), req.position(), req.additionalExperiences()
+            );
+        order.verify(mockMember).recalcProgress(progressPolicy);
+        order.verifyNoMoreInteractions();
     }
 
     @Test
