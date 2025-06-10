@@ -16,6 +16,7 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.entity.Member;
+import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.util.NicknameGenerator;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     private final MemberRepository memberRepository;
     private final ImageService imageService;
     private final AiApiClient aiApiClient;
+    private final ResumeProgressPolicy resumeProgressPolicy;
 
     @Override
     public Member forceJoin(OAuthInfoResponse oAuthInfo) {
@@ -58,6 +60,8 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             updateResumeReq.position(),
             updateResumeReq.additionalExperiences()
         );
+
+        validMember.recalcProgress(resumeProgressPolicy);
     }
 
     @Override
@@ -94,8 +98,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         );
 
         // 2. 만들어진 정보로 ai서버에 이력서 정보추출 요청
-        ExtractResumeResp extractResumeResp = aiApiClient.requestExtractResume(extractResumeReq);
-        System.out.println("extractResumeResp = " + extractResumeResp);
-        return extractResumeResp;
+        return aiApiClient.requestExtractResume(extractResumeReq);
     }
 }
