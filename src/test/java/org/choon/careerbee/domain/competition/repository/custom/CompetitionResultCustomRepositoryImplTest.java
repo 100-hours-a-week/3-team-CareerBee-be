@@ -8,10 +8,15 @@ import static org.choon.careerbee.fixture.competition.CompetitionResultFixture.c
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp.RankerInfo;
 import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
@@ -108,5 +113,60 @@ class CompetitionResultCustomRepositoryImplTest {
 
         // then
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준 상위 10명 실시간 랭킹 조회")
+    void fetchLiveRankingByDate_success_withMap() {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 10);
+
+        Competition competition = em.persist(createCompetition(
+            LocalDateTime.of(2025, 6, 10, 13, 0, 0),
+            LocalDateTime.of(2025, 6, 10, 13, 30, 0)
+        ));
+
+        Map<String, CompetitionResultSubmitReq> userResults = new HashMap<>();
+        userResults.put("유저1", new CompetitionResultSubmitReq((short) 5, 120000));
+        userResults.put("유저2", new CompetitionResultSubmitReq((short) 5, 130000));
+        userResults.put("유저3", new CompetitionResultSubmitReq((short) 5, 150000));
+        userResults.put("유저4", new CompetitionResultSubmitReq((short) 4, 110000));
+        userResults.put("유저5", new CompetitionResultSubmitReq((short) 4, 140000));
+        userResults.put("유저6", new CompetitionResultSubmitReq((short) 3, 100000));
+        userResults.put("유저7", new CompetitionResultSubmitReq((short) 3, 110000));
+        userResults.put("유저8", new CompetitionResultSubmitReq((short) 2, 90000));
+        userResults.put("유저9", new CompetitionResultSubmitReq((short) 2, 95000));
+        userResults.put("유저10", new CompetitionResultSubmitReq((short) 1, 50000));
+        userResults.put("유저11", new CompetitionResultSubmitReq((short) 1, 70000));
+        userResults.put("유저12", new CompetitionResultSubmitReq((short) 0, 10000));
+
+        // 저장
+        Map<String, Member> savedMembers = new HashMap<>();
+        userResults.forEach((name, result) -> {
+            Member member = em.persist(
+                createMember(name, name.toLowerCase() + "@test.com", (long) name.hashCode()));
+            savedMembers.put(name, member);
+            em.persist(createCompetitionResult(competition, member, result));
+        });
+
+        em.flush();
+        em.clear();
+
+        // when
+        LiveRankingResp result = competitionResultCustomRepository.fetchLiveRankingByDate(today);
+
+        // then
+        assertThat(result).isNotNull();
+        List<RankerInfo> rankers = result.rankings();
+        assertThat(rankers).hasSize(10); // 12명 중 상위 10명만
+
+        // 검증 (상위 3명 이름 확인)
+        assertThat(rankers.get(0).nickname()).isEqualTo("유저1");
+        assertThat(rankers.get(1).nickname()).isEqualTo("유저2");
+        assertThat(rankers.get(2).nickname()).isEqualTo("유저3");
+
+        for (int i = 0; i < rankers.size(); i++) {
+            assertThat(rankers.get(i).rank()).isEqualTo(i + 1L);
+        }
     }
 }
