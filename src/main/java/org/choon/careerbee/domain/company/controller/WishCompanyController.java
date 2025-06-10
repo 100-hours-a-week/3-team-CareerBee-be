@@ -11,8 +11,10 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.company.service.CompanyCommandService;
 import org.choon.careerbee.domain.company.service.CompanyQueryService;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -40,7 +43,7 @@ public class WishCompanyController {
     @PostMapping("/{companyId}")
     public ResponseEntity<CommonResponse<Void>> registWishCompany(
         @Parameter(description = "관심 등록할 기업 ID", example = "1")
-        @PathVariable Long companyId,
+        @PathVariable("companyId") Long companyId,
 
         @Parameter(hidden = true)
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -62,7 +65,7 @@ public class WishCompanyController {
     @DeleteMapping("/{companyId}")
     public ResponseEntity<CommonResponse<Void>> deleteWishCompany(
         @Parameter(description = "삭제할 관심 기업 ID", example = "1")
-        @PathVariable Long companyId,
+        @PathVariable("companyId") Long companyId,
 
         @Parameter(hidden = true)
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -84,7 +87,7 @@ public class WishCompanyController {
     @GetMapping("/{companyId}")
     public ResponseEntity<CommonResponse<CheckWishCompanyResp>> checkWishCompany(
         @Parameter(description = "확인할 기업 ID", example = "1")
-        @PathVariable Long companyId,
+        @PathVariable("companyId") Long companyId,
 
         @Parameter(hidden = true)
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -116,6 +119,42 @@ public class WishCompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "관심 기업 아이디 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping()
+    public ResponseEntity<CommonResponse<WishCompaniesResp>> fetchWishCompanies(
+        @RequestParam(name = "cursor", required = false) Long cursor,
+        @RequestParam(name = "size", defaultValue = "5") int size,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        WishCompaniesResp response = queryService.fetchWishCompanies(
+            principalDetails.getId(),
+            cursor,
+            size
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "관심 기업 목록 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/{companyId}/progress")
+    public ResponseEntity<CommonResponse<WishCompanyProgressResp>> fetchWishCompanies(
+        @PathVariable("companyId") Long companyId,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        WishCompanyProgressResp response = queryService.fetchWishCompanyProgress(
+            companyId,
+            principalDetails.getId()
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "진척도 조회에 성공하였습니다."
         );
     }
 }

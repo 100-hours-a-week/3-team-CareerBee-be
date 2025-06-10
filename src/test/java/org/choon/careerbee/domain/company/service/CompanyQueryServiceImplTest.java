@@ -2,8 +2,8 @@ package org.choon.careerbee.domain.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
@@ -20,17 +20,19 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
-import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
-import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
-import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
+import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -418,5 +420,91 @@ class CompanyQueryServiceImplTest {
         verify(memberRepository, times(1)).findById(invalidMemberId);
         verifyNoInteractions(wishCompanyRepository);
     }
+
+    @Test
+    @DisplayName("관심 회사 목록 조회 - repository 호출 및 결과 반환")
+    void fetchWishCompanies_shouldCallRepositoryAndReturnResponse() {
+        // given
+        Long memberId = 1L;
+        Long cursor = 100L;
+        int size = 10;
+
+        CompanySummaryInfo company1 = new CompanySummaryInfo(
+            101L, "회사A", "https://logo.a", 12L, List.of(new CompanySummaryInfo.Keyword("복지"))
+        );
+        CompanySummaryInfo company2 = new CompanySummaryInfo(
+            102L, "회사B", "https://logo.b", 7L, List.of(new CompanySummaryInfo.Keyword("자율출퇴근"))
+        );
+
+        WishCompaniesResp mockResp = new WishCompaniesResp(List.of(company1, company2), 200L, true);
+
+        when(wishCompanyRepository.fetchWishCompaniesByMemberId(memberId, cursor, size))
+            .thenReturn(mockResp);
+
+        // when
+        WishCompaniesResp actual = companyQueryService.fetchWishCompanies(memberId, cursor, size);
+
+        // then
+        assertThat(actual).isEqualTo(mockResp);
+        assertThat(actual.wishCompanies()).hasSize(2);
+        assertThat(actual.nextCursor()).isEqualTo(200L);
+        assertThat(actual.hasNext()).isTrue();
+
+        ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Long> cursorCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
+
+        verify(wishCompanyRepository, times(1))
+            .fetchWishCompaniesByMemberId(idCaptor.capture(), cursorCaptor.capture(),
+                sizeCaptor.capture());
+
+        assertThat(idCaptor.getValue()).isEqualTo(memberId);
+        assertThat(cursorCaptor.getValue()).isEqualTo(cursor);
+        assertThat(sizeCaptor.getValue()).isEqualTo(size);
+    }
+
+    @Test
+    @DisplayName("관심기업 진척도 조회 - 유효한 ID 조합 시 응답 반환")
+    void fetchWishCompanyProgress_shouldReturnResponse_whenDataExists() {
+        // given
+        Long wishCompanyId = 1L;
+        Long memberId = 100L;
+        WishCompanyProgressResp expected = new WishCompanyProgressResp(80, 320);
+
+        when(wishCompanyRepository.fetchWishCompanyAndMemberProgress(wishCompanyId, memberId))
+            .thenReturn(Optional.of(expected));
+
+        // when
+        WishCompanyProgressResp actual = companyQueryService.fetchWishCompanyProgress(wishCompanyId,
+            memberId);
+
+        // then
+        assertThat(actual).isEqualTo(expected);
+
+        verify(wishCompanyRepository, times(1))
+            .fetchWishCompanyAndMemberProgress(wishCompanyId, memberId);
+    }
+
+    @Test
+    @DisplayName("관심기업 진척도 조회 - 존재하지 않는 경우 예외 발생")
+    void fetchWishCompanyProgress_shouldThrow_whenWishCompanyNotFound() {
+        // given
+        Long wishCompanyId = 1L;
+        Long memberId = 100L;
+
+        when(wishCompanyRepository.fetchWishCompanyAndMemberProgress(wishCompanyId, memberId))
+            .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() ->
+            companyQueryService.fetchWishCompanyProgress(wishCompanyId, memberId)
+        )
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.WISH_COMPANY_NOT_FOUND.getMessage());
+
+        verify(wishCompanyRepository, times(1))
+            .fetchWishCompanyAndMemberProgress(wishCompanyId, memberId);
+    }
+
 
 }

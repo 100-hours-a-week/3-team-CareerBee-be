@@ -18,7 +18,6 @@ import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.response.LoginResp;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
 import org.choon.careerbee.domain.auth.dto.response.ReissueResp;
-import org.choon.careerbee.domain.auth.dto.response.TokenAndUserInfo;
 import org.choon.careerbee.domain.auth.service.auth.AuthService;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoLoginParams;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,7 +54,7 @@ public class AuthController {
     @GetMapping("/oauth")
     public ResponseEntity<CommonResponse<OAuthLoginUrlResp>> getOAuthLoginUrl(
         @Parameter(name = "type", description = "소셜 로그인 타입 (ex: KAKAO, GOOGLE)", required = true)
-        @RequestParam(value = "type") String type,
+        @RequestParam(name = "type", value = "type") String type,
         @RequestHeader(value = "Origin") String origin
     ) {
         OAuthLoginUrlResp response = authService.getOAuthLoginUrl(type, origin);
@@ -82,11 +81,11 @@ public class AuthController {
         @RequestHeader(value = "Origin") String origin,
         HttpServletResponse response
     ) {
-        TokenAndUserInfo tokenAndUserInfo = authService.login(kakaoParams, origin);
-        setTokenInCookie(response, tokenAndUserInfo.authTokens());
+        AuthTokens loginResponse = authService.login(kakaoParams, origin);
+        setTokenInCookie(response, loginResponse);
 
         return CommonResponseEntity.ok(
-            new LoginResp(tokenAndUserInfo.authTokens().accessToken(), tokenAndUserInfo.userInfo()),
+            new LoginResp(loginResponse.accessToken()),
             CustomResponseStatus.SUCCESS,
             "로그인에 성공하였습니다."
         );

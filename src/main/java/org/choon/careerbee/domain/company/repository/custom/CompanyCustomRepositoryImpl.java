@@ -8,10 +8,12 @@ import static org.choon.careerbee.domain.company.entity.techStack.QCompanyTechSt
 import static org.choon.careerbee.domain.company.entity.techStack.QTechStack.techStack;
 import static org.choon.careerbee.domain.company.entity.wish.QWishCompany.wishCompany;
 
+import com.querydsl.core.annotations.QueryProjection;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -227,6 +230,18 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         }
 
         return result;
+    }
+
+    @Override
+    public List<Company> findBySaraminNameIn(List<String> companyNames) {
+        if (companyNames == null || companyNames.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return queryFactory
+            .selectFrom(company)
+            .where(company.saraminName.in(companyNames))
+            .fetch();
     }
 
     private BooleanExpression inDistance(String point, Integer radius) {

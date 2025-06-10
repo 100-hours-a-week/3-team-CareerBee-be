@@ -9,9 +9,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.jwt.TokenClaimInfo;
-import org.choon.careerbee.domain.auth.dto.response.LoginResp.UserInfo;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
-import org.choon.careerbee.domain.auth.dto.response.TokenAndUserInfo;
 import org.choon.careerbee.domain.auth.entity.Token;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
@@ -57,12 +55,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public TokenAndUserInfo login(OAuthLoginParams oAuthLoginParams, String origin) {
+    public AuthTokens login(OAuthLoginParams oAuthLoginParams, String origin) {
         OAuthInfoResponse oAuthInfo = requestOAuthInfoService.request(oAuthLoginParams, origin);
 
         // Todo : 추후(Redis로 변경)에는 Member 엔티티 보단 memberId만 있으면 되므로 리팩토링시 변경 코드
         // Todo : forceJoin의 리턴타입도 Long으로 저장된 member의 id를 리턴해줘야함.
-        Member member = memberRepository.findByEmail(oAuthInfo.getEmail())
+        Member member = memberRepository.findByProviderId(oAuthInfo.getProviderId())
             .orElseGet(() -> memberCommandService.forceJoin(oAuthInfo));
 
         String accessToken = jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
@@ -77,11 +75,7 @@ public class AuthServiceImpl implements AuthService {
             return newRefreshToken;
         });
 
-        // Todo : 추후 새 알림이 있다면 해당 코드 변경
-        return new TokenAndUserInfo(
-            new AuthTokens(accessToken, refreshToken),
-            new UserInfo(member.getPoints(), false)
-        );
+        return new AuthTokens(accessToken, refreshToken);
     }
 
     @Override

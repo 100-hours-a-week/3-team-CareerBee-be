@@ -11,9 +11,24 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
+        jdbc:
+          batch_size: 30
+
+  cloud:
+    aws:
+      s3:
+        credentials:
+          accessKey: ${AWS_S3_ACCESSKEY}
+          secretKey: ${AWS_S3_SECRETKEY}
+        bucket: ${AWS_S3_BUCKET}
+      region:
+        static: ${AWS_REGION}
+      stack:
+        auto: false
 
 jwt:
   secret: ${JWT_SECRETS}
@@ -35,6 +50,15 @@ server:
     session:
       cookie:
         domain: ${COOKIE_DOMAIN}
+
+saramin:
+  api:
+    base-url: https://oapi.saramin.co.kr
+    access-key: ${SARAMIN_SECRET_KEY}
+
+ai:
+  api:
+    base-url: https://dev-ai.careerbee.co.kr
 
 sentry:
   dsn: ${SENTRY_DSN}  # 필수: Sentry DSN을 환경변수로 주입
@@ -58,3 +82,6 @@ management:
       show-details: always  # 상세 정보 포함
   server:
     port: 8080
+
+careerbee:
+  allow-date-param: false

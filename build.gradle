@@ -41,6 +41,10 @@ spotbugs {
 group = 'org.choon'
 version = '0.0.1-SNAPSHOT'
 
+bootJar {
+    archiveFileName = "careerbee-api.jar"
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -97,6 +101,9 @@ dependencies {
     // Spring Actuator + Prometheus
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // S3
+    implementation 'io.awspring.cloud:spring-cloud-aws-s3:3.3.1'
 }
 
 sentry {

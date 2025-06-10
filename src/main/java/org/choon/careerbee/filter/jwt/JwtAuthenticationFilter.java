@@ -47,7 +47,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (CustomException e) {
-            writeErrorResponse(response, CustomResponseStatus.LOGOUT_MEMBER);
+            writeErrorResponse(response, e.getCustomResponseStatus());
         } catch (ExpiredJwtException e) {
             writeErrorResponse(response, CustomResponseStatus.EXPIRED_JWT);
         } catch (JwtException | IllegalArgumentException e) {
@@ -78,6 +78,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/oauth",
             "/auth/tokens",
             "/auth/reissue",
+            "/competitions/rankings",
+            "/competitions/ids",
             "/favicon.ico",
             "/api/v1/companies",
             "/swagger-ui",
@@ -86,6 +88,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         };
 
         String path = request.getRequestURI();
+        if (path.equals("/api/v1/members/competitions/rankings") || path.equals(
+            "/api/v1/members/competitions/rankings/live")) {
+            return false;
+        }
         return Arrays.stream(excludePath).anyMatch(path::contains);
     }
 }

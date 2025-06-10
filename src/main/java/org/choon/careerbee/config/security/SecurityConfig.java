@@ -67,10 +67,16 @@ public class SecurityConfig {
                     "/api/v1/auth/oauth/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
+                    "/competitions/rankings",
+                    "/competitions/ids",
                     "/actuator/**"
                 )
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
-                .requestMatchers("/users/**").hasRole("MEMBER")
+                .requestMatchers(
+                    "/users/**",
+                    "/api/v1/members/competitions/rankings",
+                    "/api/v1/members/competitions/rankings/live"
+                ).hasRole("MEMBER")
                 .anyRequest().permitAll()  // 그 외 요청은 인가처리를 할 필요가 없음
             )
             // CORS 해결하기 위한 코드 추가
