@@ -148,7 +148,6 @@ public class Member extends BaseEntity {
 
     public void updateProfileInfo(UpdateProfileCommand command) {
         this.imgUrl = command.profileImgUrl();
-        this.email = command.email();
         this.nickname = command.nickname();
     }
 

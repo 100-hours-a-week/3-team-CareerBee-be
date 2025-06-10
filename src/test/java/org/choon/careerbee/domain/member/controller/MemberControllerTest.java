@@ -115,8 +115,7 @@ class MemberControllerTest {
         // given
         UpdateProfileInfoReq req = new UpdateProfileInfoReq(
             "https://img.example.com/profile.png",
-            "새닉네임",
-            "new_email@example.com"
+            "새닉네임"
         );
         String json = objectMapper.writeValueAsString(req);
 
@@ -135,7 +134,7 @@ class MemberControllerTest {
     @DisplayName("내 정보 수정 - 인증 없이 요청 시 401 반환")
     void updateProfileInfo_unauthorized_shouldReturn401() throws Exception {
         UpdateProfileInfoReq req = new UpdateProfileInfoReq(
-            "https://img.example.com/profile.png", "newNick", "unauth@example.com"
+            "https://img.example.com/profile.png", "newNick"
         );
         String json = objectMapper.writeValueAsString(req);
 
@@ -143,29 +142,6 @@ class MemberControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
             .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 - 중복 이메일이면 409 Conflict 반환")
-    void updateProfileInfo_duplicateEmail_shouldReturn409() throws Exception {
-        // given
-        memberRepository.saveAndFlush(createMember("testnickname", "duplicate@test.com", 2345L));
-        UpdateProfileInfoReq req = new UpdateProfileInfoReq(
-            "https://img.example.com/profile.png",
-            "new nickname",
-            "duplicate@test.com"
-        );
-        String json = objectMapper.writeValueAsString(req);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/members")
-                .header("Authorization", "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.httpStatusCode").value(409))
-            .andExpect(
-                jsonPath("$.message").value(CustomResponseStatus.EMAIL_ALREADY_EXIST.getMessage()));
     }
 
     @Test

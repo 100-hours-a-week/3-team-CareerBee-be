@@ -74,7 +74,7 @@ class MemberIntegrationTest {
         Member member = memberRepository.save(createMember("nick", "email@test.com", 999L));
 
         UpdateProfileCommand command = new UpdateProfileCommand(
-            "https://example.com/profile.png", "new@test.com", "새닉네임"
+            "https://example.com/profile.png", "새닉네임"
         );
 
         member.updateProfileInfo(command);
@@ -86,7 +86,6 @@ class MemberIntegrationTest {
 
         // then
         assertThat(updated.getImgUrl()).isEqualTo(command.profileImgUrl());
-        assertThat(updated.getEmail()).isEqualTo(command.email());
         assertThat(updated.getNickname()).isEqualTo(command.nickname());
     }
 
