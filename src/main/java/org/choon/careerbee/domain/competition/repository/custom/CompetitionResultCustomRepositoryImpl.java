@@ -5,9 +5,12 @@ import static org.choon.careerbee.domain.competition.domain.QCompetitionResult.c
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp.RankerInfo;
 import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.springframework.stereotype.Repository;
 
@@ -49,5 +52,45 @@ public class CompetitionResultCustomRepositoryImpl implements CompetitionResultC
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public LiveRankingResp fetchLiveRankingByDate(LocalDate today) {
+        List<Tuple> top10 = queryFactory
+            .select(
+                competitionResult.member.id,
+                competitionResult.member.nickname,
+                competitionResult.member.imgUrl, // Todo : 추후 badge url도 도입해야함
+                competitionResult.solvedCount,
+                competitionResult.elapsedTime
+            )
+            .from(competitionResult)
+            .where(competitionResult.createdAt.year().eq(today.getYear())
+                .and(competitionResult.createdAt.month().eq(today.getMonthValue()))
+                .and(competitionResult.createdAt.dayOfMonth().eq(today.getDayOfMonth())))
+            .orderBy(
+                competitionResult.solvedCount.desc(),
+                competitionResult.elapsedTime.asc())
+            .limit(10)
+            .fetch();
+
+        List<RankerInfo> rankerInfos = new ArrayList<>();
+
+        Long rank = 1L;
+        for (Tuple tuple : top10) {
+            rankerInfos.add(
+                new RankerInfo(
+                    rank,
+                    tuple.get(competitionResult.member.nickname),
+                    tuple.get(competitionResult.member.imgUrl),
+                    tuple.get(competitionResult.member.imgUrl), // Todo : 이후 badge url로 변경해야함
+                    tuple.get(competitionResult.elapsedTime),
+                    tuple.get(competitionResult.solvedCount)
+                )
+            );
+            rank++;
+        }
+
+        return new LiveRankingResp(rankerInfos);
     }
 }

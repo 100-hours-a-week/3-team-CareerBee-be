@@ -8,6 +8,7 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
+import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
@@ -72,5 +73,10 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
         return competitionResultRepository.fetchMemberLiveRankingByDate(
             accessMemberId, today
         ).orElseThrow(() -> new CustomException(CustomResponseStatus.RANKING_NOT_EXIST));
+    }
+
+    @Override
+    public LiveRankingResp fetchLiveRanking(LocalDate today) {
+        return competitionResultRepository.fetchLiveRankingByDate(today);
     }
 }
