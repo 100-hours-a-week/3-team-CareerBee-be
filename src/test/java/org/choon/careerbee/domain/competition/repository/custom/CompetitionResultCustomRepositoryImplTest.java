@@ -5,15 +5,18 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.competition.CompetitionFixture.createCompetition;
 import static org.choon.careerbee.fixture.competition.CompetitionResultFixture.createCompetitionResult;
 
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.competition.domain.Competition;
+import org.choon.careerbee.domain.competition.domain.CompetitionResult;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp.RankerInfo;
@@ -56,18 +59,22 @@ class CompetitionResultCustomRepositoryImplTest {
             LocalDateTime.of(2025, 6, 10, 13, 10, 0)
         ));
 
-        em.persist(
-            createCompetitionResult(todayCompetition, me, new CompetitionResultSubmitReq(
+        List<CompetitionResult> results = new ArrayList<>();
+        results.add(createCompetitionResult(todayCompetition, me,
+            new CompetitionResultSubmitReq(
                 (short) 3, 100000
             )));
-        em.persist(
-            createCompetitionResult(todayCompetition, member2, new CompetitionResultSubmitReq(
+        results.add(createCompetitionResult(todayCompetition, member2,
+            new CompetitionResultSubmitReq(
                 (short) 3, 90000
             )));
-        em.persist(
-            createCompetitionResult(todayCompetition, member3, new CompetitionResultSubmitReq(
+        results.add(createCompetitionResult(todayCompetition, member3,
+            new CompetitionResultSubmitReq(
                 (short) 4, 200000
             )));
+
+        results.forEach(r -> em.persist(r));
+        updateCreatedAtOfCompetitionResults(results);
 
         em.flush();
         em.clear();
@@ -142,12 +149,19 @@ class CompetitionResultCustomRepositoryImplTest {
 
         // 저장
         Map<String, Member> savedMembers = new HashMap<>();
+        List<CompetitionResult> results = new ArrayList<>();
         userResults.forEach((name, result) -> {
             Member member = em.persist(
                 createMember(name, name.toLowerCase() + "@test.com", (long) name.hashCode()));
             savedMembers.put(name, member);
-            em.persist(createCompetitionResult(competition, member, result));
+            CompetitionResult competitionResult = createCompetitionResult(
+                competition, member, result
+            );
+            results.add(competitionResult);
+            em.persist(competitionResult);
         });
+
+        updateCreatedAtOfCompetitionResults(results);
 
         em.flush();
         em.clear();
@@ -168,5 +182,16 @@ class CompetitionResultCustomRepositoryImplTest {
         for (int i = 0; i < rankers.size(); i++) {
             assertThat(rankers.get(i).rank()).isEqualTo(i + 1L);
         }
+    }
+
+    private void updateCreatedAtOfCompetitionResults(List<CompetitionResult> results) {
+        EntityManager entityManager = em.getEntityManager();
+        results.stream().forEach(result -> {
+            entityManager.createNativeQuery(
+                    "UPDATE competition_result SET created_at = :createdAt WHERE id = :id")
+                .setParameter("createdAt", LocalDateTime.of(2025, 6, 10, 13, 5))
+                .setParameter("id", result.getId())
+                .executeUpdate();
+        });
     }
 }
