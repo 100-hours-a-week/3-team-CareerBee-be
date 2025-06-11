@@ -129,7 +129,7 @@ class AuthServiceImplTest {
 
         when(requestOAuthInfoService.request(params, "http://localhost:5173"))
             .thenReturn(oAuthInfo);
-        when(memberRepository.findByProviderId(123L)).thenReturn(Optional.of(member));
+        when(memberQueryService.findMemberByProviderId(123L)).thenReturn(Optional.of(member));
         when(jwtUtil.createToken(1L, TokenType.ACCESS_TOKEN)).thenReturn("access-token");
         when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE))
             .thenReturn(Optional.of(new Token(member, TokenStatus.LIVE, "refresh-token")));
@@ -171,7 +171,7 @@ class AuthServiceImplTest {
 
         when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
             oAuthInfo);
-        when(memberRepository.findByProviderId(999L)).thenReturn(Optional.empty());
+        when(memberQueryService.findMemberByProviderId(999L)).thenReturn(Optional.empty());
         when(memberCommandService.forceJoin(oAuthInfo)).thenReturn(newMember);
         when(jwtUtil.createToken(newMember.getId(), TokenType.ACCESS_TOKEN)).thenReturn(
             "access-token-new");
@@ -214,7 +214,7 @@ class AuthServiceImplTest {
 
         when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
             oAuthInfo);
-        when(memberRepository.findByProviderId(777L)).thenReturn(Optional.of(member));
+        when(memberQueryService.findMemberByProviderId(777L)).thenReturn(Optional.of(member));
         when(jwtUtil.createToken(3L, TokenType.ACCESS_TOKEN)).thenReturn("access-token-exist");
         when(jwtUtil.createToken(3L, TokenType.REFRESH_TOKEN)).thenReturn("refresh-token-exist");
         when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE)).thenReturn(
@@ -302,8 +302,8 @@ class AuthServiceImplTest {
         AuthTokens newAuthTokens = new AuthTokens("new-access-token", "new-refresh-token");
 
         when(jwtUtil.getTokenClaims(oldRefreshToken)).thenReturn(tokenClaimInfo);
-        when(memberQueryService.findById(anyLong())).thenReturn(member);
-        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
+        when(memberQueryService.getReferenceById(anyLong())).thenReturn(member);
+        when(tokenRepository.findByTokenValueAndStatus(anyString(), any(TokenStatus.class)))
             .thenReturn(Optional.of(storedToken));
         when(tokenGenerator.generateToken(anyLong())).thenReturn(newAuthTokens);
 
@@ -340,37 +340,13 @@ class AuthServiceImplTest {
         TokenClaimInfo tokenClaimInfo = new TokenClaimInfo(member.getId());
 
         when(jwtUtil.getTokenClaims(anyString())).thenReturn(tokenClaimInfo);
-        when(memberQueryService.findById(anyLong())).thenReturn(member);
-        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
+        when(memberQueryService.getReferenceById(anyLong())).thenReturn(member);
+        when(tokenRepository.findByTokenValueAndStatus(anyString(), any(TokenStatus.class)))
             .thenReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> authService.reissue(refreshToken))
             .isInstanceOf(CustomException.class)
             .hasMessage(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND.getMessage());
-    }
-
-    @Test
-    @DisplayName("재발급 실패 - 요청한 리프레시 토큰과 저장된 토큰 불일치")
-    void reissue_shouldThrow_whenTokenNotMatch() {
-        // given
-        Member member = createMember("nickname", "email@test.com", 1234L);
-        ReflectionTestUtils.setField(member, "id", 1l);
-
-        String providedRefreshToken = "provided-token";
-        String actualStoredToken = "different-token";
-
-        TokenClaimInfo tokenClaimInfo = new TokenClaimInfo(member.getId());
-        Token tokenInDB = createToken(member, actualStoredToken, TokenStatus.LIVE);
-
-        when(jwtUtil.getTokenClaims(providedRefreshToken)).thenReturn(tokenClaimInfo);
-        when(memberQueryService.findById(anyLong())).thenReturn(member);
-        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
-            .thenReturn(Optional.of(tokenInDB));
-
-        // when & then
-        assertThatThrownBy(() -> authService.reissue(providedRefreshToken))
-            .isInstanceOf(CustomException.class)
-            .hasMessage(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getMessage());
     }
 }

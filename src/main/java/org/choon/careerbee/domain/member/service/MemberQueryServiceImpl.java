@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.member.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -35,6 +36,11 @@ public class MemberQueryServiceImpl implements MemberQueryService {
         } catch (EntityNotFoundException e) {
             throw new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST);
         }
+    }
+
+    @Override
+    public Optional<Member> findMemberByProviderId(Long providerId) {
+        return memberRepository.findByProviderId(providerId);
     }
 
 }

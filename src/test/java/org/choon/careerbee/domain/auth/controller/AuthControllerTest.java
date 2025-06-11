@@ -247,22 +247,4 @@ class AuthControllerTest {
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
     }
-
-    @Test
-    @DisplayName("토큰 재발급 실패 - 토큰 불일치")
-    void reissue_shouldReturn401_whenTokenMismatch() throws Exception {
-        // given
-        String validRefreshToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
-        tokenRepository.saveAndFlush(createToken(testMember, validRefreshToken, TokenStatus.LIVE));
-        String fakeToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
-
-        mockMvc.perform(post("/api/v1/auth/reissue")
-                .cookie(new Cookie("refreshToken", fakeToken))
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.message")
-                .value(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getMessage()))
-            .andExpect(jsonPath("$.httpStatusCode")
-                .value(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getHttpStatusCode()));
-    }
 }

@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.auth.service.auth;
 
 import io.jsonwebtoken.ExpiredJwtException;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -19,7 +18,6 @@ import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginParams;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProviderFactory;
 import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
 import org.choon.careerbee.domain.member.entity.Member;
-import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.util.jwt.JwtUtil;
@@ -43,8 +41,6 @@ public class AuthServiceImpl implements AuthService {
     private final MemberQueryService memberQueryService;
 
     private final TokenRepository tokenRepository;
-
-    private final MemberRepository memberRepository; // Todo : 추후 Redis로 이전시 없앨 예정. (개발 편의성을 위해 둠)
 
     @Override
     public OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider, String origin) {
@@ -86,40 +82,36 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthTokens reissue(String refreshToken) {
+    public AuthTokens reissue(String rtInCookie) {
         TokenClaimInfo tokenClaims;
         try {
-            tokenClaims = jwtUtil.getTokenClaims(refreshToken);
+            tokenClaims = jwtUtil.getTokenClaims(rtInCookie);
         } catch (ExpiredJwtException e) {
             throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_EXPIRED);
         }
 
-        Member findMember = memberQueryService.findById(tokenClaims.id());
-        Token refreshTokenInRDB = tokenRepository
-            .findByMemberIdAndStatus(findMember.getId(), TokenStatus.LIVE)
+        Member memberRef = memberQueryService.getReferenceById(tokenClaims.id());
+
+        Token currentLiveRt = tokenRepository
+            .findByTokenValueAndStatus(rtInCookie, TokenStatus.LIVE)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND));
 
-        if (!Objects.equals(refreshToken, refreshTokenInRDB.getTokenValue())) {
-            throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH);
-        }
+        AuthTokens newTokens = tokenGenerator.generateToken(memberRef.getId());
+        tokenRepository.save(new Token(memberRef, TokenStatus.LIVE, newTokens.refreshToken()));
 
-        AuthTokens generateTokens = tokenGenerator.generateToken(findMember.getId());
-        refreshTokenInRDB.revoke();
+        currentLiveRt.revoke();
 
-        tokenRepository.save(
-            new Token(findMember, TokenStatus.LIVE, generateTokens.refreshToken())
-        );
-        return generateTokens;
+        return newTokens;
     }
 
     private Member findOrCreateMember(OAuthInfoResponse info) {
         try {
-            return memberRepository
-                .findByProviderId(info.getProviderId())
+            return memberQueryService
+                .findMemberByProviderId(info.getProviderId())
                 .orElseGet(() -> memberCommandService.forceJoin(info));
         } catch (DataIntegrityViolationException ex) {
-            return memberRepository
-                .findByProviderId(info.getProviderId())
+            return memberQueryService
+                .findMemberByProviderId(info.getProviderId())
                 .orElseThrow(() -> new CustomException(CustomResponseStatus.INVALID_LOGIN_LOGIC));
         }
     }
