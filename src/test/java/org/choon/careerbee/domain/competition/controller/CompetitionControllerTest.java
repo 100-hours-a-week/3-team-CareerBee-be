@@ -16,12 +16,15 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
+import org.choon.careerbee.domain.competition.domain.CompetitionResult;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.domain.problem.CompetitionProblem;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
@@ -439,12 +442,25 @@ class CompetitionControllerTest {
             LocalDateTime.of(2025, 6, 10, 13, 10, 0)
         ));
 
-        competitionResultRepository.saveAndFlush(createCompetitionResult(todayCompetition, me,
-            new CompetitionResultSubmitReq((short) 3, 100000)));
-        competitionResultRepository.saveAndFlush(createCompetitionResult(todayCompetition, member2,
-            new CompetitionResultSubmitReq((short) 3, 90000)));
-        competitionResultRepository.saveAndFlush(createCompetitionResult(todayCompetition, member3,
-            new CompetitionResultSubmitReq((short) 4, 200000)));
+        List<CompetitionResult> results = new ArrayList<>();
+        CompetitionResult competitionResult1 = createCompetitionResult(todayCompetition, me,
+            new CompetitionResultSubmitReq((short) 3, 100000));
+        em.persist(competitionResult1);
+        results.add(competitionResult1);
+
+        CompetitionResult competitionResult2 = createCompetitionResult(todayCompetition, member2,
+            new CompetitionResultSubmitReq((short) 4, 100000));
+        em.persist(competitionResult2);
+        results.add(competitionResult2);
+
+        CompetitionResult competitionResult3 = createCompetitionResult(todayCompetition, member3,
+            new CompetitionResultSubmitReq((short) 5, 100000));
+        em.persist(competitionResult3);
+        results.add(competitionResult3);
+
+        em.flush();
+
+        updateCreatedAtOfCompetitionResults(results);
 
         String token = "Bearer " + jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
 
@@ -487,7 +503,7 @@ class CompetitionControllerTest {
     }
 
     @Test
-    @DisplayName("실시간 내 랭킹 조회 - 데이터가 존재하지 않을 경우 예외")
+    @DisplayName("실시간 랭킹 조회 - 성공")
     void fetchLiveRanking_success() throws Exception {
         // given
         LocalDate today = LocalDate.of(2025, 6, 10);
@@ -513,12 +529,19 @@ class CompetitionControllerTest {
 
         // 저장
         Map<String, Member> savedMembers = new HashMap<>();
+        List<CompetitionResult> results = new ArrayList<>();
         userResults.forEach((name, result) -> {
             Member member = memberRepository.saveAndFlush(
                 createMember(name, name.toLowerCase() + "@test.com", (long) name.hashCode()));
             savedMembers.put(name, member);
-            em.persist(createCompetitionResult(competition, member, result));
+            CompetitionResult competitionResult = createCompetitionResult(
+                competition, member, result
+            );
+            results.add(competitionResult);
+            em.persist(competitionResult);
         });
+
+        updateCreatedAtOfCompetitionResults(results);
 
         // when & then
         mockMvc.perform(get("/api/v1/competitions/rankings/live")
@@ -535,6 +558,16 @@ class CompetitionControllerTest {
             .andExpect(jsonPath("$.data.rankings[0].nickname").value("유저1"))
             .andExpect(jsonPath("$.data.rankings[0].elapsedTime").value(120000))
             .andExpect(jsonPath("$.data.rankings[0].solvedCount").value(5));
+    }
+
+    private void updateCreatedAtOfCompetitionResults(List<CompetitionResult> results) {
+        results.stream().forEach(result -> {
+            em.createNativeQuery(
+                    "UPDATE competition_result SET created_at = :createdAt WHERE id = :id")
+                .setParameter("createdAt", LocalDateTime.of(2025, 6, 10, 13, 5))
+                .setParameter("id", result.getId())
+                .executeUpdate();
+        });
     }
 
 }
