@@ -2,7 +2,6 @@ package org.choon.careerbee.domain.auth.service.auth;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -25,6 +24,7 @@ import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.choon.careerbee.util.jwt.TokenGenerator;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,26 +54,20 @@ public class AuthServiceImpl implements AuthService {
             providerFactory.getProvider(provider).getLoginUrlByOrigin(origin));
     }
 
-    @Override
-    public AuthTokens login(OAuthLoginParams oAuthLoginParams, String origin) {
-        OAuthInfoResponse oAuthInfo = requestOAuthInfoService.request(oAuthLoginParams, origin);
+    public AuthTokens login(OAuthLoginParams params, String origin) {
+        OAuthInfoResponse info = requestOAuthInfoService.request(params, origin);
 
-        // Todo : 추후(Redis로 변경)에는 Member 엔티티 보단 memberId만 있으면 되므로 리팩토링시 변경 코드
-        // Todo : forceJoin의 리턴타입도 Long으로 저장된 member의 id를 리턴해줘야함.
-        Member member = memberRepository.findByProviderId(oAuthInfo.getProviderId())
-            .orElseGet(() -> memberCommandService.forceJoin(oAuthInfo));
+        final Member validMember = findOrCreateMember(info);
 
-        String accessToken = jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
-
-        Optional<String> existingRefreshToken = tokenRepository
-            .findByMemberAndStatus(member, TokenStatus.LIVE)
-            .map(Token::getTokenValue);
-
-        String refreshToken = existingRefreshToken.orElseGet(() -> {
-            String newRefreshToken = jwtUtil.createToken(member.getId(), TokenType.REFRESH_TOKEN);
-            tokenRepository.save(new Token(member, TokenStatus.LIVE, newRefreshToken));
-            return newRefreshToken;
-        });
+        String accessToken = jwtUtil.createToken(validMember.getId(), TokenType.ACCESS_TOKEN);
+        String refreshToken = tokenRepository
+            .findByMemberAndStatus(validMember, TokenStatus.LIVE)
+            .map(Token::getTokenValue)
+            .orElseGet(() -> {
+                String newRt = jwtUtil.createToken(validMember.getId(), TokenType.REFRESH_TOKEN);
+                tokenRepository.save(new Token(validMember, TokenStatus.LIVE, newRt));
+                return newRt;
+            });
 
         return new AuthTokens(accessToken, refreshToken);
     }
@@ -117,6 +111,18 @@ public class AuthServiceImpl implements AuthService {
             new Token(findMember, TokenStatus.LIVE, generateTokens.refreshToken())
         );
         return generateTokens;
+    }
+
+    private Member findOrCreateMember(OAuthInfoResponse info) {
+        try {
+            return memberRepository
+                .findByProviderId(info.getProviderId())
+                .orElseGet(() -> memberCommandService.forceJoin(info));
+        } catch (DataIntegrityViolationException ex) {
+            return memberRepository
+                .findByProviderId(info.getProviderId())
+                .orElseThrow(() -> new CustomException(CustomResponseStatus.INVALID_LOGIN_LOGIC));
+        }
     }
 
 }
