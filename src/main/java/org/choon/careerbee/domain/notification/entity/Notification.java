@@ -16,6 +16,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.choon.careerbee.common.entity.BaseEntity;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
 
@@ -26,7 +27,7 @@ import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
 @Table(
     name = "notification"
 )
-public class Notification {
+public class Notification extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
