@@ -61,7 +61,7 @@ jobs:
             --parameters 'commands=[
               "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
               "cd /home/ubuntu/docker",
-              "sed -i \"s|image: .*/.*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}|\" docker-compose.yml",
+              "sed -i \"/backend:/,/^[^[:space:]]/ s|image: .*/.*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}|\" docker-compose.yml",
               "docker-compose pull backend",
               "docker-compose up -d backend"
             ]' \
