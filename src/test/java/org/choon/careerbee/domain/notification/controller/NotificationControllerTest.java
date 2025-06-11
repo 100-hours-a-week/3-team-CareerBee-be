@@ -3,16 +3,18 @@ package org.choon.careerbee.domain.notification.controller;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.NotificationFixture.createNotification;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import jakarta.persistence.EntityManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
+import org.choon.careerbee.domain.notification.dto.request.ReadNotificationReq;
 import org.choon.careerbee.domain.notification.entity.Notification;
 import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
 import org.choon.careerbee.domain.notification.repository.NotificationRepository;
@@ -37,14 +39,18 @@ class NotificationControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired
     private MemberRepository memberRepository;
+
     @Autowired
     private NotificationRepository notificationRepository;
+
     @Autowired
     private JwtUtil jwtUtil;
+
     @Autowired
-    private EntityManager em;
+    private ObjectMapper objectMapper;
 
     private Member testMember;
     private String accessToken;
@@ -68,9 +74,7 @@ class NotificationControllerTest {
             createNotification(testMember, "알림5", NotificationType.POINT, true),
             createNotification(testMember, "알림6", NotificationType.POINT, false)
         );
-        notifications.forEach(em::persist);
-        em.flush();
-        em.clear();
+        notificationRepository.saveAllAndFlush(notifications);
 
         // when & then
         mockMvc.perform(get("/api/v1/members/notifications")
@@ -81,7 +85,7 @@ class NotificationControllerTest {
                 .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.message")
                 .value("알림 조회에 성공하였습니다."))
-            .andExpect(jsonPath("$.data.notifications.length()").value(5)) // 기본 size = 5
+            .andExpect(jsonPath("$.data.notifications.length()").value(5))
             .andExpect(jsonPath("$.data.hasNext").value(true));
     }
 
@@ -96,13 +100,7 @@ class NotificationControllerTest {
         Notification n5 = createNotification(testMember, "알림5", NotificationType.POINT, true);
         Notification n6 = createNotification(testMember, "알림6", NotificationType.POINT, false);
 
-        em.persist(n1);
-        em.persist(n2);
-        em.persist(n3);
-        em.persist(n4);
-        em.persist(n5);
-        em.persist(n6);
-        em.flush();
+        notificationRepository.saveAllAndFlush(List.of(n1, n2, n3, n4, n5, n6));
 
         // when & then
         mockMvc.perform(get("/api/v1/members/notifications")
@@ -134,5 +132,49 @@ class NotificationControllerTest {
             .andExpect(jsonPath("$.data.notifications.length()").value(0))
             .andExpect(jsonPath("$.data.hasNext").value(false))
             .andExpect(jsonPath("$.data.nextCursor").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("알림 읽음 처리 - 성공적으로 처리되는 경우")
+    void markNotificationsAsRead_success() throws Exception {
+        // given
+        Notification n1 = createNotification(testMember, "알림1", NotificationType.POINT, false);
+        Notification n2 = createNotification(testMember, "알림2", NotificationType.POINT, false);
+        notificationRepository.saveAllAndFlush(List.of(n1, n2));
+
+        ReadNotificationReq req = new ReadNotificationReq(List.of(n1.getId(), n2.getId()));
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/members/notifications")
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value("알림 읽음 처리에 성공하였습니다."));
+    }
+
+    @Test
+    @DisplayName("알림 읽음 처리 - 유효하지 않은 알림 ID 포함 시 예외 발생")
+    void markNotificationsAsRead_withInvalidId_throwsException() throws Exception {
+        // given
+        Notification n1 = notificationRepository.saveAndFlush(
+            createNotification(testMember, "알림1", NotificationType.POINT, false));
+
+        Long invalidId = 999999L;
+        ReadNotificationReq req = new ReadNotificationReq(List.of(n1.getId(), invalidId));
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/members/notifications")
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.NOTIFICATION_UPDATE_INVALID.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.NOTIFICATION_UPDATE_INVALID.getMessage()));
     }
 }
