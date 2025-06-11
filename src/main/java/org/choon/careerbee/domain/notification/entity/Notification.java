@@ -48,14 +48,17 @@ public class Notification extends BaseEntity {
     private Boolean isRead;
 
     @Builder
-    private Notification(String content, NotificationType type, Boolean isRead) {
+    private Notification(Member member, String content, NotificationType type, Boolean isRead) {
+        this.member = member;
         this.content = content;
         this.type = type;
         this.isRead = isRead;
     }
 
-    public Notification of(String content, NotificationType type, Boolean isRead) {
+    public static Notification of(Member member, String content, NotificationType type,
+        Boolean isRead) {
         return Notification.builder()
+            .member(member)
             .content(content)
             .type(type)
             .isRead(isRead)
