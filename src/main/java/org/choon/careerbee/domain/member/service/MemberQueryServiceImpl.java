@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.member.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -18,16 +19,6 @@ public class MemberQueryServiceImpl implements MemberQueryService {
     private final MemberRepository memberRepository;
 
     @Override
-    public boolean isMemberExistByEmail(String email) {
-        return memberRepository.existsByEmail(email);
-    }
-
-    @Override
-    public Optional<Long> getMemberIdByEmail(String email) {
-        return memberRepository.findIdByEmail(email);
-    }
-
-    @Override
     public MyInfoResp getMyInfoByMemberId(Long memberId) {
         return memberRepository.fetchMyInfoByMemberId(memberId);
     }
@@ -39,10 +30,17 @@ public class MemberQueryServiceImpl implements MemberQueryService {
     }
 
     @Override
-    public void checkEmailExist(String email) {
-        if (memberRepository.existsByEmail(email)) {
-            throw new CustomException(CustomResponseStatus.EMAIL_ALREADY_EXIST);
+    public Member getReferenceById(Long memberId) {
+        try {
+            return memberRepository.getReferenceById(memberId);
+        } catch (EntityNotFoundException e) {
+            throw new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST);
         }
+    }
+
+    @Override
+    public Optional<Member> findMemberByProviderId(Long providerId) {
+        return memberRepository.findByProviderId(providerId);
     }
 
 }

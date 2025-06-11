@@ -9,6 +9,7 @@ public enum CustomResponseStatus {
     SUCCESS_WITH_NO_CONTENT(HttpStatus.NO_CONTENT.value(), "요청에 성공하였습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN.value(), "권한이 없습니다."),
 
+    INVALID_LOGIN_LOGIC(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비정상적인 로그인 로직이 감지되었습니다."),
     MEMBER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 회원입니다."),
     EMAIL_ALREADY_EXIST(HttpStatus.CONFLICT.value(), "이미 존재하는 이메일입니다."),
     MEMBER_ALREADY_WITHDRAWAL(HttpStatus.CONFLICT.value(), "이미 탈퇴한 회원입니다."),
