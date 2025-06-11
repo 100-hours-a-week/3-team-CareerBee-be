@@ -33,7 +33,7 @@ spring:
 jwt:
   secret: ${JWT_SECRETS}
   expiration_time:
-    access_token: 600000 # 10분
+    access_token: 60000 # 1분
     refresh_token: 604800000 # 7일
 
 oauth:
