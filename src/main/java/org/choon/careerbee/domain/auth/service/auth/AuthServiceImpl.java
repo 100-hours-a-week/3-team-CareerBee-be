@@ -77,13 +77,12 @@ public class AuthServiceImpl implements AuthService {
         String resolveAccessToken = jwtUtil.resolveToken(accessToken);
         TokenClaimInfo tokenClaims = jwtUtil.getTokenClaims(resolveAccessToken);
 
-        Member member = memberQueryService.findById(tokenClaims.id());
-        Token refreshTokenInRDB = tokenRepository
-            .findByMemberIdAndStatus(tokenClaims.id(), TokenStatus.LIVE)
-            .orElseThrow(() -> new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND));
+        Member memberRef = memberQueryService.getReferenceById(tokenClaims.id());
 
-        refreshTokenInRDB.logout();
-        tokenRepository.save(new Token(member, TokenStatus.BLACK, resolveAccessToken));
+        tokenRepository.findByMemberIdAndStatus(memberRef.getId(), TokenStatus.LIVE)
+            .ifPresent(Token::logout);
+
+        tokenRepository.save(new Token(memberRef, TokenStatus.BLACK, resolveAccessToken));
     }
 
     @Override

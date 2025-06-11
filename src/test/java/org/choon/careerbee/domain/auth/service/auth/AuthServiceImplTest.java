@@ -250,7 +250,7 @@ class AuthServiceImplTest {
 
         when(jwtUtil.resolveToken(anyString())).thenReturn(resolvedToken);
         when(jwtUtil.getTokenClaims(anyString())).thenReturn(tokenClaims);
-        when(memberQueryService.findById(anyLong())).thenReturn(member);
+        when(memberQueryService.getReferenceById(anyLong())).thenReturn(member);
         when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
             .thenReturn(Optional.of(refreshToken));
 
@@ -270,28 +270,6 @@ class AuthServiceImplTest {
     }
 
     @Test
-    @DisplayName("로그아웃 실패 - 기존 리프레시 토큰이 존재하지 않는 경우 예외 발생")
-    void logout_shouldThrow_whenRefreshTokenNotFound() {
-        // given
-        Member member = createMember("nickname", "email@test.com", 1L);
-
-        String accessToken = "Bearer some-valid-token";
-        String resolvedToken = "some-valid-token";
-        TokenClaimInfo tokenClaims = new TokenClaimInfo(1L);
-
-        when(jwtUtil.resolveToken(anyString())).thenReturn(resolvedToken);
-        when(jwtUtil.getTokenClaims(anyString())).thenReturn(tokenClaims);
-        when(memberQueryService.findById(anyLong())).thenReturn(member);
-        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
-            .thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> authService.logout(accessToken))
-            .isInstanceOf(CustomException.class)
-            .hasMessage(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND.getMessage());
-    }
-
-    @Test
     @DisplayName("로그아웃 실패 - 토큰의 ID에 해당하는 멤버가 존재하지 않는 경우")
     void logout_shouldThrow_whenMemberNotFound() {
         // given
@@ -301,7 +279,7 @@ class AuthServiceImplTest {
 
         when(jwtUtil.resolveToken(anyString())).thenReturn(resolvedToken);
         when(jwtUtil.getTokenClaims(anyString())).thenReturn(tokenClaims);
-        when(memberQueryService.findById(anyLong()))
+        when(memberQueryService.getReferenceById(anyLong()))
             .thenThrow(new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
 
         // when & then
