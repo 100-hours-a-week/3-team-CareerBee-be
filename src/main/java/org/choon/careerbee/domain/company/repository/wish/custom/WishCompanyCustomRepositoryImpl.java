@@ -102,6 +102,15 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
         return Optional.ofNullable(resp);
     }
 
+    @Override
+    public List<Long> getMemberIdsByCompanyId(Long companyId) {
+        return queryFactory
+            .select(wishCompany.member.id).distinct()
+            .from(wishCompany)
+            .where(wishCompany.company.id.eq(companyId))
+            .fetch();
+    }
+
     private List<Tuple> fetchWishCompanyInfos(Long memberId, Long cursor, int size) {
         return queryFactory
             .select(wishCompany.id, company.id, company.name, company.logoUrl)

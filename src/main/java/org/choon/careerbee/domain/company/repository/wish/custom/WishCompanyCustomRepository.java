@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.company.repository.wish.custom;
 
+import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
@@ -12,6 +13,9 @@ public interface WishCompanyCustomRepository {
 
     WishCompaniesResp fetchWishCompaniesByMemberId(Long memberId, Long cursor, int size);
 
-    Optional<WishCompanyProgressResp> fetchWishCompanyAndMemberProgress(Long wishCompanyId,
-        Long accessMemberId);
+    Optional<WishCompanyProgressResp> fetchWishCompanyAndMemberProgress(
+        Long wishCompanyId, Long accessMemberId
+    );
+
+    List<Long> getMemberIdsByCompanyId(Long companyId);
 }
