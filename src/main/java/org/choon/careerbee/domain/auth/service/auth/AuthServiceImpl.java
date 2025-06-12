@@ -54,18 +54,15 @@ public class AuthServiceImpl implements AuthService {
 
     public AuthTokens login(OAuthLoginParams params, String origin) {
         OAuthInfoResponse info = requestOAuthInfoService.request(params, origin);
-
         final Member validMember = findOrCreateMember(info);
 
+        tokenRepository.findByMemberAndStatus(validMember, TokenStatus.LIVE)
+            .ifPresent(Token::revoke);
+
         String accessToken = jwtUtil.createToken(validMember.getId(), TokenType.ACCESS_TOKEN);
-        String refreshToken = tokenRepository
-            .findByMemberAndStatus(validMember, TokenStatus.LIVE)
-            .map(Token::getTokenValue)
-            .orElseGet(() -> {
-                String newRt = jwtUtil.createToken(validMember.getId(), TokenType.REFRESH_TOKEN);
-                tokenRepository.save(new Token(validMember, TokenStatus.LIVE, newRt));
-                return newRt;
-            });
+        String refreshToken = jwtUtil.createToken(validMember.getId(), TokenType.REFRESH_TOKEN);
+
+        tokenRepository.save(new Token(validMember, TokenStatus.LIVE, refreshToken));
 
         return new AuthTokens(accessToken, refreshToken);
     }
