@@ -18,7 +18,6 @@ import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.choon.careerbee.util.NicknameGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +35,7 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     @Override
     public Member forceJoin(OAuthInfoResponse oAuthInfo) {
         Member newMember = Member.builder()
-            .nickname(NicknameGenerator.generate())
+            .nickname(oAuthInfo.getNickname())
             .email(oAuthInfo.getEmail())
             .oAuthProvider(oAuthInfo.getOauthProvider())
             .providerId(oAuthInfo.getProviderId())
