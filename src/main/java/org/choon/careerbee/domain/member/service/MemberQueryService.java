@@ -13,4 +13,6 @@ public interface MemberQueryService {
     Member getReferenceById(Long memberId);
 
     Optional<Member> findMemberByProviderId(Long providerId);
+
+    String getNicknameByMemberId(Long memberId);
 }

@@ -43,4 +43,9 @@ public class MemberQueryServiceImpl implements MemberQueryService {
         return memberRepository.findByProviderId(providerId);
     }
 
+    @Override
+    public String getNicknameByMemberId(Long memberId) {
+        return memberRepository.getNicknameByMemberId(memberId);
+    }
+
 }

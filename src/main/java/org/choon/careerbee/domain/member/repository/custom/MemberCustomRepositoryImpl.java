@@ -32,4 +32,13 @@ public class MemberCustomRepositoryImpl implements MemberCustomRepository {
             .where(member.id.eq(memberId))
             .fetchOne();
     }
+
+    @Override
+    public String getNicknameByMemberId(Long memberId) {
+        return queryFactory
+            .select(member.nickname)
+            .from(member)
+            .where(member.id.eq(memberId))
+            .fetchOne();
+    }
 }
