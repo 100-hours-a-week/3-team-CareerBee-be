@@ -56,7 +56,7 @@ saramin:
 
 ai:
   api:
-    base-url: https://dev-ai.careerbee.co.kr
+    base-url: ${AI_BASE_URL}
 
 management:
   endpoints:
