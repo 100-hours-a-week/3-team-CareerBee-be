@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.member.service;
 
+import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -15,4 +16,6 @@ public interface MemberQueryService {
     Optional<Member> findMemberByProviderId(Long providerId);
 
     String getNicknameByMemberId(Long memberId);
+
+    List<Long> findAllMemberIds();
 }
