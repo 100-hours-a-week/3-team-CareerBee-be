@@ -29,20 +29,22 @@ public class ProblemChoice extends BaseEntity {
     @JoinColumn(name = "competition_problem_id", nullable = false)
     private CompetitionProblem competitionProblem;
 
-    @Column(length = 100, nullable = false)
+    @Column(length = 250, nullable = false)
     private String content;
 
     @Column(name = "choice_order", nullable = false)
     private Short choiceOrder;
 
     @Builder
-    private ProblemChoice(CompetitionProblem competitionProblem, String content, Short choiceOrder) {
+    private ProblemChoice(CompetitionProblem competitionProblem, String content,
+        Short choiceOrder) {
         this.competitionProblem = competitionProblem;
         this.content = content;
         this.choiceOrder = choiceOrder;
     }
 
-    public static ProblemChoice of(CompetitionProblem competitionProblem, String content, Short choiceOrder) {
+    public static ProblemChoice of(CompetitionProblem competitionProblem, String content,
+        Short choiceOrder) {
         return ProblemChoice.builder()
             .competitionProblem(competitionProblem)
             .content(content)
