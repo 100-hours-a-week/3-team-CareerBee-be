@@ -35,7 +35,7 @@ public class CompetitionProblem {
     @Column(length = 200, nullable = false)
     private String description;
 
-    @Column(length = 300, nullable = false)
+    @Column(length = 550, nullable = false)
     private String solution;
 
     @Column(nullable = false)
