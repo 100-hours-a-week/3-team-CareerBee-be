@@ -21,6 +21,7 @@ import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmi
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp.RankerInfo;
 import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
+import org.choon.careerbee.domain.competition.repository.custom.result.CompetitionResultCustomRepositoryImpl;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
