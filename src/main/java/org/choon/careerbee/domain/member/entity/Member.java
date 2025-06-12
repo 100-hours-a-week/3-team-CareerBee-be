@@ -24,6 +24,7 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.entity.enums.RoleType;
+import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
@@ -31,9 +32,11 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @SQLRestriction("withdrawn_at is NULL")
-@Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"provider", "provider_id"})
-})
+@Table(
+    name = "member",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"provider", "provider_id"})
+    })
 public class Member extends BaseEntity {
 
     @Id
@@ -101,6 +104,9 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private Integer progress;
 
+    @Column(nullable = false)
+    private Integer additionalProgress;
+
     @Builder
     public Member(String nickname, String email, OAuthProvider oAuthProvider, Long providerId) {
         this.nickname = nickname;
@@ -112,10 +118,13 @@ public class Member extends BaseEntity {
         this.role = RoleType.ROLE_MEMBER;
         this.points = 0;
         this.progress = 0;
+        this.additionalProgress = 0;
         this.workPeriod = 0;
     }
 
     public void updateResumeInfo(
+        PreferredJob preferredJob,
+        String psTier,
         int certificationCount,
         int projectCount,
         MajorType majorType,
@@ -124,6 +133,8 @@ public class Member extends BaseEntity {
         String position,
         String additionalExperiences
     ) {
+        this.preferredJob = preferredJob;
+        this.psTier = psTier;
         this.certificationCount = certificationCount;
         this.projectCount = projectCount;
         this.majorType = majorType;
@@ -131,6 +142,10 @@ public class Member extends BaseEntity {
         this.workPeriod = workPeriod;
         this.position = position;
         this.additionalExperiences = additionalExperiences;
+    }
+
+    public void recalcProgress(ResumeProgressPolicy policy) {
+        this.progress = policy.calculate(this);
     }
 
     public static Member ofId(Long memberId) {
@@ -142,7 +157,6 @@ public class Member extends BaseEntity {
 
     public void updateProfileInfo(UpdateProfileCommand command) {
         this.imgUrl = command.profileImgUrl();
-        this.email = command.email();
         this.nickname = command.nickname();
     }
 

@@ -74,7 +74,8 @@ public class SecurityConfig {
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
                 .requestMatchers(
                     "/users/**",
-                    "/api/v1/members/competitions/rankings"
+                    "/api/v1/members/competitions/rankings",
+                    "/api/v1/members/competitions/rankings/live"
                 ).hasRole("MEMBER")
                 .anyRequest().permitAll()  // 그 외 요청은 인가처리를 할 필요가 없음
             )

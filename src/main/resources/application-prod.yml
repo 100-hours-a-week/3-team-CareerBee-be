@@ -58,7 +58,7 @@ saramin:
 
 ai:
   api:
-    base-url: https://dev-ai.careerbee.co.kr
+    base-url: ${AI_BASE_URL}
 
 sentry:
   dsn: ${SENTRY_DSN}  # 필수: Sentry DSN을 환경변수로 주입

@@ -24,4 +24,12 @@ public class SystemController {
             "헬스체크에 성공하였습니다."
         );
     }
+
+    @GetMapping("/favicon.ico")
+    public ResponseEntity<CommonResponse<Void>> faviconHandle() {
+        return CommonResponseEntity.ok(
+            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            "헬스체크에 성공하였습니다."
+        );
+    }
 }

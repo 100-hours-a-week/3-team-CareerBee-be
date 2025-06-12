@@ -1,6 +1,9 @@
 package org.choon.careerbee.domain.competition.controller;
 
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.choon.careerbee.fixture.competition.CompetitionFixture.createCompetition;
 import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.createProblem;
+import static org.choon.careerbee.fixture.competition.CompetitionResultFixture.createCompetitionResult;
 import static org.choon.careerbee.fixture.competition.CompetitionSummaryFixture.createSummary;
 import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -13,21 +16,25 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
+import org.choon.careerbee.domain.competition.domain.CompetitionResult;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.domain.problem.CompetitionProblem;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionProblemRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.ProblemChoiceRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.choon.careerbee.fixture.MemberFixture;
-import org.choon.careerbee.fixture.competition.CompetitionFixture;
 import org.choon.careerbee.fixture.competition.RankingTestDataSupport;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +62,9 @@ class CompetitionControllerTest {
     private MemberRepository memberRepository;
 
     @Autowired
+    private CompetitionResultRepository competitionResultRepository;
+
+    @Autowired
     private CompetitionRepository competitionRepository;
 
     @Autowired
@@ -80,9 +90,9 @@ class CompetitionControllerTest {
     @BeforeEach
     void setUp() {
         testMember = memberRepository.saveAndFlush(
-            MemberFixture.createMember("nick", "nick@a.com", 5L));
+            createMember("nick", "nick@a.com", 5L));
         testCompetition = competitionRepository.saveAndFlush(
-            CompetitionFixture.createCompetition(
+            createCompetition(
                 LocalDateTime.of(2025, 5, 30, 20, 0, 0),
                 LocalDateTime.of(2025, 5, 30, 20, 10, 0)
             )
@@ -338,7 +348,7 @@ class CompetitionControllerTest {
         // given
         LocalDateTime now = LocalDateTime.now();
         Competition todayCompetition = competitionRepository.saveAndFlush(
-            CompetitionFixture.createCompetition(
+            createCompetition(
                 now.withHour(10).withMinute(0),
                 now.withHour(23).withMinute(0)
             )
@@ -418,4 +428,146 @@ class CompetitionControllerTest {
             .andExpect(jsonPath("$.data.month.continuous").value(18))
             .andExpect(jsonPath("$.data.month.correctRate").value(70.6));
     }
+
+    @Test
+    @DisplayName("실시간 내 랭킹 조회 - 성공")
+    void fetchMemberLiveRanking_success() throws Exception {
+        // given
+        Member me = memberRepository.saveAndFlush(createMember("유저1", "user1@test.com", 1L));
+        Member member2 = memberRepository.saveAndFlush(createMember("유저2", "user2@test.com", 2L));
+        Member member3 = memberRepository.saveAndFlush(createMember("유저3", "user3@test.com", 3L));
+
+        Competition todayCompetition = competitionRepository.saveAndFlush(createCompetition(
+            LocalDateTime.of(2025, 6, 10, 13, 0, 0),
+            LocalDateTime.of(2025, 6, 10, 13, 10, 0)
+        ));
+
+        List<CompetitionResult> results = new ArrayList<>();
+        CompetitionResult competitionResult1 = createCompetitionResult(todayCompetition, me,
+            new CompetitionResultSubmitReq((short) 3, 100000));
+        em.persist(competitionResult1);
+        results.add(competitionResult1);
+
+        CompetitionResult competitionResult2 = createCompetitionResult(todayCompetition, member2,
+            new CompetitionResultSubmitReq((short) 4, 100000));
+        em.persist(competitionResult2);
+        results.add(competitionResult2);
+
+        CompetitionResult competitionResult3 = createCompetitionResult(todayCompetition, member3,
+            new CompetitionResultSubmitReq((short) 5, 100000));
+        em.persist(competitionResult3);
+        results.add(competitionResult3);
+
+        em.flush();
+
+        updateCreatedAtOfCompetitionResults(results);
+
+        String token = "Bearer " + jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/rankings/live")
+                .header("Authorization", token)
+                .param("date", "2025-06-10")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value("실시간 내 랭킹 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.rank").value(3))
+            .andExpect(jsonPath("$.data.solvedCount").value(3))
+            .andExpect(jsonPath("$.data.elapsedTime").value(100000));
+    }
+
+    @Test
+    @DisplayName("실시간 내 랭킹 조회 - 데이터가 존재하지 않을 경우 예외")
+    void fetchMemberLiveRanking_notFound() throws Exception {
+        // given
+        Member me = memberRepository.saveAndFlush(createMember("유저1", "user1@test.com", 1L));
+        String token = "Bearer " + jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
+
+        // flush without any result data intentionally
+        em.flush();
+        em.clear();
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/competitions/rankings/live")
+                .header("Authorization", token)
+                .param("date", "2025-06-10")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.RANKING_NOT_EXIST.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.RANKING_NOT_EXIST.getHttpStatusCode()));
+    }
+
+    @Test
+    @DisplayName("실시간 랭킹 조회 - 성공")
+    void fetchLiveRanking_success() throws Exception {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 10);
+
+        Competition competition = competitionRepository.save(createCompetition(
+            LocalDateTime.of(2025, 6, 10, 13, 0, 0),
+            LocalDateTime.of(2025, 6, 10, 13, 30, 0)
+        ));
+
+        Map<String, CompetitionResultSubmitReq> userResults = new HashMap<>();
+        userResults.put("유저1", new CompetitionResultSubmitReq((short) 5, 120000));
+        userResults.put("유저2", new CompetitionResultSubmitReq((short) 5, 130000));
+        userResults.put("유저3", new CompetitionResultSubmitReq((short) 5, 150000));
+        userResults.put("유저4", new CompetitionResultSubmitReq((short) 4, 110000));
+        userResults.put("유저5", new CompetitionResultSubmitReq((short) 4, 140000));
+        userResults.put("유저6", new CompetitionResultSubmitReq((short) 3, 100000));
+        userResults.put("유저7", new CompetitionResultSubmitReq((short) 3, 110000));
+        userResults.put("유저8", new CompetitionResultSubmitReq((short) 2, 90000));
+        userResults.put("유저9", new CompetitionResultSubmitReq((short) 2, 95000));
+        userResults.put("유저10", new CompetitionResultSubmitReq((short) 1, 50000));
+        userResults.put("유저11", new CompetitionResultSubmitReq((short) 1, 70000));
+        userResults.put("유저12", new CompetitionResultSubmitReq((short) 0, 10000));
+
+        // 저장
+        Map<String, Member> savedMembers = new HashMap<>();
+        List<CompetitionResult> results = new ArrayList<>();
+        userResults.forEach((name, result) -> {
+            Member member = memberRepository.saveAndFlush(
+                createMember(name, name.toLowerCase() + "@test.com", (long) name.hashCode()));
+            savedMembers.put(name, member);
+            CompetitionResult competitionResult = createCompetitionResult(
+                competition, member, result
+            );
+            results.add(competitionResult);
+            em.persist(competitionResult);
+        });
+
+        updateCreatedAtOfCompetitionResults(results);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/competitions/rankings/live")
+                .header("Authorization", accessToken)
+                .param("date", "2025-06-10")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value("실시간 랭킹 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.rankings").isArray())
+            .andExpect(jsonPath("$.data.rankings[0].rank").value(1L))
+            .andExpect(jsonPath("$.data.rankings[0].nickname").value("유저1"))
+            .andExpect(jsonPath("$.data.rankings[0].elapsedTime").value(120000))
+            .andExpect(jsonPath("$.data.rankings[0].solvedCount").value(5));
+    }
+
+    private void updateCreatedAtOfCompetitionResults(List<CompetitionResult> results) {
+        results.stream().forEach(result -> {
+            em.createNativeQuery(
+                    "UPDATE competition_result SET created_at = :createdAt WHERE id = :id")
+                .setParameter("createdAt", LocalDateTime.of(2025, 6, 10, 13, 5))
+                .setParameter("id", result.getId())
+                .executeUpdate();
+        });
+    }
+
 }

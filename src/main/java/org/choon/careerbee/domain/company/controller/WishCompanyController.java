@@ -11,6 +11,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.company.service.CompanyCommandService;
 import org.choon.careerbee.domain.company.service.CompanyQueryService;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
@@ -137,6 +138,23 @@ public class WishCompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "관심 기업 목록 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/{companyId}/progress")
+    public ResponseEntity<CommonResponse<WishCompanyProgressResp>> fetchWishCompanies(
+        @PathVariable("companyId") Long companyId,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        WishCompanyProgressResp response = queryService.fetchWishCompanyProgress(
+            companyId,
+            principalDetails.getId()
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "진척도 조회에 성공하였습니다."
         );
     }
 }

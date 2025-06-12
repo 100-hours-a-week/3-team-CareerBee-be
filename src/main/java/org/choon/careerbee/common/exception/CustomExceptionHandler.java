@@ -1,13 +1,16 @@
 package org.choon.careerbee.common.exception;
 
 import io.sentry.Sentry;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.AccessDeniedException;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.domain.auth.service.cookie.CookieService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -22,8 +25,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 @Slf4j
 public class CustomExceptionHandler {
+
+    private final CookieService cookieService;
 
     /**
      * Valid 애너테이션의 유효성 검사를 통과하지 못한 경우 해당 컨트롤러에서 처리
@@ -52,30 +58,35 @@ public class CustomExceptionHandler {
             .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
     }
 
-    /**
-     * CustomException 및 Exception 을 처리하는 메서드입니다.
-     *
-     * @param e : 서버에서 발생한 에러입니다.
-     * @return : 처리되지 못한(CustomException 이 아닌) 예외의 경우 내부서버 오류로 리턴, 그 외의 예외는 CERS에 의해서 처리됨
-     */
-    @ExceptionHandler({CustomException.class, Exception.class})
-    public ResponseEntity<CommonResponse<String>> handleException(Exception e) {
-        if (!(e instanceof CustomException custom)) {
-            String stackTrace = getStackTraceAsString(e);
-            log.error("[ERROR] : {}\n{}", e.getMessage(), stackTrace);
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<CommonResponse<String>> handleCustom(
+        CustomException ex, HttpServletResponse resp
+    ) {
+        log.error("[ERROR] : {}\n{}", ex.getMessage(), getStackTraceAsString(ex));
 
-            // ✅ Sentry로 에러 전송
-            Sentry.captureException(e);
+        Sentry.captureException(ex);
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(CommonResponse.createError(CustomResponseStatus.INTERNAL_SERVER_ERROR));
+        switch (ex.getCustomResponseStatus()) {
+            case REFRESH_TOKEN_EXPIRED, REFRESH_TOKEN_NOT_FOUND ->
+                cookieService.deleteRefreshTokenCookie(resp);
         }
 
-        String stackTrace = getStackTraceAsString(e);
-        log.error("[ERROR] : {}\n{}", e.getMessage(), stackTrace);
-        return ResponseEntity.status(
-                ((CustomException) e).getCustomResponseStatus().getHttpStatusCode())
-            .body(CommonResponse.createError(custom.getCustomResponseStatus()));
+        return ResponseEntity
+            .status(ex.getCustomResponseStatus().getHttpStatusCode())
+            .body(CommonResponse.createError(ex.getCustomResponseStatus()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<CommonResponse<String>> handleUnknown(
+        Exception ex, HttpServletResponse resp
+    ) {
+        log.error("[UNCAUGHT ERROR] : {}\n{}", ex.getMessage(), getStackTraceAsString(ex));
+
+        Sentry.captureException(ex);
+
+        return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(CommonResponse.createError(CustomResponseStatus.INTERNAL_SERVER_ERROR));
     }
 
     /**

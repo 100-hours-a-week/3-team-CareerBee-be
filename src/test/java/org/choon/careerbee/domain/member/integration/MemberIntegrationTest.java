@@ -7,10 +7,11 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
-import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
+import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
+import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,8 @@ class MemberIntegrationTest {
 
         // when
         member.updateResumeInfo(
+            PreferredJob.BACKEND,
+            "BR1",
             3,
             2,
             MajorType.MAJOR,
@@ -53,6 +56,8 @@ class MemberIntegrationTest {
         // then
         Member updated = memberRepository.findById(member.getId()).orElseThrow();
 
+        assertThat(updated.getPreferredJob()).isEqualTo(PreferredJob.BACKEND);
+        assertThat(updated.getPsTier()).isEqualTo("BR1");
         assertThat(updated.getCertificationCount()).isEqualTo(3);
         assertThat(updated.getProjectCount()).isEqualTo(2);
         assertThat(updated.getMajorType()).isEqualTo(MajorType.MAJOR);
@@ -69,7 +74,7 @@ class MemberIntegrationTest {
         Member member = memberRepository.save(createMember("nick", "email@test.com", 999L));
 
         UpdateProfileCommand command = new UpdateProfileCommand(
-            "https://example.com/profile.png", "new@test.com", "새닉네임"
+            "https://example.com/profile.png", "새닉네임"
         );
 
         member.updateProfileInfo(command);
@@ -81,7 +86,6 @@ class MemberIntegrationTest {
 
         // then
         assertThat(updated.getImgUrl()).isEqualTo(command.profileImgUrl());
-        assertThat(updated.getEmail()).isEqualTo(command.email());
         assertThat(updated.getNickname()).isEqualTo(command.nickname());
     }
 

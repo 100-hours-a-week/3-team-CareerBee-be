@@ -88,7 +88,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         };
 
         String path = request.getRequestURI();
-        if (path.equals("/api/v1/members/competitions/rankings")) {
+        if (path.equals("/api/v1/members/competitions/rankings") || path.equals(
+            "/api/v1/members/competitions/rankings/live")) {
             return false;
         }
         return Arrays.stream(excludePath).anyMatch(path::contains);

@@ -16,8 +16,8 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.entity.Member;
+import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.choon.careerbee.util.NicknameGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,11 +30,12 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     private final MemberRepository memberRepository;
     private final ImageService imageService;
     private final AiApiClient aiApiClient;
+    private final ResumeProgressPolicy resumeProgressPolicy;
 
     @Override
     public Member forceJoin(OAuthInfoResponse oAuthInfo) {
         Member newMember = Member.builder()
-            .nickname(NicknameGenerator.generate())
+            .nickname(oAuthInfo.getNickname())
             .email(oAuthInfo.getEmail())
             .oAuthProvider(oAuthInfo.getOauthProvider())
             .providerId(oAuthInfo.getProviderId())
@@ -48,6 +49,8 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         Member validMember = memberQueryService.findById(accessMemberId);
 
         validMember.updateResumeInfo(
+            updateResumeReq.preferredJob(),
+            updateResumeReq.psTier(),
             updateResumeReq.certificationCount(),
             updateResumeReq.projectCount(),
             updateResumeReq.majorType(),
@@ -56,16 +59,15 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             updateResumeReq.position(),
             updateResumeReq.additionalExperiences()
         );
+
+        validMember.recalcProgress(resumeProgressPolicy);
     }
 
     @Override
     public void updateProfileInfo(UpdateProfileInfoReq updateProfileInfoReq, Long accessMemberId) {
-        memberQueryService.checkEmailExist(updateProfileInfoReq.newEmail());
-
         Member validMember = memberQueryService.findById(accessMemberId);
         validMember.updateProfileInfo(new UpdateProfileCommand(
             updateProfileInfoReq.newProfileUrl(),
-            updateProfileInfoReq.newEmail(),
             updateProfileInfoReq.newNickname())
         );
     }
@@ -92,8 +94,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         );
 
         // 2. 만들어진 정보로 ai서버에 이력서 정보추출 요청
-        ExtractResumeResp extractResumeResp = aiApiClient.requestExtractResume(extractResumeReq);
-        System.out.println("extractResumeResp = " + extractResumeResp);
-        return extractResumeResp;
+        return aiApiClient.requestExtractResume(extractResumeReq);
     }
 }

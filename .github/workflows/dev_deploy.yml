@@ -30,7 +30,7 @@ jobs:
           echo "::add-mask::$AWS_ACCESS_KEY_ID"
           echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
           echo "::add-mask::$AWS_DEFAULT_REGION"
-          echo "::add-mask::$S3_BUCKET_IMAGE"
+          echo "::add-mask::$AWS_S3_BUCKET"
           echo "::add-mask::$S3_BUCKET_INFRA"
           echo "::add-mask::$DB_URL"
           echo "::add-mask::$DB_USERNAME"
@@ -44,7 +44,7 @@ jobs:
           echo "::add-mask::$SENTRY_DSN"
           echo "::add-mask::$SENTRY_AUTH_TOKEN"
           echo "::add-mask::$SARAMIN_SECRET_KEY"
-          
+          echo "::add-mask::$AI_BASE_URL"
 
           echo "SSH_KEY=$SSH_KEY" >> $GITHUB_ENV
           echo "SSH_KEY_BASE64=$SSH_KEY_BASE64" >> $GITHUB_ENV
@@ -52,7 +52,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> $GITHUB_ENV
           echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> $GITHUB_ENV
-          echo "S3_BUCKET_IMAGE=$S3_BUCKET_IMAGE" >> $GITHUB_ENV
+          echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> $GITHUB_ENV
           echo "S3_BUCKET_INFRA=$S3_BUCKET_INFRA" >> $GITHUB_ENV
           echo "DB_URL=$DB_URL" >> $GITHUB_ENV
           echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
@@ -66,6 +66,7 @@ jobs:
           echo "SENTRY_DSN=$SENTRY_DSN" >> $GITHUB_ENV
           echo "SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN" >> $GITHUB_ENV
           echo "SARAMIN_SECRET_KEY=$SARAMIN_SECRET_KEY" >> $GITHUB_ENV
+          echo "AI_BASE_URL=$AI_BASE_URL" >> $GITHUB_ENV
           
       - name: Restore SSH Key
         run: |
@@ -97,7 +98,7 @@ jobs:
       - name: Upload build to S3
         run: |
           mkdir -p ./deploy
-          cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
+          cp ./build/libs/careerbee-api.jar ./deploy/careerbee-api.jar
           echo "Uploading to: ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}"
           aws s3 cp ./deploy "${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/" --recursive
 
@@ -130,8 +131,9 @@ jobs:
               -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
               -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
               -DAWS_REGION="${AWS_DEFAULT_REGION}" \
-              -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
+              -DAWS_S3_BUCKET="${AWS_S3_BUCKET}" \
               -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
+              -DAI_BASE_URL="${AI_BASE_URL}" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
               -Djdk.attach.allowAttachSelf=true \
@@ -189,8 +191,9 @@ jobs:
                 -DAWS_S3_ACCESSKEY="${AWS_ACCESS_KEY_ID}" \
                 -DAWS_S3_SECRETKEY="${AWS_SECRET_ACCESS_KEY}" \
                 -DAWS_REGION="${AWS_DEFAULT_REGION}" \
-                -DAWS_S3_BUCKET="${S3_BUCKET_IMAGE}" \
+                -DAWS_S3_BUCKET="${AWS_S3_BUCKET}" \
                 -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
+                -DAI_BASE_URL="${AI_BASE_URL}" \
                 --add-opens java.base/java.lang=ALL-UNNAMED \
                 --add-exports java.base/sun.net=ALL-UNNAMED \
                 -Djdk.attach.allowAttachSelf=true \

@@ -13,7 +13,6 @@ public enum SupportedExtension {
     PNG("png", "image/png"),
     WEBP("webp", "image/webp"),
     HEIC("heic", "image/heic"),
-    SVG("svg", "image/image/svg+xml"),
     PDF("pdf", "application/pdf");
 
     private final String ext;

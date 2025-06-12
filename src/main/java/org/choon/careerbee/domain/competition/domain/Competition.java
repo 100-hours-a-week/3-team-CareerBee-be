@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -18,16 +20,21 @@ import org.choon.careerbee.common.entity.BaseEntity;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Table(
+    name = "competition",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"start_date_time", "end_date_time"})
+    })
 public class Competition extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, columnDefinition = "DATETIME")
+    @Column(name = "start_date_time", nullable = false, columnDefinition = "DATETIME")
     private LocalDateTime startDateTime;
 
-    @Column(nullable = false, columnDefinition = "DATETIME")
+    @Column(name = "end_date_time", nullable = false, columnDefinition = "DATETIME")
     private LocalDateTime endDateTime;
 
     @Builder

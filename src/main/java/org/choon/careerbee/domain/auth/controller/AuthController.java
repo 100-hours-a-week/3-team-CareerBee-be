@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +18,8 @@ import org.choon.careerbee.domain.auth.dto.response.LoginResp;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
 import org.choon.careerbee.domain.auth.dto.response.ReissueResp;
 import org.choon.careerbee.domain.auth.service.auth.AuthService;
+import org.choon.careerbee.domain.auth.service.cookie.CookieService;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoLoginParams;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,10 +37,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Auth", description = "소셜 로그인 관련 API")
 public class AuthController {
 
-    @Value("${server.servlet.session.cookie.domain}")
-    private String cookieDomain;
-
     private final AuthService authService;
+    private final CookieService cookieService;
 
     @Operation(
         summary = "소셜 로그인 URL 요청",
@@ -82,7 +79,7 @@ public class AuthController {
         HttpServletResponse response
     ) {
         AuthTokens loginResponse = authService.login(kakaoParams, origin);
-        setTokenInCookie(response, loginResponse);
+        cookieService.setRefreshTokenCookie(response, loginResponse);
 
         return CommonResponseEntity.ok(
             new LoginResp(loginResponse.accessToken()),
@@ -138,27 +135,12 @@ public class AuthController {
         HttpServletResponse response
     ) {
         AuthTokens authTokens = authService.reissue(refreshToken);
-        setTokenInCookie(response, authTokens);
+        cookieService.setRefreshTokenCookie(response, authTokens);
 
         return CommonResponseEntity.ok(
             new ReissueResp(authTokens.accessToken()),
             CustomResponseStatus.SUCCESS,
             "토큰 재발급에 성공하였습니다."
         );
-    }
-
-    private void setTokenInCookie(HttpServletResponse response, AuthTokens tokens) {
-        response.addCookie(createCookie(tokens.refreshToken()));
-    }
-
-    private Cookie createCookie(String value) {
-        Cookie cookie = new Cookie("refreshToken", value);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(60 * 60 * 24 * 7);
-        cookie.setDomain(cookieDomain);
-        cookie.setAttribute("SameSite", "None");
-        return cookie;
     }
 }

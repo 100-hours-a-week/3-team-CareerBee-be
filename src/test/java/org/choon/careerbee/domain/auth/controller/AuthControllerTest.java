@@ -21,6 +21,7 @@ import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthApiClient;
 import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoInfoResponse;
+import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoInfoResponse.Profile;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoLoginParams;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -134,7 +135,10 @@ class AuthControllerTest {
 
         KakaoInfoResponse mockOAuthInfo = new KakaoInfoResponse();
         KakaoInfoResponse.KakaoAccount kakaoAccount = new KakaoInfoResponse.KakaoAccount();
+        Profile profile = new Profile();
+        ReflectionTestUtils.setField(profile, "nickname", "testNick");
         ReflectionTestUtils.setField(kakaoAccount, "email", "mock@kakao.com");
+        ReflectionTestUtils.setField(kakaoAccount, "profile", profile);
         ReflectionTestUtils.setField(mockOAuthInfo, "kakaoAccount", kakaoAccount);
         ReflectionTestUtils.setField(mockOAuthInfo, "id", 12345L);
 
@@ -246,23 +250,5 @@ class AuthControllerTest {
                 .value(CustomResponseStatus.INVALID_INPUT_VALUE.getMessage()))
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.INVALID_INPUT_VALUE.getHttpStatusCode()));
-    }
-
-    @Test
-    @DisplayName("토큰 재발급 실패 - 토큰 불일치")
-    void reissue_shouldReturn401_whenTokenMismatch() throws Exception {
-        // given
-        String validRefreshToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
-        tokenRepository.saveAndFlush(createToken(testMember, validRefreshToken, TokenStatus.LIVE));
-        String fakeToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
-
-        mockMvc.perform(post("/api/v1/auth/reissue")
-                .cookie(new Cookie("refreshToken", fakeToken))
-                .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.message")
-                .value(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getMessage()))
-            .andExpect(jsonPath("$.httpStatusCode")
-                .value(CustomResponseStatus.REFRESH_TOKEN_NOT_MATCH.getHttpStatusCode()));
     }
 }

@@ -14,6 +14,7 @@ import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
+import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +61,8 @@ class MemberControllerTest {
     void updateResumeInfo_success() throws Exception {
         // given
         UpdateResumeReq req = new UpdateResumeReq(
+            PreferredJob.BACKEND,
+            "BR1",
             2,
             3,
             MajorType.MAJOR,
@@ -90,7 +93,7 @@ class MemberControllerTest {
         String invalidToken = jwtUtil.createToken(invalidMemberId, TokenType.ACCESS_TOKEN);
 
         UpdateResumeReq req = new UpdateResumeReq(
-            1, 1, MajorType.MAJOR, "카카오", 12, "백엔드", "인턴 경험 있음"
+            PreferredJob.BACKEND, "BR1", 1, 1, MajorType.MAJOR, "카카오", 12, "백엔드", "인턴 경험 있음"
         );
         String json = objectMapper.writeValueAsString(req);
 
@@ -102,7 +105,8 @@ class MemberControllerTest {
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.httpStatusCode").value(404))
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage()));
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage()));
     }
 
     @Test
@@ -111,8 +115,7 @@ class MemberControllerTest {
         // given
         UpdateProfileInfoReq req = new UpdateProfileInfoReq(
             "https://img.example.com/profile.png",
-            "새닉네임",
-            "new_email@example.com"
+            "새닉네임"
         );
         String json = objectMapper.writeValueAsString(req);
 
@@ -131,7 +134,7 @@ class MemberControllerTest {
     @DisplayName("내 정보 수정 - 인증 없이 요청 시 401 반환")
     void updateProfileInfo_unauthorized_shouldReturn401() throws Exception {
         UpdateProfileInfoReq req = new UpdateProfileInfoReq(
-            "https://img.example.com/profile.png", "newNick", "unauth@example.com"
+            "https://img.example.com/profile.png", "newNick"
         );
         String json = objectMapper.writeValueAsString(req);
 
@@ -139,28 +142,6 @@ class MemberControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
             .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 - 중복 이메일이면 409 Conflict 반환")
-    void updateProfileInfo_duplicateEmail_shouldReturn409() throws Exception {
-        // given
-        memberRepository.saveAndFlush(createMember("testnickname", "duplicate@test.com", 2345L));
-        UpdateProfileInfoReq req = new UpdateProfileInfoReq(
-            "https://img.example.com/profile.png",
-            "new nickname",
-            "duplicate@test.com"
-        );
-        String json = objectMapper.writeValueAsString(req);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/members")
-                .header("Authorization", "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.httpStatusCode").value(409))
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.EMAIL_ALREADY_EXIST.getMessage()));
     }
 
     @Test
@@ -197,7 +178,8 @@ class MemberControllerTest {
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.httpStatusCode").value(404))
-            .andExpect(jsonPath("$.message").value(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage()));
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage()));
     }
 
 }

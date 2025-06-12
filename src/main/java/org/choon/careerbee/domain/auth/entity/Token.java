@@ -1,6 +1,5 @@
 package org.choon.careerbee.domain.auth.entity;
 
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -53,5 +52,9 @@ public class Token {
 
     public void revoke() {
         this.status = TokenStatus.REVOKED;
+    }
+
+    public void expire() {
+        this.status = TokenStatus.EXPIRED;
     }
 }

@@ -4,6 +4,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.PresignedUrlReq;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 @RequiredArgsConstructor
+@Slf4j
 @Service
 public class S3Service implements ImageService {
 
@@ -36,6 +38,7 @@ public class S3Service implements ImageService {
 
     @Override
     public PresignedUrlResp generatePresignedUrl(PresignedUrlReq request) {
+        log.info("S3 bucket property={}", bucket);
         SupportedExtension extension = request.extension();
         UploadType uploadType = request.uploadType();
 
