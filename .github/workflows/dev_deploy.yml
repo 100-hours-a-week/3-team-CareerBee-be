@@ -44,7 +44,7 @@ jobs:
           echo "::add-mask::$SENTRY_DSN"
           echo "::add-mask::$SENTRY_AUTH_TOKEN"
           echo "::add-mask::$SARAMIN_SECRET_KEY"
-          
+          echo "::add-mask::$AI_BASE_URL"
 
           echo "SSH_KEY=$SSH_KEY" >> $GITHUB_ENV
           echo "SSH_KEY_BASE64=$SSH_KEY_BASE64" >> $GITHUB_ENV
@@ -66,6 +66,7 @@ jobs:
           echo "SENTRY_DSN=$SENTRY_DSN" >> $GITHUB_ENV
           echo "SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN" >> $GITHUB_ENV
           echo "SARAMIN_SECRET_KEY=$SARAMIN_SECRET_KEY" >> $GITHUB_ENV
+          echo "AI_BASE_URL=$AI_BASE_URL" >> $GITHUB_ENV
           
       - name: Restore SSH Key
         run: |
@@ -132,6 +133,7 @@ jobs:
               -DAWS_REGION="${AWS_DEFAULT_REGION}" \
               -DAWS_S3_BUCKET="${AWS_S3_BUCKET}" \
               -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
+              -DAI_BASE_URL="${AI_BASE_URL}" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
               -Djdk.attach.allowAttachSelf=true \
@@ -191,6 +193,7 @@ jobs:
                 -DAWS_REGION="${AWS_DEFAULT_REGION}" \
                 -DAWS_S3_BUCKET="${AWS_S3_BUCKET}" \
                 -DSARAMIN_SECRET_KEY="${SARAMIN_SECRET_KEY}" \
+                -DAI_BASE_URL="${AI_BASE_URL}" \
                 --add-opens java.base/java.lang=ALL-UNNAMED \
                 --add-exports java.base/sun.net=ALL-UNNAMED \
                 -Djdk.attach.allowAttachSelf=true \
