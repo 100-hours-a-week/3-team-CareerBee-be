@@ -79,11 +79,15 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(noRollbackFor = CustomException.class)
     public AuthTokens reissue(String rtInCookie) {
         TokenClaimInfo tokenClaims;
         try {
             tokenClaims = jwtUtil.getTokenClaims(rtInCookie);
         } catch (ExpiredJwtException e) {
+            tokenRepository.findByTokenValueAndStatus(rtInCookie, TokenStatus.LIVE)
+                .ifPresent(Token::expire);
+
             throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_EXPIRED);
         }
 
