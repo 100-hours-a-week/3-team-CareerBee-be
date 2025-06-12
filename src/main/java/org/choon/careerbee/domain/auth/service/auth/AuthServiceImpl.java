@@ -13,6 +13,7 @@ import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.auth.repository.TokenRepository;
+import org.choon.careerbee.domain.auth.service.cookie.CookieService;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginParams;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProviderFactory;
@@ -39,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final MemberCommandService memberCommandService;
     private final MemberQueryService memberQueryService;
+    private final CookieService cookieService;
 
     private final TokenRepository tokenRepository;
 
