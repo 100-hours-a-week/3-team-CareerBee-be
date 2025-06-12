@@ -97,7 +97,7 @@ jobs:
       - name: Upload build to S3
         run: |
           mkdir -p ./deploy
-          cp ./build/libs/careerbee-0.0.1-SNAPSHOT.jar ./deploy/careerbee-api.jar
+          cp ./build/libs/careerbee-api.jar ./deploy/careerbee-api.jar
           echo "Uploading to: ${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}"
           aws s3 cp ./deploy "${S3_BUCKET_INFRA}/be/${DEPLOY_PATH}/" --recursive
 
