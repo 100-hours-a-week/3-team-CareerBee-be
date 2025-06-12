@@ -53,4 +53,8 @@ public class Token {
     public void revoke() {
         this.status = TokenStatus.REVOKED;
     }
+
+    public void expire() {
+        this.status = TokenStatus.EXPIRED;
+    }
 }

@@ -111,45 +111,48 @@ class AuthServiceImplTest {
         verifyNoInteractions(providerFactory);
     }
 
+    @DisplayName("로그인 성공 – 기존 회원 & 이전 LIVE 토큰 있음 → 새 RT 발급 + 기존 RT REVOKE")
     @Test
-    @DisplayName("로그인 성공 - 기존 회원 & 기존 리프레시 토큰 있음")
-    void login_existingMember_existingRefreshToken() {
+    void login_existingMember_issueNewRefreshToken() {
         // given
         KakaoLoginParams params = new KakaoLoginParams();
-        ReflectionTestUtils.setField(params, "authorizationCode", "test-code");
+        ReflectionTestUtils.setField(params, "authorizationCode", "code123");
 
-        KakaoInfoResponse oAuthInfo = new KakaoInfoResponse();
-        KakaoAccount kakaoAccount = new KakaoAccount();
-        ReflectionTestUtils.setField(kakaoAccount, "email", "test@kakao.com");
-        ReflectionTestUtils.setField(oAuthInfo, "id", 123L);
-        ReflectionTestUtils.setField(oAuthInfo, "kakaoAccount", kakaoAccount);
+        KakaoInfoResponse kakaoInfo = new KakaoInfoResponse();
+        KakaoAccount account = new KakaoAccount();
+        ReflectionTestUtils.setField(account, "email", "old@kakao.com");
+        ReflectionTestUtils.setField(kakaoInfo, "id", 321L);
+        ReflectionTestUtils.setField(kakaoInfo, "kakaoAccount", account);
 
-        Member member = createMember("testnick", "test@test.com", 123L);
-        ReflectionTestUtils.setField(member, "id", 1L);
+        Member member = createMember("oldnick", "old@kakao.com", 321L);
+        ReflectionTestUtils.setField(member, "id", 10L);
 
-        when(requestOAuthInfoService.request(params, "http://localhost:5173"))
-            .thenReturn(oAuthInfo);
-        when(memberQueryService.findMemberByProviderId(123L)).thenReturn(Optional.of(member));
-        when(jwtUtil.createToken(1L, TokenType.ACCESS_TOKEN)).thenReturn("access-token");
+        Token oldLiveRt = createToken(member, "old-refresh", TokenStatus.LIVE);
+
+        when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
+            kakaoInfo);
+        when(memberQueryService.findMemberByProviderId(321L)).thenReturn(Optional.of(member));
         when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE))
-            .thenReturn(Optional.of(new Token(member, TokenStatus.LIVE, "refresh-token")));
+            .thenReturn(Optional.of(oldLiveRt));
+
+        when(jwtUtil.createToken(10L, TokenType.ACCESS_TOKEN)).thenReturn("new-access");
+        when(jwtUtil.createToken(10L, TokenType.REFRESH_TOKEN)).thenReturn("new-refresh");
 
         // when
         AuthTokens result = authService.login(params, "http://localhost:5173");
 
         // then
-        assertThat(result.accessToken()).isEqualTo("access-token");
-        assertThat(result.refreshToken()).isEqualTo("refresh-token");
+        assertThat(result.accessToken()).isEqualTo("new-access");
+        assertThat(result.refreshToken()).isEqualTo("new-refresh");
+        assertThat(oldLiveRt.getStatus()).isEqualTo(TokenStatus.REVOKED);
 
-        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-        ArgumentCaptor<TokenStatus> statusCaptor = ArgumentCaptor.forClass(TokenStatus.class);
-        verify(tokenRepository).findByMemberAndStatus(
-            memberCaptor.capture(),
-            statusCaptor.capture()
-        );
+        ArgumentCaptor<Token> captor = ArgumentCaptor.forClass(Token.class);
+        verify(tokenRepository).save(captor.capture());
 
-        assertThat(memberCaptor.getValue().getId()).isEqualTo(1L);
-        assertThat(statusCaptor.getValue()).isEqualTo(TokenStatus.LIVE);
+        Token saved = captor.getValue();
+        assertThat(saved.getMember()).isEqualTo(member);
+        assertThat(saved.getStatus()).isEqualTo(TokenStatus.LIVE);
+        assertThat(saved.getTokenValue()).isEqualTo("new-refresh");
     }
 
 
@@ -196,44 +199,45 @@ class AuthServiceImplTest {
         assertThat(savedToken.getTokenValue()).isEqualTo("refresh-token-new");
     }
 
+    @DisplayName("로그인 성공 – 리프레시 토큰이 없던 기존 회원 → 새 RT 발급·저장")
     @Test
-    @DisplayName("로그인 성공 - 기존 회원 & 리프레시 토큰 없음 → 새로 발급 후 저장")
-    void login_existingMember_noRefreshToken() {
+    void login_existingMember_withoutRefreshToken() {
         // given
         KakaoLoginParams params = new KakaoLoginParams();
-        ReflectionTestUtils.setField(params, "authorizationCode", "existing-code");
+        ReflectionTestUtils.setField(params, "authorizationCode", "code456");
 
-        KakaoInfoResponse oAuthInfo = new KakaoInfoResponse();
-        KakaoAccount kakaoAccount = new KakaoAccount();
-        ReflectionTestUtils.setField(kakaoAccount, "email", "exist@kakao.com");
-        ReflectionTestUtils.setField(oAuthInfo, "id", 777L);
-        ReflectionTestUtils.setField(oAuthInfo, "kakaoAccount", kakaoAccount);
+        KakaoInfoResponse kakaoInfo = new KakaoInfoResponse();
+        KakaoAccount account = new KakaoAccount();
+        ReflectionTestUtils.setField(account, "email", "exist@kakao.com");
+        ReflectionTestUtils.setField(kakaoInfo, "id", 654L);
+        ReflectionTestUtils.setField(kakaoInfo, "kakaoAccount", account);
 
-        Member member = createMember("existnick", "exist@kakao.com", 777L);
-        ReflectionTestUtils.setField(member, "id", 3L);
+        Member member = createMember("existnick", "exist@kakao.com", 654L);
+        ReflectionTestUtils.setField(member, "id", 20L);
 
         when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
-            oAuthInfo);
-        when(memberQueryService.findMemberByProviderId(777L)).thenReturn(Optional.of(member));
-        when(jwtUtil.createToken(3L, TokenType.ACCESS_TOKEN)).thenReturn("access-token-exist");
-        when(jwtUtil.createToken(3L, TokenType.REFRESH_TOKEN)).thenReturn("refresh-token-exist");
+            kakaoInfo);
+        when(memberQueryService.findMemberByProviderId(654L)).thenReturn(Optional.of(member));
         when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE)).thenReturn(
             Optional.empty());
+
+        when(jwtUtil.createToken(20L, TokenType.ACCESS_TOKEN)).thenReturn("access-exist");
+        when(jwtUtil.createToken(20L, TokenType.REFRESH_TOKEN)).thenReturn("refresh-exist");
 
         // when
         AuthTokens result = authService.login(params, "http://localhost:5173");
 
         // then
-        assertThat(result.refreshToken()).isEqualTo("refresh-token-exist");
-        assertThat(result.accessToken()).isEqualTo("access-token-exist");
+        assertThat(result.accessToken()).isEqualTo("access-exist");
+        assertThat(result.refreshToken()).isEqualTo("refresh-exist");
 
-        ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
-        verify(tokenRepository).save(tokenCaptor.capture());
+        ArgumentCaptor<Token> captor = ArgumentCaptor.forClass(Token.class);
+        verify(tokenRepository).save(captor.capture());
 
-        Token savedToken = tokenCaptor.getValue();
-        assertThat(savedToken.getMember().getId()).isEqualTo(member.getId());
-        assertThat(savedToken.getStatus()).isEqualTo(TokenStatus.LIVE);
-        assertThat(savedToken.getTokenValue()).isEqualTo("refresh-token-exist");
+        Token saved = captor.getValue();
+        assertThat(saved.getMember()).isEqualTo(member);
+        assertThat(saved.getStatus()).isEqualTo(TokenStatus.LIVE);
+        assertThat(saved.getTokenValue()).isEqualTo("refresh-exist");
     }
 
     @Test
