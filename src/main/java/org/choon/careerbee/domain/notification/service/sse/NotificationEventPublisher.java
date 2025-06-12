@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.notification.service.sse;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -44,5 +45,22 @@ public class NotificationEventPublisher {
                 sseService.sendTo(memberId, message);
             }
         }
+    }
+
+    public void sendDailyFirstMemberNoti(String firstMemberNickname, List<Long> allMemberIds) {
+        String message = firstMemberNickname + "님이 오늘의 CS 대회에서 1위를 달성했어요!";
+        log.info("일일 대회 1등 알림 전송 시작. 메시지 : {}", message);
+
+        List<Notification> notifications = allMemberIds.stream()
+            .map(id -> Notification.of(
+                Member.ofId(id),
+                message,
+                NotificationType.COMPETITION,
+                false
+            ))
+            .toList();
+        notificationRepository.saveAll(notifications);
+
+        sseService.sendAll(message);
     }
 }

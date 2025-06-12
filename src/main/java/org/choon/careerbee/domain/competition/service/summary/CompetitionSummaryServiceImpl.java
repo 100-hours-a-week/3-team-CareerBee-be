@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -21,6 +22,8 @@ import org.choon.careerbee.domain.competition.dto.response.ResultSummaryResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
 import org.choon.careerbee.domain.member.entity.Member;
+import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -31,6 +34,8 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
 
     private final CompetitionSummaryRepository summaryRepository;
     private final CompetitionResultRepository resultRepository;
+    private final MemberQueryService memberQueryService;
+    private final NotificationEventPublisher eventPublisher;
 
     @Override
     public void dailySummary(LocalDate now) {
@@ -41,10 +46,16 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
             return;
         }
 
+        final AtomicReference<String> firstMemberNick = new AtomicReference<>();
         List<CompetitionSummary> summaries = IntStream.range(0, dailyResultSummaryList.size())
             .mapToObj(i -> {
                 DailyResultSummaryResp summary = dailyResultSummaryList.get(i);
                 long rank = i + 1L;
+                if (rank == 1) {
+                    String firstMemberNickname = memberQueryService.getNicknameByMemberId(
+                        summary.memberId());
+                    firstMemberNick.set(firstMemberNickname);
+                }
                 return CompetitionSummary.of(
                     Member.ofId(summary.memberId()),
                     summary.solvedSum(),
@@ -58,8 +69,12 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
             .toList();
 
         summaryRepository.saveAll(summaries);
-
-        // Todo : 이후 오늘의 1등에 대한 알림 발송 로직 필요
+        
+        // 일일 대회 1등 유저 알림 발송
+        eventPublisher.sendDailyFirstMemberNoti(
+            firstMemberNick.get(),
+            memberQueryService.findAllMemberIds()
+        );
     }
 
     @Override

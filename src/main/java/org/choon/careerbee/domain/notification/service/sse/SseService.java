@@ -7,4 +7,6 @@ public interface SseService {
     SseEmitter connect(Long memberId);
 
     void sendTo(Long memberId, String message);
+
+    void sendAll(String message);
 }
