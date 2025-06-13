@@ -27,12 +27,12 @@ public class SseServiceImpl implements SseService {
     }
 
     @Override
-    public void sendTo(Long memberId, String message) {
+    public void sendTo(Long memberId) {
         log.info("알림 전송 시도. id : {}", memberId);
         SseEmitter emitter = emitters.get(memberId);
         if (emitter != null) {
             try {
-                emitter.send(SseEmitter.event().name(NOTIFICATION).data(message));
+                emitter.send(SseEmitter.event().name(NOTIFICATION).data(true));
                 log.info("[SSE Success] {}에게 전송 성공", memberId);
             } catch (IOException e) {
                 emitters.remove(memberId);
@@ -44,12 +44,12 @@ public class SseServiceImpl implements SseService {
     }
 
     @Override
-    public void sendAll(String message) {
+    public void sendAll() {
         log.info("[BROADCAST] 전체 알림 전송 시작. 총 {}명", emitters.size());
 
         emitters.forEach((memberId, emitter) -> {
             try {
-                emitter.send(SseEmitter.event().name(NOTIFICATION).data(message));
+                emitter.send(SseEmitter.event().name(NOTIFICATION).data(true));
                 log.info("[SSE Success] {}에게 전송 성공", memberId);
             } catch (IOException e) {
                 emitters.remove(memberId);
