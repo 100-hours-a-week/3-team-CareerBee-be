@@ -14,8 +14,8 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingRes
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberLiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
-import org.choon.careerbee.domain.competition.service.CompetitionCommandService;
-import org.choon.careerbee.domain.competition.service.CompetitionQueryService;
+import org.choon.careerbee.domain.competition.service.command.CompetitionCommandService;
+import org.choon.careerbee.domain.competition.service.query.CompetitionQueryService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;

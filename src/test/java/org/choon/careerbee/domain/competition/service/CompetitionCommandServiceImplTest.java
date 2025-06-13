@@ -18,8 +18,10 @@ import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmi
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
+import org.choon.careerbee.domain.competition.service.command.CompetitionCommandServiceImpl;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +46,9 @@ class CompetitionCommandServiceImplTest {
 
     @Mock
     private MemberQueryService memberQueryService;
+
+    @Mock
+    private NotificationEventPublisher eventPublisher;
 
     @Test
     @DisplayName("대회 참가 - 성공")

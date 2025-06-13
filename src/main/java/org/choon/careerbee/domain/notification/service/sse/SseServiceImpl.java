@@ -33,13 +33,29 @@ public class SseServiceImpl implements SseService {
         if (emitter != null) {
             try {
                 emitter.send(SseEmitter.event().name(NOTIFICATION).data(message));
-                log.info("[SSE Success] SSE 전송 완료");
+                log.info("[SSE Success] {}에게 전송 성공", memberId);
             } catch (IOException e) {
                 emitters.remove(memberId);
-                log.error("[SSE Send Fail] SSE 연결은 있지만 전송 실패");
+                log.warn("[SSE Fail] {}에게 전송 실패, emitter 제거", memberId);
             }
         } else {
-            log.warn("[No Connection] emitter 객체가 존재하지 않습니다.");
+            log.warn("[SSE No Connection] emitter 객체가 존재하지 않습니다.");
         }
+    }
+
+    @Override
+    public void sendAll(String message) {
+        log.info("[BROADCAST] 전체 알림 전송 시작. 총 {}명", emitters.size());
+
+        emitters.forEach((memberId, emitter) -> {
+            try {
+                emitter.send(SseEmitter.event().name(NOTIFICATION).data(message));
+                log.info("[SSE Success] {}에게 전송 성공", memberId);
+            } catch (IOException e) {
+                emitters.remove(memberId);
+                log.warn("[SSE Fail] {}에게 전송 실패, emitter 제거", memberId);
+            }
+        });
+
     }
 }
