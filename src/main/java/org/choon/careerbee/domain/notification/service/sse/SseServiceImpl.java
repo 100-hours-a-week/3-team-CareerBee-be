@@ -21,6 +21,7 @@ public class SseServiceImpl implements SseService {
 
         emitter.onCompletion(() -> emitters.remove(memberId));
         emitter.onTimeout(() -> {
+            log.warn("[SSE Time Out] memberId={}", memberId);
             emitter.complete();
             emitters.remove(memberId);
         });
