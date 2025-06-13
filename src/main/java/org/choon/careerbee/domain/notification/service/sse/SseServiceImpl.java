@@ -33,15 +33,8 @@ public class SseServiceImpl implements SseService {
 
         emitters.put(memberId, emitter);
 
-        try {
-            emitter.send(SseEmitter               // flush 즉시 발생
-                .event()
-                .name("connected")
-                .data("ok"));
-        } catch (IOException ex) {
-            emitters.remove(memberId);
-        }
-
+        sendTo(memberId);
+        log.info("[SSE Send SUC] SSE 연결 & 알림 전송 성공");
         return emitter;
     }
 
