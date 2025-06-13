@@ -6,13 +6,15 @@ COPY . .
 ARG SENTRY_AUTH_TOKEN
 ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 
-RUN gradle build -x test --no-daemon
+RUN chmod +x ./gradlew
+
+RUN ./gradle build -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /backend
 
-COPY --from=builder /backend/build/libs/*.jar careerbee-api.jar
+COPY --from=builder /backend/build/libs/careerbee-api.jar careerbee-api.jar
 
 EXPOSE 8080
 
