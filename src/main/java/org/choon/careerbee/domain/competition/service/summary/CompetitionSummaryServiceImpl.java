@@ -69,7 +69,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
             .toList();
 
         summaryRepository.saveAll(summaries);
-        
+
         // 일일 대회 1등 유저 알림 발송
         eventPublisher.sendDailyFirstMemberNoti(
             firstMemberNick.get(),
@@ -129,7 +129,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         // 4. Map으로 변환
         Map<Long, CompetitionSummary> existSummaryMap = existSummaries.stream()
             .collect(Collectors.toMap(
-                cs -> cs.getMember().getId(), // 근데 여기서 N+1 발생하지 않나? 멤버 가져오는 select 쿼리 발생할거같은데
+                cs -> cs.getMember().getId(),
                 Function.identity()
             ));
 
@@ -142,7 +142,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
             if (competitionSummary == null) {
                 competitionSummaryToInsert.add(CompetitionSummary.of(
                     Member.ofId(tempSummaryInfo.memberId()),
-                    tempSummaryInfo.solvedSum().shortValue(),
+                    tempSummaryInfo.solvedSum(),
                     tempSummaryInfo.timeSum(),
                     0L,
                     tempSummaryInfo.maxStreak(),

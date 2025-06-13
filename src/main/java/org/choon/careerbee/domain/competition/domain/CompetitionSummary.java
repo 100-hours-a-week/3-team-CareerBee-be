@@ -103,7 +103,7 @@ public class CompetitionSummary extends BaseEntity {
     }
 
     public void updateSummary(TempSummaryInfo summaryInfo) {
-        this.solvedCount = summaryInfo.solvedSum().shortValue();
+        this.solvedCount = summaryInfo.solvedSum();
         this.elapsedTime = summaryInfo.timeSum();
         this.correctRate = summaryInfo.correctRate();
         this.maxContinuousDays = summaryInfo.maxStreak();
