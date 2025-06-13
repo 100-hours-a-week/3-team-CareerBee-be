@@ -32,7 +32,7 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     public String getLoginUrlByOrigin(String origin) {
         String redirectUri = switch (origin) {
             case "http://localhost:5173" -> localRedirectUri;
-            case "https://dev.careerbee.co.kr" -> devRedirectUri;
+            case "https://www.dev.careerbee.co.kr" -> devRedirectUri;
             default -> prodRedirectUri;
         };
 
