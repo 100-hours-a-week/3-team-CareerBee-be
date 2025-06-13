@@ -22,6 +22,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
@@ -88,6 +89,12 @@ public class CustomExceptionHandler {
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(CommonResponse.createError(CustomResponseStatus.INTERNAL_SERVER_ERROR));
     }
+
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleSseException(AsyncRequestNotUsableException ex) {
+        log.debug("AsyncRequestNotUsableException ignored: {}", ex.getMessage());
+    }
+
 
     /**
      * 인증에 대한 Exception 을 처리하는 메서드입니다.
