@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
+import org.choon.careerbee.domain.image.dto.response.ObjectUrlResp;
 import org.choon.careerbee.domain.image.service.ImageService;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
@@ -66,8 +67,11 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     @Override
     public void updateProfileInfo(UpdateProfileInfoReq updateProfileInfoReq, Long accessMemberId) {
         Member validMember = memberQueryService.findById(accessMemberId);
+        ObjectUrlResp response = imageService.getObjectUrlByKey(
+            updateProfileInfoReq.newProfileUrl());
+
         validMember.updateProfileInfo(new UpdateProfileCommand(
-            updateProfileInfoReq.newProfileUrl(),
+            response.objectUrl(),
             updateProfileInfoReq.newNickname())
         );
     }

@@ -11,6 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import org.choon.careerbee.domain.image.dto.response.ObjectUrlResp;
+import org.choon.careerbee.domain.image.service.ImageService;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
@@ -33,7 +35,10 @@ class MemberCommandServiceImplTest {
     private MemberQueryService memberQueryService;
 
     @Mock
-    ResumeProgressPolicy progressPolicy;
+    private ResumeProgressPolicy progressPolicy;
+
+    @Mock
+    private ImageService imageService;
 
     @InjectMocks
     private MemberCommandServiceImpl memberCommandService;
@@ -99,6 +104,7 @@ class MemberCommandServiceImplTest {
     void updateProfileInfo_shouldCallMemberUpdate() {
         // given
         Long accessMemberId = 1L;
+        ObjectUrlResp objectUrlResp = new ObjectUrlResp("objectUrl");
 
         UpdateProfileInfoReq req = new UpdateProfileInfoReq(
             "https://example.com/profile.png",
@@ -107,6 +113,7 @@ class MemberCommandServiceImplTest {
 
         Member mockMember = mock(Member.class);
         when(memberQueryService.findById(accessMemberId)).thenReturn(mockMember);
+        when(imageService.getObjectUrlByKey(req.newProfileUrl())).thenReturn(objectUrlResp);
 
         // when
         memberCommandService.updateProfileInfo(req, accessMemberId);
@@ -116,7 +123,7 @@ class MemberCommandServiceImplTest {
         verify(mockMember, times(1)).updateProfileInfo(
             argThat(command ->
                 command.nickname().equals(req.newNickname()) &&
-                    command.profileImgUrl().equals(req.newProfileUrl())
+                    command.profileImgUrl().equals(objectUrlResp.objectUrl())
             ));
     }
 

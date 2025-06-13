@@ -9,6 +9,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.PresignedUrlReq;
 import org.choon.careerbee.domain.image.dto.response.GetPresignedUrlResp;
+import org.choon.careerbee.domain.image.dto.response.ObjectUrlResp;
 import org.choon.careerbee.domain.image.dto.response.PresignedUrlResp;
 import org.choon.careerbee.domain.image.enums.SupportedExtension;
 import org.choon.careerbee.domain.image.enums.UploadType;
@@ -33,6 +34,9 @@ public class S3Service implements ImageService {
 
     @Value("${spring.cloud.aws.s3.bucket}")
     private String bucket;
+
+    @Value("${spring.cloud.aws.region.static}")
+    private String region;
 
     private static final Duration PRESIGNED_URL_EXPIRATION = Duration.ofMinutes(15);
 
@@ -88,6 +92,12 @@ public class S3Service implements ImageService {
         return new GetPresignedUrlResp(
             getUrl.toString()
         );
+    }
+
+    @Override
+    public ObjectUrlResp getObjectUrlByKey(String objectKey) {
+        String objectUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + objectKey;
+        return new ObjectUrlResp(objectUrl);
     }
 
     private void validateUploadTypeAndExtension(UploadType type, SupportedExtension ext) {
