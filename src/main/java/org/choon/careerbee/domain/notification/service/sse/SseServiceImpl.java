@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.notification.service.sse;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
@@ -16,13 +17,20 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public SseEmitter connect(Long memberId) {
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
-        emitters.put(memberId, emitter);
+        SseEmitter emitter = new SseEmitter(Duration.ofMinutes(30).toMillis());
 
         emitter.onCompletion(() -> emitters.remove(memberId));
-        emitter.onTimeout(() -> emitters.remove(memberId));
+        emitter.onTimeout(() -> {
+            emitter.complete();
+            emitters.remove(memberId);
+        });
+        emitter.onError(e -> {
+            log.warn("[SSE Error] memberId={}, msg={}", memberId, e.getMessage());
+            emitter.completeWithError(e);
+            emitters.remove(memberId);
+        });
 
-        log.info("SSE 연결 완료, map 사이즈 : {}", emitters.keySet().size());
+        emitters.put(memberId, emitter);
         return emitter;
     }
 
@@ -30,16 +38,20 @@ public class SseServiceImpl implements SseService {
     public void sendTo(Long memberId) {
         log.info("알림 전송 시도. id : {}", memberId);
         SseEmitter emitter = emitters.get(memberId);
-        if (emitter != null) {
-            try {
-                emitter.send(SseEmitter.event().name(NOTIFICATION).data(true));
-                log.info("[SSE Success] {}에게 전송 성공", memberId);
-            } catch (IOException e) {
-                emitters.remove(memberId);
-                log.warn("[SSE Fail] {}에게 전송 실패, emitter 제거", memberId);
-            }
-        } else {
-            log.warn("[SSE No Connection] emitter 객체가 존재하지 않습니다.");
+
+        if (emitter == null) {
+            log.warn("[SSE No Connection] memberId={}", memberId);
+            return;
+        }
+        try {
+            emitter.send(SseEmitter.event()
+                .name(NOTIFICATION)
+                .data(true));
+            log.info("[SSE Success] memberId={}", memberId);
+        } catch (IOException ex) {
+            log.warn("[SSE Broken] memberId={} -> remove emitter", memberId);
+            emitter.completeWithError(ex);
+            emitters.remove(memberId);
         }
     }
 
