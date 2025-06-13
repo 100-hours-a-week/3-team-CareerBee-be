@@ -32,6 +32,16 @@ public class SseServiceImpl implements SseService {
         });
 
         emitters.put(memberId, emitter);
+
+        try {
+            emitter.send(SseEmitter               // flush 즉시 발생
+                .event()
+                .name("connected")
+                .data("ok"));
+        } catch (IOException ex) {
+            emitters.remove(memberId);
+        }
+
         return emitter;
     }
 
