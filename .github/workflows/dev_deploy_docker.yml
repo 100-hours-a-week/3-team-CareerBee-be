@@ -27,7 +27,8 @@ jobs:
 
       - name: Download .env from S3
         run: |
-          aws s3 cp s3://${{ secrets.DEV_S3_INFRA_NAME }}/terraform.tfvars .env
+          aws s3 cp s3://${{ secrets.DEV_S3_INFRA_NAME }}/terraform.tfvars.enc terraform.tfvars.enc
+          openssl aes-256-cbc -d -salt -pbkdf2 -in terraform.tfvars.enc -out .env -k ${{ secrets.DEV_TFVARS_ENC_PW }}
 
       - name: Load selected env variables into GitHub Environment
         run: |
