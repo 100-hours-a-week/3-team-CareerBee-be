@@ -5,6 +5,7 @@ import static org.choon.careerbee.domain.member.entity.QMember.member;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.springframework.stereotype.Repository;
@@ -31,5 +32,22 @@ public class MemberCustomRepositoryImpl implements MemberCustomRepository {
             .from(member)
             .where(member.id.eq(memberId))
             .fetchOne();
+    }
+
+    @Override
+    public String getNicknameByMemberId(Long memberId) {
+        return queryFactory
+            .select(member.nickname)
+            .from(member)
+            .where(member.id.eq(memberId))
+            .fetchOne();
+    }
+
+    @Override
+    public List<Long> findAllMemberIds() {
+        return queryFactory
+            .select(member.id)
+            .from(member)
+            .fetch();
     }
 }

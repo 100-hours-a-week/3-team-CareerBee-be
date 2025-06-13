@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +26,7 @@ import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepo
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,8 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
     private final CompanyApiClient companyApiClient;
+
+    private final NotificationEventPublisher eventPublisher;
 
     private final RecruitmentRepository recruitmentRepository;
     private final WishCompanyRepository wishCompanyRepository;
@@ -112,6 +117,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
         // 3. 메모리 필터링 & 엔티티 생성
         List<Recruitment> toSave = new ArrayList<>();
+        Map<String, Set<Long>> toNoti = new HashMap<>();
         for (SaraminRecruitingResp.Job job : jobs) {
             if (job.active() == RECRUITING_STATUS_CLOSED) {
                 continue;
@@ -124,6 +130,16 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
             // 상태 변경
             company.changeRecruitingStatus(RecruitingStatus.ONGOING);
+
+            // 해당 기업을 관심목록으로 등록한 사람들을 넣기
+            if (isOpenRecruitment) {
+                List<Long> wishMemberIds = wishCompanyRepository.getMemberIdsByCompanyId(
+                    company.getId());
+
+                toNoti
+                    .computeIfAbsent(company.getName(), k -> new HashSet<>())
+                    .addAll(wishMemberIds);
+            }
 
             toSave.add(Recruitment.from(
                 company,
@@ -142,7 +158,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
         // 5. 알림 이벤트 발행
         if (isOpenRecruitment) {
-
+            eventPublisher.sendOpenRecruitingNoti(toNoti);
         }
     }
 

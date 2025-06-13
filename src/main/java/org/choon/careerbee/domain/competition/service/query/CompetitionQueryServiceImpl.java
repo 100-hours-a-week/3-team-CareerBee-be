@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.competition.service;
+package org.choon.careerbee.domain.competition.service.query;
 
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
