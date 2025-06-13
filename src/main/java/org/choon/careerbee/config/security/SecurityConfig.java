@@ -41,9 +41,7 @@ public class SecurityConfig {
                 "http://127.0.0.1:5173",
                 "http://127.0.0.1:5500",
                 "https://www.careerbee.co.kr",
-                "https://ai.careerbee.co.kr",
-                "https://dev.careerbee.co.kr",
-                "https://dev-ai.careerbee.co.kr",
+                "https://www.dev.careerbee.co.kr",
                 "https://www.junjo.o-r.kr"
             ));
             config.setAllowCredentials(true);
