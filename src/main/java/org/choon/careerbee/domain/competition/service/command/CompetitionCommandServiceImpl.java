@@ -6,15 +6,15 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
+import org.choon.careerbee.domain.competition.dto.event.PointEvent;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
-import org.choon.careerbee.domain.notification.dto.request.PointNotiInfo;
 import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
-import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +27,7 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
     private final CompetitionParticipantRepository competitionParticipantRepository;
     private final CompetitionResultRepository competitionResultRepository;
     private final MemberQueryService memberQueryService;
-    private final NotificationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void joinCompetition(Long competitionId, Long accessMemberId) {
@@ -66,9 +66,8 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
             CompetitionResult.of(validCompetition, validMember, submitReq)
         );
 
-        // 포인트 획득 메시지 전송
-        eventPublisher.sendPointEarnedNotification(
-            new PointNotiInfo(validMember, 5, NotificationType.POINT, false)
+        eventPublisher.publishEvent(
+            new PointEvent(validMember, 5, NotificationType.POINT, false)
         );
 
     }
