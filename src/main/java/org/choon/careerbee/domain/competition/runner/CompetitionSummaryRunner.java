@@ -23,10 +23,15 @@ public class CompetitionSummaryRunner {
         log.info("[{}] 대회 결과 데이터 집계 시작!", now);
         summaryService.dailySummary(now);
 
-        summaryService.weekAndMonthSummary(DateUtil.getPeriod(now, SummaryType.WEEK),
-            SummaryType.WEEK);
-        summaryService.weekAndMonthSummary(DateUtil.getPeriod(now, SummaryType.MONTH),
-            SummaryType.MONTH);
+        summaryService.weekAndMonthSummary(
+            DateUtil.getPeriod(now, SummaryType.WEEK),
+            SummaryType.WEEK
+        );
+        summaryService.weekAndMonthSummary(
+            DateUtil.getPeriod(now, SummaryType.MONTH),
+            SummaryType.MONTH
+        );
         log.info("[{}] 대회 결과 데이터 집계 종료!", now);
     }
+
 }

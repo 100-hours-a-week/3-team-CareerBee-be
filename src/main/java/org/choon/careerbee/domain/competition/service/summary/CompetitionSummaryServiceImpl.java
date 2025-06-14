@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.competition.service.summary;
 
+import io.sentry.Sentry;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -25,6 +26,10 @@ import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepos
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.TransientDataAccessException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -38,6 +43,10 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
     private final MemberQueryService memberQueryService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Retryable(
+        retryFor = {TransientDataAccessException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 3000, multiplier = 2))
     @Override
     public void dailySummary(LocalDate now) {
         List<DailyResultSummaryResp> dailyResultSummaryList = resultRepository.fetchResultSummaryOfDaily(now);
@@ -81,6 +90,16 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         );
     }
 
+    @Recover
+    public void dailySummaryRecover(TransientDataAccessException ex, LocalDate day) {
+        log.error("[일일 집계 실패] : {} 일일 집계가 실패하였습니다.", day);
+        Sentry.captureException(ex);
+    }
+
+    @Retryable(
+        retryFor = {TransientDataAccessException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 3000, multiplier = 2))
     @Override
     public void weekAndMonthSummary(SummaryPeriod summaryPeriod, SummaryType summaryType) {
         // 1. 기간 내의 대회 결과 데이터 조회
@@ -177,7 +196,14 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
             cs.updateRank(rank++);
         }
 
-        summaryRepository.saveAll(competitionSummaryToInsert);
+        summaryRepository.rewritePeriod(summaryType, summaryPeriod.startAt(), summaryPeriod.endAt(), competitionSummaryToInsert);
+    }
+
+    @Recover
+    public void weekOrMonthSummaryRecover(TransientDataAccessException ex, SummaryPeriod p, SummaryType t) {
+        log.error("[주간/월간 집계] {}({}) 재시도 후 실패", t, p, ex);
+
+        Sentry.captureException(ex);
     }
 
     private int calculateMaxStreak(List<LocalDate> days) {
