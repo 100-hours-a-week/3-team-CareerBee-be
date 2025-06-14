@@ -74,7 +74,7 @@ jobs:
 
       - name: Get instance ID from tfstate
         run: |
-          aws s3 cp $S3_BUCKET_INFRA/terraform.tfstate terraform.tfstate
+          aws s3 cp $S3_BUCKET_INFRA/tfstate/terraform_docker.tfstate terraform.tfstate
           INSTANCE_A_ID=$(jq -r \
             '.resources[] | select(.type == "aws_instance") | .instances[] |
             select(.attributes.tags.Name == "ec2-careerbee-dev-azone-service") | .attributes.id' terraform.tfstate)
