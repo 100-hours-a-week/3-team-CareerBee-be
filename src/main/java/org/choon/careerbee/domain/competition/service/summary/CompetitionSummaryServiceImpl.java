@@ -40,8 +40,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
 
     @Override
     public void dailySummary(LocalDate now) {
-        List<DailyResultSummaryResp> dailyResultSummaryList = resultRepository
-            .fetchResultSummaryOfDaily(now);
+        List<DailyResultSummaryResp> dailyResultSummaryList = resultRepository.fetchResultSummaryOfDaily(now);
         if (dailyResultSummaryList.isEmpty()) {
             log.warn("[일일 집계] 집계할 데이터가 존재하지 않습니다.");
             return;
@@ -68,8 +67,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
                     0.0,
                     SummaryType.DAY,
                     now, now);
-            })
-            .toList();
+            }).toList();
 
         summaryRepository.rewritePeriod(SummaryType.DAY, now, now, summaries);
 

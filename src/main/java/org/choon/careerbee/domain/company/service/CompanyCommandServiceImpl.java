@@ -26,7 +26,8 @@ import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepo
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
-import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
+import org.choon.careerbee.domain.notification.dto.event.OpenRecruitingEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     private final CompanyApiClient companyApiClient;
 
-    private final NotificationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final RecruitmentRepository recruitmentRepository;
     private final WishCompanyRepository wishCompanyRepository;
@@ -99,11 +100,11 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         List<String> companyNames = jobs.stream()
             .map(j -> j.company().detail().name())
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
         List<Long> jobIds = jobs.stream()
             .map(SaraminRecruitingResp.Job::id)
-            .collect(Collectors.toList());
+            .toList();
 
         // 2. DB에서 한 번에 조회
         List<Company> companies = companyQueryService.findBySaraminNameIn(companyNames);
@@ -153,12 +154,14 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
         if (!toSave.isEmpty()) {
             // 4. Batch Insert
-            recruitmentRepository.saveAll(toSave);
+            recruitmentRepository.batchInsert(toSave);
         }
 
         // 5. 알림 이벤트 발행
-        if (isOpenRecruitment) {
-            eventPublisher.sendOpenRecruitingNoti(toNoti);
+        if (isOpenRecruitment && !toNoti.isEmpty()) {
+            eventPublisher.publishEvent(
+                new OpenRecruitingEvent(toNoti)
+            );
         }
     }
 
