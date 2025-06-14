@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class CompetitionCommandServiceImplTest {
@@ -45,6 +46,9 @@ class CompetitionCommandServiceImplTest {
 
     @Mock
     private MemberQueryService memberQueryService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Test
     @DisplayName("대회 참가 - 성공")
