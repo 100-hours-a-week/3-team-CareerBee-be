@@ -56,7 +56,17 @@ jobs:
             -t ${{ secrets.DEV_ECR_REGISTRY }}/backend:latest \
             .
 
+      - name: Health Check Webhook
+        run: |
+          set -e
+          if ! curl -sf https://webhook.dev.careerbee.co.kr/health-check; then
+            echo "❌ Health check failed"
+            echo "DISCORD_MSG=failure" >> $GITHUB_ENV
+            exit 0
+          fi
+
       - name: Trigger Deploy Webhook
+        if: env.DISCORD_MSG != 'failure'
         run: |
           curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
             -H "Content-Type: application/json" \
