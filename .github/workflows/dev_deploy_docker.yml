@@ -3,7 +3,7 @@ name: DEV Backend Docker CICD
 on:
   push:
     branches:
-      - cicd/#82 # develop
+      - develop
 
 jobs:
   deploy:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          ref: cicd/#82 # develop
+          ref: develop
       
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -162,56 +162,56 @@ jobs:
         if: steps.health.outputs.result == 'failure'
         run: echo "DISCORD_MSG=failure" >> $GITHUB_ENV            
 
-      # - name: Notify Discord
-      #   if: always()
-      #   run: |
-      #     TITLE=""
-      #     DESC=""
+      - name: Notify Discord
+        if: always()
+        run: |
+          TITLE=""
+          DESC=""
 
-      #     if [ "${{ env.DISCORD_MSG }}" = "success" ]; then
-      #       TITLE="✅ 개발 환경에 백엔드 배포 성공"
-      #       DESC="모두 배포에 성공했습니다."
-      #       COLOR=65280
-      #     elif [ "${{ env.DISCORD_MSG }}" = "failure" ]; then
-      #       TITLE="❌ 개발 환경에 백엔드 배포 실패"
-      #       DESC="배포 실패로 롤백하였습니다."
-      #       COLOR=16711680
-      #     else
-      #       TITLE="⚠️ 배포 상태 알 수 없음"
-      #       DESC="워크플로 로그를 확인해 주세요."
-      #       COLOR=16753920
-      #     fi
+          if [ "${{ env.DISCORD_MSG }}" = "success" ]; then
+            TITLE="✅ 개발 환경에 백엔드 배포 성공"
+            DESC="모두 배포에 성공했습니다."
+            COLOR=65280
+          elif [ "${{ env.DISCORD_MSG }}" = "failure" ]; then
+            TITLE="❌ 개발 환경에 백엔드 배포 실패"
+            DESC="배포 실패로 롤백하였습니다."
+            COLOR=16711680
+          else
+            TITLE="⚠️ 배포 상태 알 수 없음"
+            DESC="워크플로 로그를 확인해 주세요."
+            COLOR=16753920
+          fi
 
-      #     COMMIT_MSG="${{ github.event.head_commit.message }}"
-      #     REPO="${{ github.repository }}"
-      #     BRANCH="${{ github.ref_name }}"
-      #     RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-      #     TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TIMESTAMP="${{ github.event.head_commit.timestamp }}"
 
-      #     DESCRIPTION="**Repository:** \`${REPO}\`
-      #     **Branch:** \`${BRANCH}\`
-      #     **Commit:** \`${COMMIT_MSG}\`
-      #     ${DESC}
-      #     [🔗 실행 로그 보기](${RUN_URL})"
+          DESCRIPTION="**Repository:** \`${REPO}\`
+          **Branch:** \`${BRANCH}\`
+          **Commit:** \`${COMMIT_MSG}\`
+          ${DESC}
+          [🔗 실행 로그 보기](${RUN_URL})"
 
-      #     jq -n \
-      #       --arg title "$TITLE" \
-      #       --arg desc "$DESCRIPTION" \
-      #       --arg timestamp "$TIMESTAMP" \
-      #       --argjson color "$COLOR" \
-      #       '{
-      #         "embeds": [
-      #           {
-      #             "title": $title,
-      #             "description": $desc,
-      #             "color": $color,
-      #             "footer": { "text": "GitHub Actions - DEV Deploy(BE)" },
-      #             "timestamp": $timestamp
-      #           }
-      #         ]
-      #       }' > payload.json
+          jq -n \
+            --arg title "$TITLE" \
+            --arg desc "$DESCRIPTION" \
+            --arg timestamp "$TIMESTAMP" \
+            --argjson color "$COLOR" \
+            '{
+              "embeds": [
+                {
+                  "title": $title,
+                  "description": $desc,
+                  "color": $color,
+                  "footer": { "text": "GitHub Actions - DEV Deploy(BE)" },
+                  "timestamp": $timestamp
+                }
+              ]
+            }' > payload.json
 
-      #     curl -H "Content-Type: application/json" \
-      #         -X POST \
-      #         -d @payload.json \
-      #         ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -H "Content-Type: application/json" \
+              -X POST \
+              -d @payload.json \
+              ${{ secrets.DISCORD_WEBHOOK_URL }}
