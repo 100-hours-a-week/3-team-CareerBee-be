@@ -2,9 +2,9 @@ name: DEV Backend Docker CICD
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - develop
+  push:
+    branches:
+      - develop
 
 jobs:
   deploy:
@@ -26,25 +26,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
-      - name: Download .env from S3
-        run: |
-          aws s3 cp s3://${{ secrets.DEV_S3_INFRA_NAME }}/terraform.tfvars.enc terraform.tfvars.enc
-          openssl aes-256-cbc -d -salt -pbkdf2 -in terraform.tfvars.enc -out .env -k ${{ secrets.DEV_TFVARS_ENC_PW }}
-
-      - name: Load selected env variables into GitHub Environment
-        run: |
-          source .env
-
-          echo "::add-mask::$AWS_DEFAULT_REGION"
-          echo "::add-mask::$ECR_REGISTRY"
-          echo "::add-mask::$S3_BUCKET_INFRA"
-          echo "::add-mask::$SENTRY_AUTH_TOKEN"
-
-          echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" >> $GITHUB_ENV
-          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_ENV
-          echo "S3_BUCKET_INFRA=$S3_BUCKET_INFRA" >> $GITHUB_ENV
-          echo "SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN" >> $GITHUB_ENV
-          
       - name: Set timestamp-based path (Asia/Seoul)
         run: |
           TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
@@ -53,7 +34,7 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registry: ${{ env.ECR_REGISTRY }}
+          registry: ${{ secrets.ECR_REGISTRY }}
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -66,49 +47,20 @@ jobs:
       - name: Build Docker image using Dockerfile.dev
         run: |
           docker buildx build \
-            --cache-from=type=registry,ref=${{ env.ECR_REGISTRY }}/backend:cache \
-            --cache-to=type=registry,ref=${{ env.ECR_REGISTRY }}/backend:cache,mode=max \
+            --cache-from=type=registry,ref=${{ secrets.ECR_REGISTRY }}/backend:cache \
+            --cache-to=type=registry,ref=${{ secrets.ECR_REGISTRY }}/backend:cache,mode=max \
             --push \
             -f Dockerfile.dev \
-            --build-arg SENTRY_AUTH_TOKEN=${{ env.SENTRY_AUTH_TOKEN }} \
-            -t ${{ env.ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }} .
+            --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} \
+            -t ${{ secrets.ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }} \
+            -t ${{ secrets.ECR_REGISTRY }}/backend:latest \
+            .
 
-      - name: Get instance ID from tfstate
+      - name: Trigger Deploy Webhook
         run: |
-          aws s3 cp $S3_BUCKET_INFRA/tfstate/terraform_docker.tfstate terraform.tfstate
-          INSTANCE_A_ID=$(jq -r \
-            '.resources[] | select(.type == "aws_instance") | .instances[] |
-            select(.attributes.tags.Name == "ec2-careerbee-dev-azone-service") | .attributes.id' terraform.tfstate)
-          INSTANCE_C_ID=$(jq -r \
-            '.resources[] | select(.type == "aws_instance") | .instances[] |
-            select(.attributes.tags.Name == "ec2-careerbee-dev-czone-service") | .attributes.id' terraform.tfstate)
-          echo "INSTANCE_A_ID=$INSTANCE_A_ID" >> $GITHUB_ENV
-          echo "INSTANCE_C_ID=$INSTANCE_C_ID" >> $GITHUB_ENV
-
-      - name: Deploy to instance A (azone)
-        env:
-          DEPLOY_TAG: ${{ env.DEPLOY_TAG }}
-          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
-          INSTANCE_ID: ${{ env.INSTANCE_A_ID }}
-          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }}
-        run: |
-          CMD_JSON=$(jq -nc \
-            --arg tag "$DEPLOY_TAG" \
-            --arg repo "$ECR_REGISTRY" \
-            '[
-              "docker stop backend || true",
-              "docker rm backend || true",
-              "docker pull \($repo)/backend:\($tag)",
-              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" \($repo)/backend:\($tag)"
-            ]'
-          )
-
-          aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploy backend to A zone" \
-            --instance-ids "$INSTANCE_ID" \
-            --region "$AWS_REGION" \
-            --parameters "commands=$CMD_JSON"
+          curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Content-Type: application/json" \
+            -d '{"fe_tag": "latest", "be_tag": "latest"}'
 
       - name: Health check and mark result
         id: health
@@ -118,79 +70,14 @@ jobs:
             echo "Status: $STATUS"
             if [ "$STATUS" == "200" ]; then
               echo "✅ Health check passed"
-              echo "result=success" >> $GITHUB_OUTPUT
+              echo "DISCORD_MSG=success" >> $GITHUB_ENV
               exit 0
             fi
             sleep 10
           done
           echo "❌ Health check failed"
-          echo "result=failure" >> $GITHUB_OUTPUT
+          echo "DISCORD_MSG=failure" >> $GITHUB_ENV
           exit 0
-
-      - name: Deploy to instance C (czone)
-        if: steps.health.outputs.result == 'success'
-        env:
-          DEPLOY_TAG: ${{ env.DEPLOY_TAG }}
-          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
-          INSTANCE_ID: ${{ env.INSTANCE_C_ID }}
-          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }}
-        run: |
-          CMD_JSON=$(jq -nc \
-            --arg tag "$DEPLOY_TAG" \
-            --arg repo "$ECR_REGISTRY" \
-            '[
-              "docker stop backend || true",
-              "docker rm backend || true",
-              "docker pull \($repo)/backend:\($tag)",
-              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" \($repo)/backend:\($tag)"
-            ]'
-          )
-
-          aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploy backend to C zone" \
-            --instance-ids "$INSTANCE_ID" \
-            --region "$AWS_REGION" \
-            --parameters "commands=$CMD_JSON"
-
-      - name: Rollback A instance to previous version
-        if: steps.health.outputs.result == 'failure'
-        env:
-          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }}
-          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
-          INSTANCE_ID: ${{ env.INSTANCE_A_ID }}
-        run: |
-          PREV_TAG=$(aws ecr describe-images \
-            --repository-name backend \
-            --region "$AWS_REGION" \
-            --query 'sort_by(imageDetails,& imagePushedAt)[-2].imageTags[0]' \
-            --output text)
-
-          CMD_JSON=$(jq -nc \
-            --arg tag "$PREV_TAG" \
-            --arg repo "$ECR_REGISTRY" \
-            '[
-              "docker stop backend || true",
-              "docker rm backend || true",
-              "docker pull \($repo)/backend:\($tag)",
-              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" \($repo)/backend:\($tag)"
-            ]'
-          )
-
-          aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --comment "Rollback backend A zone" \
-            --instance-ids "$INSTANCE_ID" \
-            --region "$AWS_REGION" \
-            --parameters "commands=$CMD_JSON"
-
-      - name: Set Discord message flag
-        if: steps.health.outputs.result == 'success'
-        run: echo "DISCORD_MSG=success" >> $GITHUB_ENV
-
-      - name: Set Discord message flag (rollback)
-        if: steps.health.outputs.result == 'failure'
-        run: echo "DISCORD_MSG=failure" >> $GITHUB_ENV            
 
       - name: Notify Discord
         if: always()
