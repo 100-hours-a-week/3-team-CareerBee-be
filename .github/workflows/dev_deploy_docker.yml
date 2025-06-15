@@ -85,19 +85,29 @@ jobs:
           echo "INSTANCE_C_ID=$INSTANCE_C_ID" >> $GITHUB_ENV
 
       - name: Deploy to instance A (azone)
+        env:
+          DEPLOY_TAG: ${{ env.DEPLOY_TAG }}
+          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
+          INSTANCE_ID: ${{ env.INSTANCE_A_ID }}
+          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }}
         run: |
+          CMD_JSON=$(jq -nc \
+            --arg tag "$DEPLOY_TAG" \
+            --arg repo "$ECR_REGISTRY" \
+            '[
+              "docker stop backend || true",
+              "docker rm backend || true",
+              "docker pull \($repo)/backend:\($tag)",
+              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" \($repo)/backend:\($tag)"
+            ]'
+          )
+
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy backend to A zone" \
-            --instance-ids "${{ env.INSTANCE_A_ID }}" \
-            --region ${{ env.AWS_DEFAULT_REGION }} \
-            --parameters commands='[
-              "echo \"${{ secrets.DEV_ENV }}\" > /home/ubuntu/.env",
-              "docker stop backend || true",
-              "docker rm backend || true",
-              "docker pull ${{ env.ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }}",
-              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" ${{ env.ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }}"
-            ]'
+            --instance-ids "$INSTANCE_ID" \
+            --region "$AWS_REGION" \
+            --parameters "commands=$CMD_JSON"
 
       - name: Health check and mark result
         id: health
@@ -118,41 +128,60 @@ jobs:
 
       - name: Deploy to instance C (czone)
         if: steps.health.outputs.result == 'success'
+        env:
+          DEPLOY_TAG: ${{ env.DEPLOY_TAG }}
+          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
+          INSTANCE_ID: ${{ env.INSTANCE_C_ID }}
+          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }}
         run: |
+          CMD_JSON=$(jq -nc \
+            --arg tag "$DEPLOY_TAG" \
+            --arg repo "$ECR_REGISTRY" \
+            '[
+              "docker stop backend || true",
+              "docker rm backend || true",
+              "docker pull \($repo)/backend:\($tag)",
+              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" \($repo)/backend:\($tag)"
+            ]'
+          )
+
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy backend to C zone" \
-            --instance-ids "${{ env.INSTANCE_C_ID }}" \
-            --region ${{ env.AWS_DEFAULT_REGION }} \
-            --parameters commands='[
-              "echo \"${{ secrets.DEV_ENV }}\" > /home/ubuntu/.env",
-              "docker stop backend || true",
-              "docker rm backend || true",
-              "docker pull ${{ env.ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }}",
-              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" ${{ env.ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }}"
-            ]'
+            --instance-ids "$INSTANCE_ID" \
+            --region "$AWS_REGION" \
+            --parameters "commands=$CMD_JSON"
 
       - name: Rollback A instance to previous version
         if: steps.health.outputs.result == 'failure'
+        env:
+          AWS_REGION: ${{ env.AWS_DEFAULT_REGION }}
+          ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
+          INSTANCE_ID: ${{ env.INSTANCE_A_ID }}
         run: |
           PREV_TAG=$(aws ecr describe-images \
             --repository-name backend \
-            --region ${{ env.AWS_DEFAULT_REGION }} \
+            --region "$AWS_REGION" \
             --query 'sort_by(imageDetails,& imagePushedAt)[-2].imageTags[0]' \
             --output text)
+
+          CMD_JSON=$(jq -nc \
+            --arg tag "$PREV_TAG" \
+            --arg repo "$ECR_REGISTRY" \
+            '[
+              "docker stop backend || true",
+              "docker rm backend || true",
+              "docker pull \($repo)/backend:\($tag)",
+              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" \($repo)/backend:\($tag)"
+            ]'
+          )
 
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --comment "Rollback backend A zone" \
-            --instance-ids "${{ env.INSTANCE_A_ID }}" \
-            --region ${{ env.AWS_DEFAULT_REGION }} \
-            --parameters commands='[
-              "echo \"${{ secrets.DEV_ENV }}\" > /home/ubuntu/.env",
-              "docker stop backend || true",
-              "docker rm backend || true",
-              "docker pull ${{ env.ECR_REGISTRY }}/backend:'"$PREV_TAG"'"",
-              "docker run -d --name backend -p 8080:8080 --env-file /home/ubuntu/.env -v /home/ubuntu/scouter:/scouter -e JAVA_TOOL_OPTIONS=\\\"-Dspring.profiles.active=dev -javaagent:/scouter/agent.java/scouter.agent.jar -Dscouter.config=/scouter/agent.java/conf/scouter.conf -Dobj_name=careerbee-api --add-opens java.base/java.lang=ALL-UNNAMED --add-exports java.base/sun.net=ALL-UNNAMED -Djdk.attach.allowAttachSelf=true\\\" ${{ env.ECR_REGISTRY }}/backend:'"$PREV_TAG"'""
-            ]'
+            --instance-ids "$INSTANCE_ID" \
+            --region "$AWS_REGION" \
+            --parameters "commands=$CMD_JSON"
 
       - name: Set Discord message flag
         if: steps.health.outputs.result == 'success'
