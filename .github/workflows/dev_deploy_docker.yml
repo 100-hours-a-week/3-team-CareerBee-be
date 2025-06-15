@@ -34,7 +34,7 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registry: ${{ secrets.ECR_REGISTRY }}
+          registry: ${{ secrets.DEV_ECR_REGISTRY }}
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -47,13 +47,13 @@ jobs:
       - name: Build Docker image using Dockerfile.dev
         run: |
           docker buildx build \
-            --cache-from=type=registry,ref=${{ secrets.ECR_REGISTRY }}/backend:cache \
-            --cache-to=type=registry,ref=${{ secrets.ECR_REGISTRY }}/backend:cache,mode=max \
+            --cache-from=type=registry,ref=${{ secrets.DEV_ECR_REGISTRY }}/backend:cache \
+            --cache-to=type=registry,ref=${{ secrets.DEV_ECR_REGISTRY }}/backend:cache,mode=max \
             --push \
             -f Dockerfile.dev \
             --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} \
-            -t ${{ secrets.ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }} \
-            -t ${{ secrets.ECR_REGISTRY }}/backend:latest \
+            -t ${{ secrets.DEV_ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }} \
+            -t ${{ secrets.DEV_ECR_REGISTRY }}/backend:latest \
             .
 
       - name: Trigger Deploy Webhook

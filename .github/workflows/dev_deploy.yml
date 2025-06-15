@@ -2,9 +2,9 @@ name: Deploy Spring Boot to S3 (Dev)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - develop
+  # push:
+  #   branches:
+  #     - develop
 
 jobs:
   Deploy-DEV:
