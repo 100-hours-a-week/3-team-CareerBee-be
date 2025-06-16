@@ -85,8 +85,8 @@ class NotificationControllerTest {
                 .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.message")
                 .value("알림 조회에 성공하였습니다."))
-            .andExpect(jsonPath("$.data.notifications.length()").value(5))
-            .andExpect(jsonPath("$.data.hasNext").value(true));
+            .andExpect(jsonPath("$.data.notifications.length()").value(6))
+            .andExpect(jsonPath("$.data.hasNext").value(false));
     }
 
     @Test
