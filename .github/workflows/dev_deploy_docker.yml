@@ -70,7 +70,7 @@ jobs:
         run: |
           curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
             -H "Content-Type: application/json" \
-            -d '{"fe_tag": "latest", "be_tag": "latest"}'
+            -d '{"frontend_tag": "latest", "backend_tag": "latest", "ai_server_tag": "latest"}'
 
       - name: Health check and mark result
         id: health
