@@ -5,6 +5,9 @@ COPY . .
 
 RUN chmod +x ./gradlew
 
+ARG SENTRY_AUTH_TOKEN
+ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
+
 RUN ./gradlew build -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine
