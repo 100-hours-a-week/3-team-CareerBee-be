@@ -90,6 +90,7 @@ public class AuthServiceImpl implements AuthService {
 
             throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_EXPIRED);
         }
+        log.info("쿠키안에 들어있는 RT : {}", rtInCookie);
 
         Member memberRef = memberQueryService.getReferenceById(tokenClaims.id());
 
