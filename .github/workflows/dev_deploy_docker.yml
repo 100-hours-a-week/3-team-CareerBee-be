@@ -1,0 +1,171 @@
+name: DEV Backend Docker CICD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      COMMIT_HASH: ${{ github.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: develop
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.DEV_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEV_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Set timestamp-based path (Asia/Seoul)
+        run: |
+          TIMESTAMP=$(TZ='Asia/Seoul' date +%Y-%m-%d_%H_%M_%S)
+          echo "DEPLOY_TAG=${TIMESTAMP}_${COMMIT_HASH}" >> $GITHUB_ENV
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry: ${{ secrets.DEV_ECR_REGISTRY }}
+      
+      - name: Get current tag for latest (for rollback)
+        run: |
+          ROLLBACK_TAG=$(aws ecr describe-images \
+            --repository-name frontend \
+            --region ap-northeast-2 \
+            --query "imageDetails[?imageTags!=null && contains(imageTags, 'latest')].imageTags[]" \
+            --output text | tr '\t' '\n' | grep -v '^latest$')
+          echo "🪃 Rollback tag: $ROLLBACK_TAG"
+          echo "ROLLBACK_TAG=$ROLLBACK_TAG" >> $GITHUB_ENV
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with: 
+          driver: docker-container
+          driver-opts: image=moby/buildkit:master,network=host
+          buildkitd-flags: --debug
+          use: true
+
+      - name: Build Docker image using Dockerfile.dev
+        run: |
+          docker buildx build \
+            --cache-from=type=registry,ref=${{ secrets.DEV_ECR_REGISTRY }}/backend:cache \
+            --cache-to=type=registry,ref=${{ secrets.DEV_ECR_REGISTRY }}/backend:cache,mode=max \
+            --push \
+            -f Dockerfile.dev \
+            --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} \
+            -t ${{ secrets.DEV_ECR_REGISTRY }}/backend:${{ env.DEPLOY_TAG }} \
+            -t ${{ secrets.DEV_ECR_REGISTRY }}/backend:latest \
+            .
+
+      - name: Health Check Webhook
+        run: |
+          set -e
+          if [[ "$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" https://webhook.dev.careerbee.co.kr/health-check)" != "200" ]]; then
+            echo "❌ Health check failed"
+            echo "DISCORD_MSG=webhook_failure" >> $GITHUB_ENV
+            exit 0
+          fi
+
+      - name: Trigger Deploy Webhook
+        if: env.DISCORD_MSG != 'webhook_failure'
+        run: |
+          curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Content-Type: application/json" \
+            -d '{"backend_tag": "latest"}'
+
+      - name: Health check and mark result
+        if: env.DISCORD_MSG != 'webhook_failure'
+        run: |
+          for i in $(seq 1 5); do
+            STATUS=$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" "https://api.dev.careerbee.co.kr/health-check")
+            echo "Status: $STATUS"
+            if [ "$STATUS" == "200" ]; then
+              echo "✅ Health check passed"
+              echo "DISCORD_MSG=success" >> $GITHUB_ENV
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "❌ Health check failed"
+          echo "DISCORD_MSG=failure" >> $GITHUB_ENV
+          exit 0
+
+      - name: Rollback
+        if: ${{ env.DISCORD_MSG == 'failure' && env.ROLLBACK_TAG != '' }}
+        run: |
+          echo "⚠️ 롤백 시작: 태그 → ${{ env.ROLLBACK_TAG }}"
+          curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Content-Type: application/json" \
+            -d '{"backend_tag": "${{ env.ROLLBACK_TAG }}"}'
+
+      - name: Notify Discord
+        if: always()
+        run: |
+          TITLE=""
+          DESC=""
+
+          if [ "${{ env.DISCORD_MSG }}" = "success" ]; then
+            TITLE="✅ 개발 환경에 백엔드 배포 성공"
+            DESC="모두 배포에 성공했습니다."
+            COLOR=65280
+          elif [ "${{ env.DISCORD_MSG }}" = "failure" ]; then
+            TITLE="❌ 개발 환경에 백엔드 배포 실패"
+            DESC="배포에 실패하여 롤백하였습니다."
+            COLOR=16711680
+          elif [ "${{ env.DISCORD_MSG }}" = "rollback_failure" ]; then
+            TITLE="❌ 개발 환경에 백엔드 배포 & 롤백 실패"
+            DESC="롤백할 태그가 없어 배포와 롤백 모두 실패하였습니다."
+            COLOR=16711680
+          elif [ "${{ env.DISCORD_MSG }}" = "webhook_failure" ]; then
+            TITLE="⚠️ 개발 환경에 백엔드 배포 중단 - 웹훅 접근 실패"
+            DESC="웹훅 헬스체크 실패로 인해 배포가 중단되었습니다."
+            COLOR=16753920
+          else
+            TITLE="⚠️ 개발 환경에 백엔드 배포 상태 알 수 없음"
+            DESC="워크플로 로그를 확인해 주세요."
+            COLOR=16753920
+          fi
+
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          REPO="${{ github.repository }}"
+          BRANCH="${{ github.ref_name }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TIMESTAMP="${{ github.event.head_commit.timestamp }}"
+
+          DESCRIPTION="**Repository:** \`${REPO}\`
+          **Branch:** \`${BRANCH}\`
+          **Commit:** \`${COMMIT_MSG}\`
+          
+          ${DESC}
+          [🔗 실행 로그 보기](${RUN_URL})"
+
+          jq -n \
+            --arg title "$TITLE" \
+            --arg desc "$DESCRIPTION" \
+            --arg timestamp "$TIMESTAMP" \
+            --argjson color "$COLOR" \
+            '{
+              "embeds": [
+                {
+                  "title": $title,
+                  "description": $desc,
+                  "color": $color,
+                  "footer": { "text": "GitHub Actions - DEV Deploy(BE)" },
+                  "timestamp": $timestamp
+                }
+              ]
+            }' > payload.json
+
+          curl -H "Content-Type: application/json" \
+              -X POST \
+              -d @payload.json \
+              ${{ secrets.DISCORD_WEBHOOK_URL }}

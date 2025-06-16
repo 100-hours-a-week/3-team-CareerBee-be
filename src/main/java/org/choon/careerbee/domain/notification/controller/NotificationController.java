@@ -29,7 +29,7 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<CommonResponse<FetchNotiResp>> fetchMemberNotifications(
         @RequestParam(name = "cursor", required = false) Long cursor,
-        @RequestParam(name = "size", defaultValue = "5") int size,
+        @RequestParam(name = "size", defaultValue = "15") int size,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
         FetchNotiResp response = queryService.fetchMemberNotifications(

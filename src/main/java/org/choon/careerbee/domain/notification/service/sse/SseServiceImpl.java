@@ -13,6 +13,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class SseServiceImpl implements SseService {
 
     private static final String NOTIFICATION = "notification";
+    private static final String PING = "ping";
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     @Override
@@ -74,4 +75,21 @@ public class SseServiceImpl implements SseService {
         });
 
     }
+
+    @Override
+    public void sendPingToAll() {
+        log.info("[BROADCAST] ping 요청 시작", emitters.size());
+
+        emitters.forEach((memberId, emitter) -> {
+            try {
+                emitter.send(SseEmitter.event().name(PING).data("keep-alive"));
+                log.info("[SSE Ping Success] {}에게 전송 성공", memberId);
+            } catch (IOException e) {
+                emitters.remove(memberId);
+                log.warn("[SSE Fail] {}에게 Ping 전송 실패, emitter 제거", memberId);
+            }
+        });
+    }
+
+
 }

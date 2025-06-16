@@ -1,8 +1,10 @@
 name: Deploy Spring Boot to S3 (Dev)
 
 on:
-  push:
-    branches: [ develop ]
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - develop
 
 jobs:
   Deploy-DEV:
@@ -136,6 +138,7 @@ jobs:
               -DAI_BASE_URL="${AI_BASE_URL}" \
               --add-opens java.base/java.lang=ALL-UNNAMED \
               --add-exports java.base/sun.net=ALL-UNNAMED \
+              -Duser.timezone=Asia/Seoul \
               -Djdk.attach.allowAttachSelf=true \
               -javaagent:/home/ubuntu/scouter/agent.java/scouter.agent.jar \
               -Dscouter.config=/home/ubuntu/scouter/agent.java/conf/scouter.conf \
