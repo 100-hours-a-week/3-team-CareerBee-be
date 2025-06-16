@@ -61,7 +61,7 @@ jobs:
           set -e
           if [[ "$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" https://webhook.dev.careerbee.co.kr/health-check)" != "200" ]]; then
             echo "❌ Health check failed"
-            echo "DISCORD_MSG=failure" >> $GITHUB_ENV
+            echo "DISCORD_MSG=webhook_failure" >> $GITHUB_ENV
             exit 0
           fi
 
@@ -101,8 +101,12 @@ jobs:
             COLOR=65280
           elif [ "${{ env.DISCORD_MSG }}" = "failure" ]; then
             TITLE="❌ 개발 환경에 백엔드 배포 실패"
-            DESC="배포 실패로 롤백하였습니다."
+            DESC="실패에 실패하였습니다."
             COLOR=16711680
+          elif [ "${{ env.DISCORD_MSG }}" = "webhook_failure" ]; then
+            TITLE="⚠️ 배포 중단 - 웹훅 접근 실패"
+            DESC="웹훅 헬스체크 실패로 인해 배포가 중단되었습니다."
+            COLOR=16753920
           else
             TITLE="⚠️ 배포 상태 알 수 없음"
             DESC="워크플로 로그를 확인해 주세요."
