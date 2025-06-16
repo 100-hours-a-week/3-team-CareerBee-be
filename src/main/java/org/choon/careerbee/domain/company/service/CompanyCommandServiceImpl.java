@@ -1,14 +1,19 @@
 package org.choon.careerbee.domain.company.service;
 
 import io.sentry.Sentry;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.api.CompanyApiClient;
+import org.choon.careerbee.domain.company.dto.response.CompanyActiveCount;
 import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.company.entity.recruitment.Recruitment;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
+import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
@@ -24,6 +29,9 @@ import org.springframework.web.client.RestClientException;
 @Transactional
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
+
+    private final RecruitmentRepository recruitmentRepository;
+
     private final CompanyApiClient companyApiClient;
 
     private final WishCompanyRepository wishCompanyRepository;
@@ -83,6 +91,18 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     public void recruitingRecover(RestClientException ex, String keyword) {
         log.error("[Saramin API No React] {}에 대한 미응담", keyword);
         Sentry.captureException(ex);
+    }
+
+    @Override
+    public void cleanExpiredRecruitments(LocalDateTime now) {
+        List<Recruitment> expiredBefore = recruitmentRepository.findExpiredBefore(now);
+        expiredBefore.forEach(r -> r.expired(now));
+
+        List<CompanyActiveCount> activeList = recruitmentRepository.countActiveByCompany();
+        activeList.forEach(c -> {
+            Company company = companyQueryService.getRefById(c.companyId());
+            company.closeRecruitingIfNoActivePostings(c.recruitmentCount());
+        });
     }
 
 }
