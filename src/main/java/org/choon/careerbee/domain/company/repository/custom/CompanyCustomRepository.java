@@ -9,7 +9,6 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Co
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 
 public interface CompanyCustomRepository {
 
@@ -25,4 +24,5 @@ public interface CompanyCustomRepository {
     CompanyMarkerInfo fetchCompanyMarkerInfo(Long companyId);
 
     List<Company> findBySaraminNameIn(List<String> companyNames);
+
 }
