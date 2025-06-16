@@ -9,4 +9,6 @@ public interface SseService {
     void sendTo(Long memberId);
 
     void sendAll();
+
+    void sendPingToAll();
 }
