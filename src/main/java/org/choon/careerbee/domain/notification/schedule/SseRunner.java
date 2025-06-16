@@ -11,7 +11,7 @@ public class SseRunner {
 
     private final SseService sseService;
 
-    @Scheduled(fixedRate = 30_000)
+    @Scheduled(fixedRate = 3000)
     public void sendPing() {
         sseService.sendPingToAll();
     }
