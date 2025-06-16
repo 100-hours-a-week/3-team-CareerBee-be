@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.competition.service.command;
 
+import java.time.LocalDate;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 
 public interface CompetitionCommandService {
@@ -8,4 +9,6 @@ public interface CompetitionCommandService {
 
     void submitCompetitionResult(Long competitionId, CompetitionResultSubmitReq submitReq,
         Long accessMemberId);
+
+    void rewardToWeekRanker(LocalDate now);
 }
