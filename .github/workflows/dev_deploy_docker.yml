@@ -36,6 +36,16 @@ jobs:
         with:
           registry: ${{ secrets.DEV_ECR_REGISTRY }}
       
+      - name: Get current tag for latest (for rollback)
+        run: |
+          ROLLBACK_TAG=$(aws ecr describe-images \
+            --repository-name frontend \
+            --region ap-northeast-2 \
+            --query "imageDetails[?imageTags!=null && contains(imageTags, 'latest')].imageTags[]" \
+            --output text | tr '\t' '\n' | grep -v '^latest$')
+          echo "🪃 Rollback tag: $ROLLBACK_TAG"
+          echo "ROLLBACK_TAG=$ROLLBACK_TAG" >> $GITHUB_ENV
+          
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with: 
@@ -66,14 +76,14 @@ jobs:
           fi
 
       - name: Trigger Deploy Webhook
-        if: env.DISCORD_MSG != 'failure'
+        if: env.DISCORD_MSG != 'webhook_failure'
         run: |
           curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
             -H "Content-Type: application/json" \
-            -d '{"frontend_tag": "latest", "backend_tag": "latest", "ai_server_tag": "latest"}'
+            -d '{"backend_tag": "latest"}'
 
       - name: Health check and mark result
-        id: health
+        if: env.DISCORD_MSG != 'webhook_failure'
         run: |
           for i in $(seq 1 5); do
             STATUS=$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" "https://api.dev.careerbee.co.kr/health-check")
@@ -89,6 +99,14 @@ jobs:
           echo "DISCORD_MSG=failure" >> $GITHUB_ENV
           exit 0
 
+      - name: Rollback
+        if: ${{ env.DISCORD_MSG == 'failure' && env.ROLLBACK_TAG != '' }}
+        run: |
+          echo "⚠️ 롤백 시작: 태그 → ${{ env.ROLLBACK_TAG }}"
+          curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Content-Type: application/json" \
+            -d '{"backend_tag": "${{ env.ROLLBACK_TAG }}"}'
+
       - name: Notify Discord
         if: always()
         run: |
@@ -101,7 +119,11 @@ jobs:
             COLOR=65280
           elif [ "${{ env.DISCORD_MSG }}" = "failure" ]; then
             TITLE="❌ 개발 환경에 백엔드 배포 실패"
-            DESC="실패에 실패하였습니다."
+            DESC="배포에 실패하여 롤백하였습니다."
+            COLOR=16711680
+          elif [ "${{ env.DISCORD_MSG }}" = "rollback_failure" ]; then
+            TITLE="❌ 개발 환경에 백엔드 배포 & 롤백 실패"
+            DESC="롤백할 태그가 없어 배포와 롤백 모두 실패하였습니다."
             COLOR=16711680
           elif [ "${{ env.DISCORD_MSG }}" = "webhook_failure" ]; then
             TITLE="⚠️ 배포 중단 - 웹훅 접근 실패"
