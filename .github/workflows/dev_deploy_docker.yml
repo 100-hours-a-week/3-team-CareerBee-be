@@ -59,7 +59,7 @@ jobs:
       - name: Health Check Webhook
         run: |
           set -e
-          if ! curl -sf https://webhook.dev.careerbee.co.kr/health-check; then
+          if [[ "$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" https://webhook.dev.careerbee.co.kr/health-check)" != "200" ]]; then
             echo "❌ Health check failed"
             echo "DISCORD_MSG=failure" >> $GITHUB_ENV
             exit 0
