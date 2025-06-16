@@ -15,8 +15,9 @@ public interface CompetitionSummaryCustomRepository {
 
     MemberRankingResp fetchMemberRankingById(Long accessMemberId, LocalDate today);
 
-    List<CompetitionSummary> fetchSummaryByPeriodAndType(SummaryPeriod summaryPeriod,
-        SummaryType summaryType);
+    List<CompetitionSummary> fetchSummaryByPeriodAndType(
+        SummaryPeriod summaryPeriod, SummaryType summaryType
+    );
 
-    List<Top10Info> fetchTop10Ranker(SummaryPeriod summaryPeriod);
+    List<Top10Info> fetchTop10Ranker(SummaryPeriod summaryPeriod, SummaryType summaryType);
 }

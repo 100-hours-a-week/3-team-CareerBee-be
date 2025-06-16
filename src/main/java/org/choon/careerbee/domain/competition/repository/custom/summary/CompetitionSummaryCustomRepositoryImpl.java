@@ -140,7 +140,9 @@ public class CompetitionSummaryCustomRepositoryImpl implements
     }
 
     @Override
-    public List<Top10Info> fetchTop10Ranker(SummaryPeriod summaryPeriod) {
+    public List<Top10Info> fetchTop10Ranker(
+        SummaryPeriod summaryPeriod, SummaryType summaryType
+    ) {
         return queryFactory
             .select(Projections.constructor(
                 Top10Info.class,
@@ -150,7 +152,8 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .from(competitionSummary)
             .where(
                 competitionSummary.periodStart.eq(summaryPeriod.startAt()),
-                competitionSummary.periodEnd.eq(summaryPeriod.endAt())
+                competitionSummary.periodEnd.eq(summaryPeriod.endAt()),
+                competitionSummary.type.eq(summaryType)
             )
             .limit(10)
             .fetch();

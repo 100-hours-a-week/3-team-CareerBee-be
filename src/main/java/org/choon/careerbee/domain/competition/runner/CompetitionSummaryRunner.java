@@ -41,7 +41,20 @@ public class CompetitionSummaryRunner {
         LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
         log.info("[{}] 주간 랭커에게 포인트 정산 시작!", now);
 
-        commandService.rewardToWeekRanker(now);
+        commandService.rewardToWeekOrMonthRanker(
+            DateUtil.getPeriod(now, SummaryType.WEEK), SummaryType.WEEK
+        );
         log.info("[{}] 주간 랭커에게 포인트 정산 마감!", now);
+    }
+
+    @Scheduled(cron = "0 0 23 L * ?", zone = "Asia/Seoul")
+    public void rewardToMonthRanker() {
+        LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        log.info("[{}] 월간 랭커에게 포인트 정산 시작!", now);
+
+        commandService.rewardToWeekOrMonthRanker(
+            DateUtil.getPeriod(now, SummaryType.MONTH), SummaryType.MONTH
+        );
+        log.info("[{}] 월간 랭커에게 포인트 정산 마감!", now);
     }
 }
