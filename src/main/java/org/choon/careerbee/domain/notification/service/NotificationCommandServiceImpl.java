@@ -7,8 +7,10 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.notification.dto.request.ReadNotificationReq;
 import org.choon.careerbee.domain.notification.entity.Notification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
+@Transactional
 @Service
 public class NotificationCommandServiceImpl implements NotificationCommandService {
 
