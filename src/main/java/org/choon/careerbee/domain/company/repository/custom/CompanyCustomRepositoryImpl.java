@@ -8,12 +8,10 @@ import static org.choon.careerbee.domain.company.entity.techStack.QCompanyTechSt
 import static org.choon.careerbee.domain.company.entity.techStack.QTechStack.techStack;
 import static org.choon.careerbee.domain.company.entity.wish.QWishCompany.wishCompany;
 
-import com.querydsl.core.annotations.QueryProjection;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +28,8 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
-import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
+import org.choon.careerbee.domain.company.entity.enums.BusinessType;
+import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -58,7 +57,9 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             ))
             .from(company)
             .where(
-                inDistance(companyQueryAddressInfo.toWKTPoint(), companyQueryCond.radius())
+                inDistance(companyQueryAddressInfo.toWKTPoint(), companyQueryCond.radius()),
+                recruitingStatusEq(companyQueryCond.recruitingStatus()),
+                businessTypeEq(companyQueryCond.type())
             )
             .fetch();
 
@@ -251,4 +252,21 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             point, company.geoPoint, radius)
             : null;
     }
+
+    private BooleanExpression recruitingStatusEq(RecruitingStatus recruitingStatus) {
+        if (recruitingStatus == null) {
+            return null;
+        }
+
+        return company.recruitingStatus.eq(recruitingStatus);
+    }
+
+    private BooleanExpression businessTypeEq(BusinessType businessType) {
+        if (businessType == null) {
+            return null;
+        }
+
+        return company.businessType.eq(businessType);
+    }
+
 }

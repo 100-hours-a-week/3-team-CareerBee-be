@@ -41,7 +41,7 @@ public class CompanyController {
         @Parameter(description = "조회 기준이 되는 주소 정보 (위도, 경도, 반경 등)")
         @ModelAttribute CompanyQueryAddressInfo companyQueryAddressInfo,
 
-        @Parameter(description = "기업 필터링 조건 (조회 반경)")
+        @Parameter(description = "기업 필터링 조건 (조회 반경, 채용중, 회사성격)")
         @ModelAttribute CompanyQueryCond companyQueryCond
     ) {
         CompanyRangeSearchResp response = queryService.fetchCompaniesByDistance(

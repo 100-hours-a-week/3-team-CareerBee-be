@@ -10,6 +10,8 @@ public interface OAuthInfoResponse {
      */
     String getEmail();
 
+    String getNickname();
+
     OAuthProvider getOauthProvider();
 
     Long getProviderId();

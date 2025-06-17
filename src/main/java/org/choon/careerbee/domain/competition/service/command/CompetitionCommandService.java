@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.competition.service;
+package org.choon.careerbee.domain.competition.service.command;
 
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 

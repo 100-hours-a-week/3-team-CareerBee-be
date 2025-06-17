@@ -144,6 +144,13 @@ public class Member extends BaseEntity {
         this.additionalExperiences = additionalExperiences;
     }
 
+    public static Member ofId(Long memberId) {
+        Member member = new Member();
+        member.id = memberId;
+
+        return member;
+    }
+
     public void recalcProgress(ResumeProgressPolicy policy) {
         this.progress = policy.calculate(this);
     }

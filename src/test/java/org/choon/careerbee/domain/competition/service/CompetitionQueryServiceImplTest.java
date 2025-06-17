@@ -26,6 +26,7 @@ import org.choon.careerbee.domain.competition.repository.CompetitionParticipantR
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
+import org.choon.careerbee.domain.competition.service.query.CompetitionQueryServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -311,7 +312,7 @@ class CompetitionQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("실시간 내 랭킹 조회 - 데이터 없을 경우 예외 발생")
+    @DisplayName("실시간 내 랭킹 조회 - 데이터 없을 경우 null 반환")
     void fetchMemberLiveRanking_notFound_throwsException() {
         // given
         Long memberId = 456L;
@@ -321,10 +322,9 @@ class CompetitionQueryServiceImplTest {
             .thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() ->
-            competitionQueryService.fetchMemberLiveRanking(memberId, today)
-        ).isInstanceOf(CustomException.class)
-            .hasMessageContaining(CustomResponseStatus.RANKING_NOT_EXIST.getMessage());
+        MemberLiveRankingResp actualResp = competitionQueryService.fetchMemberLiveRanking(memberId,
+            today);
+        assertThat(actualResp).isNull();
 
         verify(competitionResultRepository).fetchMemberLiveRankingByDate(memberId, today);
     }
