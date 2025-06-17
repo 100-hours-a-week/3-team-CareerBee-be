@@ -72,7 +72,7 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     ) {
         return competitionResultRepository.fetchMemberLiveRankingByDate(
             accessMemberId, today
-        ).orElseThrow(() -> new CustomException(CustomResponseStatus.RANKING_NOT_EXIST));
+        ).orElse(null);
     }
 
     @Override
