@@ -67,7 +67,8 @@ class CompanyQueryServiceImplTest {
         CompanyQueryAddressInfo addressInfo = new CompanyQueryAddressInfo(
             37.40024430415324, 127.10698761648364
         );
-        CompanyQueryCond queryCond = new CompanyQueryCond(500);
+        CompanyQueryCond queryCond = new CompanyQueryCond(500, RecruitingStatus.CLOSED,
+            BusinessType.PLATFORM);
         CompanyRangeSearchResp expectedResponse = new CompanyRangeSearchResp(List.of(
             new CompanyMarkerInfo(1L, "test.url", BusinessType.PLATFORM, RecruitingStatus.ONGOING,
                 new LocationInfo(37.4, 127.3))

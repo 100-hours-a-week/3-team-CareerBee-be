@@ -20,6 +20,8 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Co
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.company.entity.enums.BusinessType;
+import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
@@ -68,7 +70,8 @@ class CompanyCustomRepositoryImplTest {
 
         CompanyQueryAddressInfo addressInfo = new CompanyQueryAddressInfo(37.40024430415324,
             127.10698761648364);
-        CompanyQueryCond cond = new CompanyQueryCond(1000);
+        CompanyQueryCond cond = new CompanyQueryCond(1000, RecruitingStatus.ONGOING,
+            BusinessType.PLATFORM);
 
         // when
         CompanyRangeSearchResp result = companyCustomRepository.fetchByDistanceAndCondition(
