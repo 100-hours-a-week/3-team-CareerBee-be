@@ -6,6 +6,7 @@ import static org.choon.careerbee.fixture.competition.CompetitionProblemFixture.
 import static org.choon.careerbee.fixture.competition.CompetitionResultFixture.createCompetitionResult;
 import static org.choon.careerbee.fixture.competition.CompetitionSummaryFixture.createSummary;
 import static org.choon.careerbee.fixture.competition.ProblemChoiceFixture.createProblemChoice;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -480,13 +481,12 @@ class CompetitionControllerTest {
     }
 
     @Test
-    @DisplayName("실시간 내 랭킹 조회 - 데이터가 존재하지 않을 경우 예외")
+    @DisplayName("실시간 내 랭킹 조회 - 데이터가 존재하지 않을 경우 data는 null")
     void fetchMemberLiveRanking_notFound() throws Exception {
         // given
         Member me = memberRepository.saveAndFlush(createMember("유저1", "user1@test.com", 1L));
         String token = "Bearer " + jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
 
-        // flush without any result data intentionally
         em.flush();
         em.clear();
 
@@ -495,11 +495,10 @@ class CompetitionControllerTest {
                 .header("Authorization", token)
                 .param("date", "2025-06-10")
                 .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound())
+            .andExpect(status().isOk())
             .andExpect(jsonPath("$.message")
-                .value(CustomResponseStatus.RANKING_NOT_EXIST.getMessage()))
-            .andExpect(jsonPath("$.httpStatusCode")
-                .value(CustomResponseStatus.RANKING_NOT_EXIST.getHttpStatusCode()));
+                .value("실시간 내 랭킹 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
     @Test
