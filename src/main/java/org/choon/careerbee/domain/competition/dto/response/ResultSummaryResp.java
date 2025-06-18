@@ -21,6 +21,6 @@ public record ResultSummaryResp(
     public Double correctRate() {
         return participationDays == 0
             ? 0
-            : (double) solvedSum / (participationDays * PROBLEM_CHOICE_COUNT);
+            : (double) solvedSum / (participationDays * PROBLEM_CHOICE_COUNT) * 100;
     }
 }
