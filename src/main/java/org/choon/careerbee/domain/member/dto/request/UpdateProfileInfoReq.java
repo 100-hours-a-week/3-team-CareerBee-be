@@ -1,7 +1,9 @@
 package org.choon.careerbee.domain.member.dto.request;
 
+import jakarta.annotation.Nullable;
+
 public record UpdateProfileInfoReq(
-    String newProfileUrl,
+    @Nullable String newProfileUrl,
     String newNickname
 ) {
 
