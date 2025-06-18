@@ -79,6 +79,7 @@ jobs:
         if: env.DISCORD_MSG != 'webhook_failure'
         run: |
           curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Authorization: Bearer ${{ env.WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"backend_tag": "latest"}'
 
@@ -104,6 +105,7 @@ jobs:
         run: |
           echo "⚠️ 롤백 시작: 태그 → ${{ env.ROLLBACK_TAG }}"
           curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Authorization: Bearer ${{ env.WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"backend_tag": "${{ env.ROLLBACK_TAG }}"}'
 
