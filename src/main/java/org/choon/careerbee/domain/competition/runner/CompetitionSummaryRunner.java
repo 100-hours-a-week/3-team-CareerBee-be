@@ -20,7 +20,7 @@ public class CompetitionSummaryRunner {
 
     //    @Scheduled(cron = "0 0 14 * * *", zone = "Asia/Seoul")
     // 오후 3시 12분(15:12)에 실행
-    @Scheduled(cron = "0 55 15 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 16 13 * * *", zone = "Asia/Seoul")
     public void runCompetitionSummaryJob() {
         LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
         log.info("[{}] 대회 결과 데이터 집계 시작!", now);
