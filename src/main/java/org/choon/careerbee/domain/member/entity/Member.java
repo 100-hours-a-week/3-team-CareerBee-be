@@ -167,4 +167,8 @@ public class Member extends BaseEntity {
         this.withdrawReason = command.reason();
         this.withdrawnAt = command.requestedAt();
     }
+
+    public void plusPoint(int point) {
+        this.points += point;
+    }
 }
