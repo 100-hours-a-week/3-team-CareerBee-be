@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.competition.runner;
 
+import io.sentry.Sentry;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +20,13 @@ public class CompetitionSummaryRunner {
     private final CompetitionSummaryService summaryService;
     private final CompetitionCommandService commandService;
 
-    @Scheduled(cron = "0 0 14 * * *", zone = "Asia/Seoul")
+    //    @Scheduled(cron = "0 0 14 * * *", zone = "Asia/Seoul")
+    // 오후 3시 12분(15:12)에 실행
+    @Scheduled(cron = "0 16 13 * * *", zone = "Asia/Seoul")
     public void runCompetitionSummaryJob() {
         LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
         log.info("[{}] 대회 결과 데이터 집계 시작!", now);
+        Sentry.captureMessage("대회 결과 데이터 집계 시작");
         summaryService.dailySummary(now);
 
         summaryService.weekAndMonthSummary(
@@ -34,6 +38,7 @@ public class CompetitionSummaryRunner {
             SummaryType.MONTH
         );
         log.info("[{}] 대회 결과 데이터 집계 종료!", now);
+        Sentry.captureMessage("대회 결과 데이터 집계 종료");
     }
 
     @Scheduled(cron = "0 0 23 ? * SUN", zone = "Asia/Seoul")
