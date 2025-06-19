@@ -39,7 +39,7 @@ jobs:
       - name: Get current tag for latest (for rollback)
         run: |
           ROLLBACK_TAG=$(aws ecr describe-images \
-            --repository-name frontend \
+            --repository-name backend \
             --region ap-northeast-2 \
             --query "imageDetails[?imageTags!=null && contains(imageTags, 'latest')].imageTags[]" \
             --output text | tr '\t' '\n' | grep -v '^latest$')
@@ -79,6 +79,7 @@ jobs:
         if: env.DISCORD_MSG != 'webhook_failure'
         run: |
           curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Authorization: Bearer ${{ secrets.DEV_WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"backend_tag": "latest"}'
 
@@ -103,7 +104,7 @@ jobs:
         if: ${{ env.DISCORD_MSG == 'failure' && env.ROLLBACK_TAG != '' }}
         run: |
           echo "⚠️ 롤백 시작: 태그 → ${{ env.ROLLBACK_TAG }}"
-          curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
+            -H "Authorization: Bearer ${{ secrets.DEV_WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"backend_tag": "${{ env.ROLLBACK_TAG }}"}'
 
@@ -115,11 +116,13 @@ jobs:
 
           if [ "${{ env.DISCORD_MSG }}" = "success" ]; then
             TITLE="✅ 개발 환경에 백엔드 배포 성공"
-            DESC="모두 배포에 성공했습니다."
+            DESC="모두 배포에 성공했습니다.
+            **배포 태그:** \`${{ env.DEPLOY_TAG }}\`"
             COLOR=65280
           elif [ "${{ env.DISCORD_MSG }}" = "failure" ]; then
             TITLE="❌ 개발 환경에 백엔드 배포 실패"
-            DESC="배포에 실패하여 롤백하였습니다."
+            DESC="배포에 실패하여 롤백하였습니다.
+            **롤백 태그:** \`${{ env.ROLLBACK_TAG }}\`"
             COLOR=16711680
           elif [ "${{ env.DISCORD_MSG }}" = "rollback_failure" ]; then
             TITLE="❌ 개발 환경에 백엔드 배포 & 롤백 실패"

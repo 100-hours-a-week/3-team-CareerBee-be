@@ -61,10 +61,16 @@ jobs:
             --parameters 'commands=[
               "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
               "cd /home/ubuntu/docker",
-              "sed -i \"/backend:/,/^[^[:space:]]/ s|image: .*/.*|image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}|\" docker-compose.yml",
+              "awk '\''BEGIN { in_backend=0 }
+                /^  backend:/ { in_backend=1; print; next }
+                /^[^[:space:]]/ { in_backend=0 }
+                in_backend && /^\\s*image:/ {
+                  sub(/image: .*/, \"image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}\")
+                }
+                { print }'\'' docker-compose.yml > tmp.yml && mv tmp.yml docker-compose.yml",
               "docker-compose pull backend",
               "docker-compose up -d backend"
-            ]' \
+          ]' \
             --region ${{ env.ECR_REGION }}
 
       - name: Notify Discord on Success
