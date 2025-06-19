@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CompetitionCommandServiceImpl implements CompetitionCommandService {
 
+    private static final Integer PARTICIPATION_POINT = 5;
+
     private final CompetitionRepository competitionRepository;
     private final CompetitionParticipantRepository competitionParticipantRepository;
     private final CompetitionResultRepository competitionResultRepository;
@@ -62,13 +64,14 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
             throw new CustomException(CustomResponseStatus.RESULT_ALREADY_SUBMIT);
         }
 
+        validMember.plusPoint(PARTICIPATION_POINT);
         competitionResultRepository.save(
             CompetitionResult.of(validCompetition, validMember, submitReq)
         );
 
         // 포인트 획득 메시지 전송
         eventPublisher.sendPointEarnedNotification(
-            new PointNotiInfo(validMember, 5, NotificationType.POINT, false)
+            new PointNotiInfo(validMember, PARTICIPATION_POINT, NotificationType.POINT, false)
         );
 
     }
