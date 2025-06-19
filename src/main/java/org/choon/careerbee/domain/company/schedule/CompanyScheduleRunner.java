@@ -20,22 +20,18 @@ public class CompanyScheduleRunner {
     private final CompanyCommandService commandService;
 
     @Scheduled(cron = "0 0 14 * * *") // 매일 오후 2시에 한 번 실행
-    public void updateRecruiting() {
+    public void recruitingScheduleProcess() {
+        LocalDateTime now = LocalDateTime.now();
+
         log.info("공고 데이터 수집 시작!");
         for (String keyword : KEYWORDS) {
             commandService.updateCompanyRecruiting(keyword);
             commandService.updateCompanyOpenRecruiting(keyword);
         }
         log.info("공고 데이터 수집 마감!");
-    }
 
-    @Scheduled(cron = "0 0 14 * * *")
-    public void cleanupExpiredRecruitments() {
-        LocalDateTime now = LocalDateTime.now();
         log.info("[{}]공고 삭제 및 기업 채용상태 변경 스케줄러 작동", now);
-
         commandService.cleanExpiredRecruitments(now);
-
         log.info("[{}]공고 삭제 및 기업 채용상태 변경 스케줄러 마감", now);
     }
 
