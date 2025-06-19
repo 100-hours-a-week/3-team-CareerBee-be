@@ -17,6 +17,7 @@ import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepo
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -93,6 +94,10 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Sentry.captureException(ex);
     }
 
+    @Retryable(
+        retryFor = {TransientDataAccessException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 3000, multiplier = 2))
     @Override
     public void cleanExpiredRecruitments(LocalDateTime now) {
         List<Recruitment> expiredBefore = recruitmentRepository.findExpiredBefore(now);
@@ -103,6 +108,14 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
             Company company = companyQueryService.getRefById(c.companyId());
             company.closeRecruitingIfNoActivePostings(c.recruitmentCount());
         });
+    }
+
+    @Recover
+    public void recoverCleanExpiredRecruitments(
+        TransientDataAccessException ex, LocalDateTime now
+    ) {
+        log.error("[RecruitCleanup] 마감 공고 삭제 실패 - 시각: {}, 메시지: {}", now, ex.getMessage(), ex);
+        Sentry.captureException(ex);
     }
 
 }
