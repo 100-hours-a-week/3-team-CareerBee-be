@@ -49,7 +49,8 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         backoff = @Backoff(delay = 3000, multiplier = 2))
     @Override
     public void dailySummary(LocalDate now) {
-        List<DailyResultSummaryResp> dailyResultSummaryList = resultRepository.fetchResultSummaryOfDaily(now);
+        List<DailyResultSummaryResp> dailyResultSummaryList = resultRepository.fetchResultSummaryOfDaily(
+            now);
         if (dailyResultSummaryList.isEmpty()) {
             log.warn("[일일 집계] 집계할 데이터가 존재하지 않습니다.");
             return;
@@ -196,12 +197,15 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
             cs.updateRank(rank++);
         }
 
-        summaryRepository.rewritePeriod(summaryType, summaryPeriod.startAt(), summaryPeriod.endAt(), competitionSummaryToInsert);
+        summaryRepository.flush();
+        summaryRepository.rewritePeriod(summaryType, summaryPeriod.startAt(), summaryPeriod.endAt(),
+            competitionSummaryToInsert);
     }
 
     @Recover
-    public void weekOrMonthSummaryRecover(TransientDataAccessException ex, SummaryPeriod p, SummaryType t) {
-        log.error("[주간/월간 집계] {}({}) 재시도 후 실패", t, p, ex);
+    public void weekOrMonthSummaryRecover(
+        TransientDataAccessException ex, SummaryPeriod period, SummaryType type) {
+        log.error("[주간/월간 집계] {}({}) 재시도 후 실패", type, period, ex);
 
         Sentry.captureException(ex);
     }
