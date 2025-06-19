@@ -61,7 +61,7 @@ jobs:
             --parameters 'commands=[
               "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
               "cd /home/ubuntu/docker",
-              "awk 'BEGIN { in_backend=0 }
+              "awk '\''BEGIN { in_backend=0 }
                   /^[[:space:]]*backend:/ { in_backend=1; print; next }
                   /^[[:alnum:]_]+:/ { in_backend=0 }
                   in_backend && /^[[:space:]]*image:/ {
