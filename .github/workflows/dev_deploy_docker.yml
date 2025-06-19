@@ -36,7 +36,7 @@ jobs:
         with:
           registry: ${{ secrets.DEV_ECR_REGISTRY }}
       
-      - name: Get current tag for latest (for rollback)
+      - name: Get current tag for DEPLOY_TAG (for rollback)
         run: |
           ROLLBACK_TAG=$(aws ecr describe-images \
             --repository-name backend \
@@ -106,6 +106,7 @@ jobs:
         if: ${{ env.DISCORD_MSG == 'failure' && env.ROLLBACK_TAG != '' }}
         run: |
           echo "⚠️ 롤백 시작: 태그 → ${{ env.ROLLBACK_TAG }}"
+          curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
             -H "Authorization: Bearer ${{ secrets.DEV_WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"backend_tag": "${{ env.ROLLBACK_TAG }}"}'
