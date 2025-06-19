@@ -1,6 +1,8 @@
 package org.choon.careerbee.domain.competition.service.command;
 
+import io.sentry.Sentry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.domain.Competition;
@@ -20,11 +22,13 @@ import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 @Service
 public class CompetitionCommandServiceImpl implements CompetitionCommandService {
@@ -99,5 +103,16 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
                 };
                 info.member().plusPoint(points);
             });
+    }
+
+    @Recover
+    public void recoverRewardToRanker(
+        TransientDataAccessException ex,
+        SummaryPeriod summaryPeriod,
+        SummaryType summaryType
+    ) {
+        log.error("[주간, 월간 포인트 지급 실패] 주기={}, 타입={} 포인트 지급 3회 재시도 실패", summaryPeriod, summaryType,
+            ex);
+        Sentry.captureException(ex);
     }
 }
