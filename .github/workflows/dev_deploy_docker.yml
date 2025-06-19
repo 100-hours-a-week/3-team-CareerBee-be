@@ -44,7 +44,7 @@ jobs:
             --query "imageDetails[?imageTags!=null] | [?(!contains(imageTags, '${{ env.DEPLOY_TAG }}') && \
               !contains(imageTags, 'latest') && !contains(imageTags, 'cache'))] \
               | sort_by(@, &imagePushedAt) | [-1].imageTags[0]" \
-            --output text)
+            --output text | head -n1)
           echo "🪃 Rollback tag: $ROLLBACK_TAG"
           echo "ROLLBACK_TAG=$ROLLBACK_TAG" >> $GITHUB_ENV
           
