@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
+import io.sentry.Sentry;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +25,7 @@ import org.choon.careerbee.domain.notification.dto.event.OpenRecruitingEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Service
 public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
+
     private static final int RECRUITING_STATUS_CLOSED = 0;
     private static final DateTimeFormatter SARAMIN_DT_FMT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
@@ -118,6 +121,17 @@ public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
                 new OpenRecruitingEvent(toNoti)
             );
         }
+    }
+
+    @Recover
+    public void recruitmentSaveRecover(
+        TransientDataAccessException ex,
+        SaraminRecruitingResp apiResp,
+        boolean isOpenRecruitment
+    ) {
+        log.error("[공고 저장 실패] 사람인 응답 건수={}, openRecruit={}", apiResp.jobs().job().size(),
+            isOpenRecruitment, ex);
+        Sentry.captureException(ex);
     }
 
     private LocalDateTime parseSaraminDate(String dateStr) {
