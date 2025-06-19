@@ -41,8 +41,10 @@ jobs:
           ROLLBACK_TAG=$(aws ecr describe-images \
             --repository-name backend \
             --region ap-northeast-2 \
-            --query "imageDetails[?imageTags!=null && contains(imageTags, 'latest')].imageTags[]" \
-            --output text | tr '\t' '\n' | grep -v '^latest$')
+            --query "imageDetails[?imageTags!=null] | [?(!contains(imageTags, '${{ env.DEPLOY_TAG }}') && \
+              !contains(imageTags, 'latest') && !contains(imageTags, 'cache'))] \
+              | sort_by(@, &imagePushedAt) | [-1].imageTags[0]" \
+            --output text)
           echo "🪃 Rollback tag: $ROLLBACK_TAG"
           echo "ROLLBACK_TAG=$ROLLBACK_TAG" >> $GITHUB_ENV
           
@@ -107,6 +109,15 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.DEV_WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"backend_tag": "${{ env.ROLLBACK_TAG }}"}'
+
+          echo "🧹 ECR에서 태그 '${{ env.DEPLOY_TAG }}' 이미지 삭제 중..."
+
+          aws ecr batch-delete-image \
+            --repository-name backend \
+            --region ap-northeast-2 \
+            --image-ids imageTag=${{ env.DEPLOY_TAG }} imageTag=latest
+
+          echo "✅ 이미지 삭제 완료"
 
       - name: Notify Discord
         if: always()
