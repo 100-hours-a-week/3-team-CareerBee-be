@@ -1,8 +1,17 @@
 package org.choon.careerbee.domain.competition.dto.request;
 
+import java.util.List;
+
 public record CompetitionResultSubmitReq(
-    Short solvedCount,
-    Integer elapsedTime
+    Integer elapsedTime,
+    List<SubmitInfo> submittedAnswers
 ) {
+
+    public record SubmitInfo(
+        Long problemId,
+        Short userChoice
+    ) {
+
+    }
 
 }
