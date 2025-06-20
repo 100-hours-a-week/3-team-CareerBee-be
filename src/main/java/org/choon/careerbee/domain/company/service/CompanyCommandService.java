@@ -1,5 +1,7 @@
 package org.choon.careerbee.domain.company.service;
 
+import java.time.LocalDateTime;
+
 public interface CompanyCommandService {
 
     void registWishCompany(Long accessMemberId, Long companyId);
@@ -9,4 +11,6 @@ public interface CompanyCommandService {
     void updateCompanyRecruiting(String keyword);
 
     void updateCompanyOpenRecruiting(String keyword);
+
+    void cleanExpiredRecruitments(LocalDateTime now);
 }
