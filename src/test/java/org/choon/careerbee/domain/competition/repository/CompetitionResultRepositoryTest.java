@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
-import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -45,8 +44,8 @@ class CompetitionResultRepositoryTest {
             LocalDateTime.of(2025, 5, 30, 20, 10, 0)
         ));
 
-        CompetitionResult result = createCompetitionResult(competition, member,
-            new CompetitionResultSubmitReq((short) 3, 412)
+        CompetitionResult result = createCompetitionResult(
+            competition, member, (short) 5, 123123
         );
         competitionResultRepository.save(result);
 

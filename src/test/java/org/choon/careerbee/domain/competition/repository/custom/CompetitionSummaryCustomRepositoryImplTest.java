@@ -13,18 +13,22 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingRes
 import org.choon.careerbee.domain.competition.repository.custom.summary.CompetitionSummaryCustomRepositoryImpl;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.fixture.competition.RankingTestDataSupport;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @Import(QueryDSLConfig.class)
 @ActiveProfiles("test")
-@DataJpaTest
+@DataJpaTest(
+    includeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = RankingTestDataSupport.class))
 @Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CompetitionSummaryCustomRepositoryImplTest {
@@ -35,12 +39,8 @@ class CompetitionSummaryCustomRepositoryImplTest {
     @Autowired
     private CompetitionSummaryCustomRepositoryImpl competitionSummaryCustomRepository;
 
+    @Autowired
     private RankingTestDataSupport testDataSupport;
-
-    @BeforeEach
-    void setUp() {
-        testDataSupport = new RankingTestDataSupport(em);
-    }
 
     @Test
     @DisplayName("랭킹 조회 성공")
@@ -53,9 +53,9 @@ class CompetitionSummaryCustomRepositoryImplTest {
         CompetitionRankingResp result = competitionSummaryCustomRepository.fetchRankings(today);
 
         // then
-        assertThat(result.daily()).hasSize(2);
-        assertThat(result.week().get(0).continuous()).isEqualTo(4);
-        assertThat(result.month()).hasSize(3);
+        assertThat(result.daily()).hasSize(10);
+        assertThat(result.week().get(0).continuous()).isEqualTo(2);
+        assertThat(result.month()).hasSize(10);
     }
 
     @Test

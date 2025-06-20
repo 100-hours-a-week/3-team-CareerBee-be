@@ -16,7 +16,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
-import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.member.entity.Member;
 
 @Entity
@@ -57,13 +56,15 @@ public class CompetitionResult extends BaseEntity {
         this.elapsedTime = elapsedTime;
     }
 
-    public static CompetitionResult of(Competition competition, Member member,
-        CompetitionResultSubmitReq submitReq) {
+    public static CompetitionResult of(
+        Competition competition, Member member,
+        short solvedCount, Integer elapsedTime
+    ) {
         return CompetitionResult.builder()
             .competition(competition)
             .member(member)
-            .solvedCount(submitReq.solvedCount())
-            .elapsedTime(submitReq.elapsedTime())
+            .solvedCount(solvedCount)
+            .elapsedTime(elapsedTime)
             .build();
     }
 }

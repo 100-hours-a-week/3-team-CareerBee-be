@@ -7,6 +7,7 @@ import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
@@ -54,15 +55,17 @@ public class CompetitionController {
     }
 
     @PostMapping("competitions/{competitionId}/results")
-    public ResponseEntity<CommonResponse<Void>> submitCompetitionResult(
+    public ResponseEntity<CommonResponse<CompetitionGradingResp>> submitCompetitionResult(
         @PathVariable("competitionId") Long competitionId,
         @RequestBody CompetitionResultSubmitReq submitReq,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
-        commandService.submitCompetitionResult(competitionId, submitReq, principalDetails.getId());
+        CompetitionGradingResp response = commandService.submitCompetitionResult(competitionId,
+            submitReq, principalDetails.getId());
 
         return CommonResponseEntity.ok(
-            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            response,
+            CustomResponseStatus.SUCCESS,
             "대회 제출에 성공하였습니다."
         );
     }
