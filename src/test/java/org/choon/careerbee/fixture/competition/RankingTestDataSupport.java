@@ -103,7 +103,8 @@ public class RankingTestDataSupport {
         Member me = null;
         List<CompetitionResult> results = new ArrayList<>();
         for (long i = 0; i < 12; i++) {
-            Member member = createMember("testNick" + i, "test" + i + "@test.com", i);
+            Member member = memberRepository.saveAndFlush(
+                createMember("testNick" + i, "test" + i + "@test.com", i));
             if (i == 0) {
                 me = member;
             }
