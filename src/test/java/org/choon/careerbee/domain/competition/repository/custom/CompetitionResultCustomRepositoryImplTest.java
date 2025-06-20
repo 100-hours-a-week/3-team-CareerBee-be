@@ -7,7 +7,6 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp.RankerInfo;
@@ -17,25 +16,33 @@ import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.fixture.competition.RankingTestDataSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @Import(QueryDSLConfig.class)
 @ActiveProfiles("test")
-@DataJpaTest
+@DataJpaTest(
+    includeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = RankingTestDataSupport.class))
 @Transactional
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@RequiredArgsConstructor
 class CompetitionResultCustomRepositoryImplTest {
 
-    private final TestEntityManager em;
+    @Autowired
+    private TestEntityManager em;
 
-    private final CompetitionResultCustomRepositoryImpl competitionResultCustomRepository;
+    @Autowired
+    private CompetitionResultCustomRepositoryImpl competitionResultCustomRepository;
 
-    private final RankingTestDataSupport testDataSupport;
+    @Autowired
+    private RankingTestDataSupport testDataSupport;
 
     @Test
     @DisplayName("오늘 날짜의 대회 결과 중 특정 유저의 실시간 랭킹 조회 성공")
@@ -54,7 +61,7 @@ class CompetitionResultCustomRepositoryImplTest {
         MemberLiveRankingResp rankingResp = result.get();
         assertThat(rankingResp.rank()).isEqualTo(1L);
         assertThat(rankingResp.solvedCount()).isEqualTo((short) 3);
-        assertThat(rankingResp.elapsedTime()).isEqualTo(100000);
+        assertThat(rankingResp.elapsedTime()).isEqualTo(10000);
     }
 
     @Test

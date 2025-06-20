@@ -82,7 +82,7 @@ class CompetitionControllerTest {
     @BeforeEach
     void setUp() {
         testMember = memberRepository.saveAndFlush(
-            createMember("nick", "nick@a.com", 5L));
+            createMember("nick", "nick@a.com", 15L));
         testCompetition = competitionRepository.saveAndFlush(
             createCompetition(
                 LocalDateTime.of(2025, 5, 30, 20, 0, 0),
@@ -196,7 +196,7 @@ class CompetitionControllerTest {
                     .header("Authorization", accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isNoContent());
+            .andExpect(status().isOk());
 
         // when & then
         mockMvc.perform(
@@ -345,11 +345,11 @@ class CompetitionControllerTest {
             .andExpect(jsonPath("$.httpStatusCode")
                 .value(CustomResponseStatus.SUCCESS.getHttpStatusCode()))
             .andExpect(jsonPath("$.data").exists())
-            .andExpect(jsonPath("$.data.daily.length()").value(2))
-            .andExpect(jsonPath("$.data.week.length()").value(2))
-            .andExpect(jsonPath("$.data.month.length()").value(3))
-            .andExpect(jsonPath("$.data.week[0].continuous").value(4))
-            .andExpect(jsonPath("$.data.month[2].nickname").value("member2"));
+            .andExpect(jsonPath("$.data.daily.length()").value(10))
+            .andExpect(jsonPath("$.data.week.length()").value(10))
+            .andExpect(jsonPath("$.data.month.length()").value(10))
+            .andExpect(jsonPath("$.data.week[0].continuous").value(2))
+            .andExpect(jsonPath("$.data.month[2].nickname").value("testNick3"));
     }
 
     @Test
@@ -392,7 +392,7 @@ class CompetitionControllerTest {
     void fetchMemberCompetitionRanking_success() throws Exception {
         // given
         Member me = testDataSupport.prepareRankingData(LocalDate.of(2025, 6, 2));
-        String meToken = jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
+        String meToken = "Bearer " + jwtUtil.createToken(me.getId(), TokenType.ACCESS_TOKEN);
 
         // when & then
         mockMvc.perform(get("/api/v1/members/competitions/rankings")

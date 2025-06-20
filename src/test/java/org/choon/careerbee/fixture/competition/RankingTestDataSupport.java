@@ -5,6 +5,9 @@ import static org.choon.careerbee.fixture.competition.CompetitionFixture.createC
 import static org.choon.careerbee.fixture.competition.CompetitionResultFixture.createCompetitionResult;
 import static org.choon.careerbee.fixture.competition.CompetitionSummaryFixture.createSummary;
 
+import org.choon.careerbee.domain.competition.domain.CompetitionSummary;
+import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
+
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
@@ -37,10 +40,14 @@ public class RankingTestDataSupport {
     private CompetitionResultRepository competitionResultRepository;
 
     @Autowired
+    private CompetitionSummaryRepository competitionSummaryRepository;
+
+    @Autowired
     private EntityManager em;
-    private Map<Long, Member> memberMap = new HashMap<>();
+
 
     public Member prepareRankingData(LocalDate today) {
+        final Map<Long, Member> memberMap = new HashMap<>();
         Member me = null;
         for (int i = 1; i <= 10; i++) {
             Member member = memberRepository.saveAndFlush(
@@ -64,27 +71,33 @@ public class RankingTestDataSupport {
         LocalDate monthStart = today.withDayOfMonth(1);
         LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
 
+        List<CompetitionSummary> summaries = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
             short solvedCount = (short) (i % 5 + 1);
             int maxContinuousDays = i % 7 + 1;
-            createSummary(
-                memberMap.get((long) i), solvedCount, 123123L + i,
-                (long) i, 1, (double) i * 10,
-                SummaryType.DAY, today, today
-            );
+            summaries.add(
+                createSummary(
+                    memberMap.get((long) i), solvedCount, 123123L + i,
+                    (long) i, 1, (double) i * 10,
+                    SummaryType.DAY, today, today
+                ));
 
-            createSummary(
-                memberMap.get((long) i), solvedCount, 123123L + i,
-                (long) i, maxContinuousDays, (double) i * 10,
-                SummaryType.WEEK, weekStart, weekEnd
-            );
+            summaries.add(
+                createSummary(
+                    memberMap.get((long) i), solvedCount, 123123L + i,
+                    (long) i, maxContinuousDays, (double) i * 10,
+                    SummaryType.WEEK, weekStart, weekEnd
+                ));
 
-            createSummary(
-                memberMap.get((long) i), solvedCount, 123123L + i,
-                (long) i, maxContinuousDays, (double) i * 10,
-                SummaryType.MONTH, monthStart, monthEnd
-            );
+            summaries.add(
+                createSummary(
+                    memberMap.get((long) i), solvedCount, 123123L + i,
+                    (long) i, maxContinuousDays, (double) i * 10,
+                    SummaryType.MONTH, monthStart, monthEnd
+                ));
         }
+        competitionSummaryRepository.saveAllAndFlush(summaries);
+        em.flush();
 
         /** me 랭킹정보
          day : 1등, 123124, 2
@@ -108,10 +121,9 @@ public class RankingTestDataSupport {
             if (i == 0) {
                 me = member;
             }
-
-            competitionResultRepository.saveAndFlush(createCompetitionResult(
+            results.add(competitionResultRepository.saveAndFlush(createCompetitionResult(
                 competition, member, (short) 3, (int) (i + 10000)
-            ));
+            )));
         }
         updateCreatedAtOfCompetitionResults(results);
 
@@ -122,7 +134,7 @@ public class RankingTestDataSupport {
     }
 
     private void updateCreatedAtOfCompetitionResults(List<CompetitionResult> results) {
-        results.stream().forEach(result -> {
+        results.forEach(result -> {
             em.createNativeQuery(
                     "UPDATE competition_result SET created_at = :createdAt WHERE id = :id")
                 .setParameter("createdAt", LocalDateTime.of(2025, 6, 10, 13, 5))
