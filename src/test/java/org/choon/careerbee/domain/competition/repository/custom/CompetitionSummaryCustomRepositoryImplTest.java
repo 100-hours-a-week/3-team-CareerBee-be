@@ -13,7 +13,6 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingRes
 import org.choon.careerbee.domain.competition.repository.custom.summary.CompetitionSummaryCustomRepositoryImpl;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.fixture.competition.RankingTestDataSupport;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +34,8 @@ class CompetitionSummaryCustomRepositoryImplTest {
     @Autowired
     private CompetitionSummaryCustomRepositoryImpl competitionSummaryCustomRepository;
 
+    @Autowired
     private RankingTestDataSupport testDataSupport;
-
-    @BeforeEach
-    void setUp() {
-        testDataSupport = new RankingTestDataSupport(em);
-    }
 
     @Test
     @DisplayName("랭킹 조회 성공")
