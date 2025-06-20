@@ -25,13 +25,11 @@ import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.entity.enums.RoleType;
 import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@SQLRestriction("withdrawn_at is NULL")
 @Table(
     name = "member",
     uniqueConstraints = {
@@ -170,5 +168,13 @@ public class Member extends BaseEntity {
 
     public void plusPoint(int point) {
         this.points += point;
+    }
+
+    public boolean isWithDrawn() {
+        if (this.withdrawnAt != null) {
+            return true;
+        }
+
+        return false;
     }
 }
