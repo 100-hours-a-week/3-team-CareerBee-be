@@ -16,7 +16,7 @@ jobs:
       uses: peter-evans/repository-dispatch@v3
       with:
         token: ${{ secrets.DEV_GITHUB_TOKEN }}
-        repository: 100-hours-a-week/3-team-CareerBee-be
+        repository: 100-hours-a-week/3-team-CareerBee-cloud
         event-type: be-updated
         client-payload: >-
           {
