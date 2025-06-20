@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
+import java.time.LocalDateTime;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
@@ -190,6 +191,36 @@ class AuthControllerTest {
 
         long countAfter = memberRepository.count();
         assertThat(countBefore).isEqualTo(countAfter);
+    }
+
+    @Test
+    @DisplayName("카카오 로그인 요청 실패 - 이미 탈퇴한 회원인 경우 410 예외 발생")
+    void kakaoLogin_fail_withdrawnMember() throws Exception {
+        // given
+        KakaoLoginParams loginParams = new KakaoLoginParams();
+        ReflectionTestUtils.setField(loginParams, "authorizationCode", "test-auth-code");
+
+        KakaoInfoResponse mockOAuthInfo = new KakaoInfoResponse();
+        KakaoInfoResponse.KakaoAccount kakaoAccount = new KakaoInfoResponse.KakaoAccount();
+        ReflectionTestUtils.setField(kakaoAccount, "email", "mock@kakao.com");
+        ReflectionTestUtils.setField(mockOAuthInfo, "kakaoAccount", kakaoAccount);
+        ReflectionTestUtils.setField(mockOAuthInfo, "id", 12345L);
+
+        Member member = memberRepository.saveAndFlush(
+            createMember("testnick", "mock@kakao.com", 12345L));
+        ReflectionTestUtils.setField(member, "withdrawnAt", LocalDateTime.now());
+        when(requestOAuthInfoService.request(any(), any())).thenReturn(mockOAuthInfo);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/auth/oauth/tokens/kakao")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Origin", "http://localhost:5173")
+                .content(objectMapper.writeValueAsString(loginParams)))
+            .andExpect(status().isGone())
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.WITHDRAWAL_MEMBER.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(410))
+            .andExpect(jsonPath("$.data").isEmpty());
     }
 
     @Test
