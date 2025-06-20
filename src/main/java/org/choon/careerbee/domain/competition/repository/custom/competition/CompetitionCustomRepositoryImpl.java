@@ -59,11 +59,10 @@ public class CompetitionCustomRepositoryImpl implements CompetitionCustomReposit
                     int[] index = {1};
                     return list.stream()
                         .map(problem -> new ProblemInfo(
-                            index[0]++, // 순서대로 number 부여
+                            problem.getId(),
+                            index[0]++,
                             problem.getTitle(),
                             problem.getDescription(),
-                            problem.getSolution(),
-                            problem.getAnswer().intValue(),
                             choiceMap.getOrDefault(problem.getId(), List.of())
                         ))
                         .collect(Collectors.toList());

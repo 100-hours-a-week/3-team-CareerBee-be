@@ -130,8 +130,6 @@ class CompetitionQueryServiceImplTest {
                 1,
                 "문제 제목",
                 "문제 설명",
-                "문제 해설",
-                2,
                 choices
             )
         );
@@ -152,8 +150,6 @@ class CompetitionQueryServiceImplTest {
         assertThat(problem.number()).isEqualTo(1);
         assertThat(problem.title()).isEqualTo("문제 제목");
         assertThat(problem.description()).isEqualTo("문제 설명");
-        assertThat(problem.solution()).isEqualTo("문제 해설");
-        assertThat(problem.answer()).isEqualTo(2);
 
         assertThat(problem.choices()).hasSize(2);
         assertThat(problem.choices())
