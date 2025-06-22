@@ -22,7 +22,6 @@ import org.choon.careerbee.domain.competition.dto.request.SummaryPeriod;
 import org.choon.careerbee.domain.competition.dto.internal.GradingResult;
 import org.choon.careerbee.domain.competition.dto.internal.ProblemAnswerInfo;
 import org.choon.careerbee.domain.competition.dto.internal.SubmissionContext;
-import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp.CompetitionGradingInfo;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
@@ -44,7 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-@Slf4j
 @Service
 public class CompetitionCommandServiceImpl implements CompetitionCommandService {
 
@@ -144,7 +142,7 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
         );
 
         eventPublisher.publishEvent(
-            new PointEvent(validMember, PARTICIPATION_POINT, NotificationType.POINT, false)
+            new PointEvent(context.member(), PARTICIPATION_POINT, NotificationType.POINT, false)
         );
     }
 

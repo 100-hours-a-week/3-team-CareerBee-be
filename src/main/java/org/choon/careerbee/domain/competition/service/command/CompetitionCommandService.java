@@ -10,15 +10,12 @@ public interface CompetitionCommandService {
 
     void joinCompetition(Long competitionId, Long accessMemberId);
 
-    void submitCompetitionResult(Long competitionId, CompetitionResultSubmitReq submitReq,
-        Long accessMemberId);
-
-    void rewardToWeekOrMonthRanker(SummaryPeriod summaryPeriod, SummaryType summaryType);
-
     CompetitionGradingResp submitCompetitionResult(
         Long competitionId,
         CompetitionResultSubmitReq submitReq,
         Long accessMemberId
     );
+
+    void rewardToWeekOrMonthRanker(SummaryPeriod summaryPeriod, SummaryType summaryType);
 
 }
