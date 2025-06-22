@@ -106,15 +106,35 @@ public class AuthServiceImpl implements AuthService {
         return newTokens;
     }
 
+    /**
+     * providerId 로 회원을 찾거나(탈퇴 포함) 없으면 가입한다. - 탈퇴 회원이면 410 Gone 예외 - 동시 가입 레이스가 일어나면 한 번 더 조회
+     */
     private Member findOrCreateMember(OAuthInfoResponse info) {
+        return memberQueryService.findMemberByProviderId(info.getProviderId())
+            .map(this::ensureNotWithdrawn)
+            .orElseGet(() -> safelyForceJoin(info));
+    }
+
+    /**
+     * 탈퇴 회원이면 예외를 던지고, 아니면 그대로 반환
+     */
+    private Member ensureNotWithdrawn(Member member) {
+        if (member.isWithDrawn()) {
+            throw new CustomException(CustomResponseStatus.WITHDRAWAL_MEMBER);
+        }
+        return member;
+    }
+
+    /**
+     * forceJoin() 과정에서 UNIQUE 제약(동일 providerId) 충돌 시 재조회해서 방금 만들어진 회원을 가져온다.
+     */
+    private Member safelyForceJoin(OAuthInfoResponse info) {
         try {
-            return memberQueryService
-                .findMemberByProviderId(info.getProviderId())
-                .orElseGet(() -> memberCommandService.forceJoin(info));
-        } catch (DataIntegrityViolationException ex) {
-            return memberQueryService
-                .findMemberByProviderId(info.getProviderId())
-                .orElseThrow(() -> new CustomException(CustomResponseStatus.INVALID_LOGIN_LOGIC));
+            return memberCommandService.forceJoin(info);
+        } catch (DataIntegrityViolationException e) {
+            return memberQueryService.findMemberByProviderId(info.getProviderId())
+                .orElseThrow(() ->
+                    new CustomException(CustomResponseStatus.INVALID_LOGIN_LOGIC));
         }
     }
 

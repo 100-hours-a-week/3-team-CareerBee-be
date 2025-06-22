@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -238,6 +239,33 @@ class AuthServiceImplTest {
         assertThat(saved.getMember()).isEqualTo(member);
         assertThat(saved.getStatus()).isEqualTo(TokenStatus.LIVE);
         assertThat(saved.getTokenValue()).isEqualTo("refresh-exist");
+    }
+
+    @DisplayName("로그인 실패 – 탈퇴한 회원인 경우 410 예외 발생")
+    @Test
+    void login_withdrawnMember_shouldReturn410() {
+        // given
+        KakaoLoginParams params = new KakaoLoginParams();
+        ReflectionTestUtils.setField(params, "authorizationCode", "code456");
+
+        KakaoInfoResponse kakaoInfo = new KakaoInfoResponse();
+        KakaoAccount account = new KakaoAccount();
+        ReflectionTestUtils.setField(account, "email", "exist@kakao.com");
+        ReflectionTestUtils.setField(kakaoInfo, "id", 654L);
+        ReflectionTestUtils.setField(kakaoInfo, "kakaoAccount", account);
+
+        Member member = createMember("existnick", "exist@kakao.com", 654L);
+        ReflectionTestUtils.setField(member, "id", 20L);
+        ReflectionTestUtils.setField(member, "withdrawnAt", LocalDateTime.now());
+
+        when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
+            kakaoInfo);
+        when(memberQueryService.findMemberByProviderId(654L)).thenReturn(Optional.of(member));
+
+        // when & then
+        assertThatThrownBy(() -> authService.login(params, "http://localhost:5173"))
+            .isInstanceOf(CustomException.class)
+            .hasMessage(CustomResponseStatus.WITHDRAWAL_MEMBER.getMessage());
     }
 
     @Test

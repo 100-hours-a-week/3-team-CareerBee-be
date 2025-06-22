@@ -2,9 +2,9 @@ name: DEV Backend Docker CICD
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - develop
+  # push:
+  #   branches:
+  #     - develop
 
 jobs:
   deploy:
@@ -36,13 +36,15 @@ jobs:
         with:
           registry: ${{ secrets.DEV_ECR_REGISTRY }}
       
-      - name: Get current tag for latest (for rollback)
+      - name: Get current tag for DEPLOY_TAG (for rollback)
         run: |
           ROLLBACK_TAG=$(aws ecr describe-images \
             --repository-name backend \
             --region ap-northeast-2 \
-            --query "imageDetails[?imageTags!=null && contains(imageTags, 'latest')].imageTags[]" \
-            --output text | tr '\t' '\n' | grep -v '^latest$')
+            --query "imageDetails[?imageTags!=null] | [?(!contains(imageTags, '${{ env.DEPLOY_TAG }}') && \
+              !contains(imageTags, 'latest') && !contains(imageTags, 'cache'))] \
+              | sort_by(@, &imagePushedAt) | [-1].imageTags[0]" \
+            --output text | head -n1)
           echo "🪃 Rollback tag: $ROLLBACK_TAG"
           echo "ROLLBACK_TAG=$ROLLBACK_TAG" >> $GITHUB_ENV
           
@@ -104,9 +106,19 @@ jobs:
         if: ${{ env.DISCORD_MSG == 'failure' && env.ROLLBACK_TAG != '' }}
         run: |
           echo "⚠️ 롤백 시작: 태그 → ${{ env.ROLLBACK_TAG }}"
+          curl -X POST https://webhook.dev.careerbee.co.kr/deploy \
             -H "Authorization: Bearer ${{ secrets.DEV_WEBHOOK_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"backend_tag": "${{ env.ROLLBACK_TAG }}"}'
+
+          echo "🧹 ECR에서 태그 '${{ env.DEPLOY_TAG }}' 이미지 삭제 중..."
+
+          aws ecr batch-delete-image \
+            --repository-name backend \
+            --region ap-northeast-2 \
+            --image-ids imageTag=${{ env.DEPLOY_TAG }} imageTag=latest
+
+          echo "✅ 이미지 삭제 완료"
 
       - name: Notify Discord
         if: always()

@@ -1,0 +1,28 @@
+name: Trigger BE Server CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+  
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Trigger infra CI with commit metadata
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ secrets.DEV_GITHUB_TOKEN }}
+        repository: 100-hours-a-week/3-team-CareerBee-cloud
+        event-type: be-updated
+        client-payload: >-
+          {
+            "sha": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "repository": "${{ github.repository }}",
+            "commit_msg": "${{ github.event.head_commit.message }}",
+            "timestamp": "${{ github.event.head_commit.timestamp }}"
+          }

@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.competition.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -8,14 +9,19 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
+import org.choon.careerbee.domain.competition.dto.internal.ProblemAnswerInfo;
 import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq.SubmitInfo;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionProblemRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.service.command.CompetitionCommandServiceImpl;
@@ -40,6 +46,9 @@ class CompetitionCommandServiceImplTest {
 
     @Mock
     private CompetitionParticipantRepository competitionParticipantRepository;
+
+    @Mock
+    private CompetitionProblemRepository competitionProblemRepository;
 
     @Mock
     private CompetitionResultRepository competitionResultRepository;
@@ -112,19 +121,42 @@ class CompetitionCommandServiceImplTest {
         Long memberId = 10L;
         Competition competition = mock(Competition.class);
         Member member = mock(Member.class);
+        int elapsedTime = 123;
+
         CompetitionResultSubmitReq submitReq = mock(CompetitionResultSubmitReq.class);
+        List<SubmitInfo> submittedAnswers = List.of(
+            new SubmitInfo(1L, (short) 5),
+            new SubmitInfo(2L, (short) 3),
+            new SubmitInfo(3L, (short) 9)  // 틀린 답
+        );
+
+        when(submitReq.submittedAnswers()).thenReturn(submittedAnswers);
+        when(submitReq.elapsedTime()).thenReturn(elapsedTime);
 
         when(competitionRepository.findById(competitionId)).thenReturn(Optional.of(competition));
         when(memberQueryService.findById(memberId)).thenReturn(member);
-        when(competitionResultRepository.existsByMemberIdAndCompetitionId(memberId, competitionId))
-            .thenReturn(false);
+        when(competitionResultRepository.existsByMemberIdAndCompetitionId(memberId, competitionId)).thenReturn(false);
+
+        when(competitionProblemRepository.getProblemAnswerInfoByCompetitionId(competitionId)).thenReturn(
+            List.of(
+                new ProblemAnswerInfo(1L, (short) 5, "sol1"),
+                new ProblemAnswerInfo(2L, (short) 3, "sol2"),
+                new ProblemAnswerInfo(3L, (short) 2, "sol3")
+            )
+        );
 
         // when
-        competitionCommandService.submitCompetitionResult(competitionId, submitReq, memberId);
+        CompetitionGradingResp resp = competitionCommandService.submitCompetitionResult(competitionId, submitReq, memberId);
 
         // then
-        verify(competitionResultRepository, times(1))
-            .save(any(CompetitionResult.class));
+        verify(competitionResultRepository, times(1)).save(any(CompetitionResult.class));
+        verify(member, times(1)).plusPoint(5);
+        verify(eventPublisher, times(1)).sendPointEarnedNotification(any());
+
+        assertThat(resp.gradingResults()).hasSize(3);
+        assertThat(resp.gradingResults().get(0).isCorrect()).isTrue();
+        assertThat(resp.gradingResults().get(1).isCorrect()).isTrue();
+        assertThat(resp.gradingResults().get(2).isCorrect()).isFalse();
     }
 
     @Test
