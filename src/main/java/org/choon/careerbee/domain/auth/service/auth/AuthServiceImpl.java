@@ -22,6 +22,7 @@ import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.choon.careerbee.util.jwt.TokenGenerator;
+import org.redisson.api.RedissonClient;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
     private final MemberQueryService memberQueryService;
 
     private final TokenRepository tokenRepository;
+    private final RedissonClient redissonClient;
 
     @Override
     public OAuthLoginUrlResp getOAuthLoginUrl(String oauthProvider, String origin) {
