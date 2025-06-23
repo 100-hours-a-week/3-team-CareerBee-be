@@ -8,6 +8,7 @@ public record CompetitionGradingResp(
 
     public record CompetitionGradingInfo(
         Long problemId,
+        short answerChoice,
         Boolean isCorrect,
         String solution
     ) {
