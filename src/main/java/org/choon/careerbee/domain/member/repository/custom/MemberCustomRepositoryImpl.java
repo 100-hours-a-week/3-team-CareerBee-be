@@ -8,6 +8,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.domain.auth.dto.internal.MemberAuthInfo;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +17,18 @@ import org.springframework.stereotype.Repository;
 public class MemberCustomRepositoryImpl implements MemberCustomRepository {
 
     private final JPAQueryFactory queryFactory;
+
+    @Override
+    public MemberAuthInfo getMemberAuthInfo(Long memberId) {
+        return queryFactory.select(
+                Projections.constructor(
+                    MemberAuthInfo.class,
+                    member.id,
+                    member.role)
+            ).from(member)
+            .where(member.id.eq(memberId))
+            .fetchOne();
+    }
 
     @Override
     public MyInfoResp fetchMyInfoByMemberId(Long memberId) {
