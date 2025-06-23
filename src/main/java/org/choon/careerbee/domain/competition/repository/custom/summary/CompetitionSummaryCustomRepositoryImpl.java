@@ -34,7 +34,6 @@ public class CompetitionSummaryCustomRepositoryImpl implements
                 RankingInfo.class,
                 member.nickname,
                 member.imgUrl,
-                member.imgUrl,
                 competitionSummary.elapsedTime,
                 competitionSummary.solvedCount
             ))
@@ -53,7 +52,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .select(
                 member.id,
                 member.nickname,
-                member.imgUrl, // Todo : 추후 badge url도 가져와야함
+                member.imgUrl,
                 competitionSummary.correctRate,
                 competitionSummary.maxContinuousDays
             )
@@ -71,7 +70,6 @@ public class CompetitionSummaryCustomRepositoryImpl implements
         List<RankingInfoWithContinuousAndCorrectRate> week = rawWeekResults.stream()
             .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
                 tuple.get(member.nickname),
-                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
                 tuple.get(competitionSummary.correctRate)
@@ -100,7 +98,6 @@ public class CompetitionSummaryCustomRepositoryImpl implements
         List<RankingInfoWithContinuousAndCorrectRate> month = rawMonthResults.stream()
             .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
                 tuple.get(member.nickname),
-                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
                 tuple.get(competitionSummary.correctRate)

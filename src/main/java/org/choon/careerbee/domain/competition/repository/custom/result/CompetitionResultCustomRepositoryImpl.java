@@ -134,7 +134,7 @@ public class CompetitionResultCustomRepositoryImpl implements
             .select(
                 competitionResult.member.id,
                 competitionResult.member.nickname,
-                competitionResult.member.imgUrl, // Todo : 추후 badge url도 도입해야함
+                competitionResult.member.imgUrl,
                 competitionResult.solvedCount,
                 competitionResult.elapsedTime
             )
@@ -157,7 +157,6 @@ public class CompetitionResultCustomRepositoryImpl implements
                     rank,
                     tuple.get(competitionResult.member.nickname),
                     tuple.get(competitionResult.member.imgUrl),
-                    tuple.get(competitionResult.member.imgUrl), // Todo : 이후 badge url로 변경해야함
                     tuple.get(competitionResult.elapsedTime),
                     tuple.get(competitionResult.solvedCount)
                 )
