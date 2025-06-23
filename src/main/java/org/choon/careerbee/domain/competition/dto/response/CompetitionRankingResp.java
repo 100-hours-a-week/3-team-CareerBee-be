@@ -10,7 +10,6 @@ public record CompetitionRankingResp(
 
     public record RankingInfo(
         String nickname,
-        String badgeUrl,
         String profileUrl,
         long elapsedTime,
         short solvedCount
@@ -20,7 +19,6 @@ public record CompetitionRankingResp(
 
     public record RankingInfoWithContinuousAndCorrectRate(
         String nickname,
-        String badgeUrl,
         String profileUrl,
         int continuous,
         double correctRate

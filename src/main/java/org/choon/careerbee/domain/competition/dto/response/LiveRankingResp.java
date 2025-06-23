@@ -10,7 +10,6 @@ public record LiveRankingResp(
         Long rank,
         String nickname,
         String profileImgUrl,
-        String badgeImgUrl,
         Integer elapsedTime,
         short solvedCount
     ) {
