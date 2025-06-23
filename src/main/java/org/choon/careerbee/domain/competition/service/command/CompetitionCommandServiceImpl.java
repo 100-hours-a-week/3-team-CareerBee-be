@@ -110,6 +110,7 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
 
             gradingInfos.add(new CompetitionGradingInfo(
                 submit.problemId(),
+                answer.answer(),
                 isCorrect,
                 answer != null ? answer.solution() : null
             ));
