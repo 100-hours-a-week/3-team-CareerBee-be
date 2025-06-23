@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
-import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.filter.jwt.JwtAuthenticationFilter;
 import org.choon.careerbee.util.jwt.JwtUtil;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -26,7 +26,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
-    private final TokenRepository tokenRepository;
+    private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
 
     @Bean
@@ -82,7 +82,7 @@ public class SecurityConfig {
             // 커스텀 JWT 핸들러 및 엔트리 포인트를 사용하기 위해 httpBasic disable
             .httpBasic(AbstractHttpConfigurer::disable)
             // JWT Filter 를 필터체인에 끼워넣어줌
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, tokenRepository, objectMapper),
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, redissonClient, objectMapper),
                 UsernamePasswordAuthenticationFilter.class)
             .build();
     }

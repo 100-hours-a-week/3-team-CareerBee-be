@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
-import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
 import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthApiClient;
