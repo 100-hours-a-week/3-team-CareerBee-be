@@ -124,7 +124,7 @@ public class JwtUtil {
      * @param token : 요청이 들어온 토큰
      * @return : 토큰의 유효기간이 얼마나 남았는지 리턴
      */
-    public Long getExpiration(String token) {
+    public Long getRemainingMillis(String token) {
         Date expiration = Jwts.parser()
             .verifyWith(getSigningKey(SECRET_KEY))
             .build()

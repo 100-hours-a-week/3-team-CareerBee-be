@@ -9,11 +9,8 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.jwt.TokenClaimInfo;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
-import org.choon.careerbee.domain.auth.entity.Token;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
-import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
-import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginParams;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProviderFactory;
@@ -39,7 +36,8 @@ public class AuthServiceImpl implements AuthService {
     @Value("${jwt.expiration_time.refresh_token}")
     private Long refreshTokenTTL;
 
-    private static final String RT_HEADER = "rt:";
+    private static final String RT_KEY = "rt:";
+    private static final String BL_KEY = "bl:";
 
     private final JwtUtil jwtUtil;
     private final TokenGenerator tokenGenerator;
@@ -49,7 +47,6 @@ public class AuthServiceImpl implements AuthService {
     private final MemberCommandService memberCommandService;
     private final MemberQueryService memberQueryService;
 
-    private final TokenRepository tokenRepository;
     private final RedissonClient redissonClient;
 
     @Override
@@ -67,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtUtil.createToken(validMember.getId(), TokenType.ACCESS_TOKEN);
         String refreshToken = jwtUtil.createToken(validMember.getId(), TokenType.REFRESH_TOKEN);
 
-        RBucket<String> bucket = redissonClient.getBucket(RT_HEADER + validMember.getId());
+        RBucket<String> bucket = redissonClient.getBucket(RT_KEY + validMember.getId());
         bucket.set(refreshToken, Duration.ofMillis(refreshTokenTTL));
 
         return new AuthTokens(accessToken, refreshToken);
@@ -80,10 +77,13 @@ public class AuthServiceImpl implements AuthService {
 
         Member memberRef = memberQueryService.getReferenceById(tokenClaims.id());
 
-        tokenRepository.findByMemberIdAndStatus(memberRef.getId(), TokenStatus.LIVE)
-            .ifPresent(Token::logout);
+        redissonClient.getBucket(RT_KEY + memberRef.getId()).delete();
 
-        tokenRepository.save(new Token(memberRef, TokenStatus.BLACK, resolveAccessToken));
+        long remainMs = jwtUtil.getRemainingMillis(resolveAccessToken);
+        if (remainMs > 0) {
+            redissonClient.getBucket(BL_KEY + resolveAccessToken)
+                .set("", Duration.ofMillis(remainMs));
+        }
     }
 
     @Override
@@ -94,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
 
         Member memberRef = memberQueryService.getReferenceById(tokenClaims.id());
 
-        RBucket<String> bucket = redissonClient.getBucket(RT_HEADER + memberRef.getId());
+        RBucket<String> bucket = redissonClient.getBucket(RT_KEY + memberRef.getId());
         String storedRt = bucket.get();
 
         if (storedRt == null || !storedRt.equals(rtInCookie)) {
