@@ -89,29 +89,30 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(noRollbackFor = CustomException.class)
     public AuthTokens reissue(String rtInCookie) {
-        TokenClaimInfo tokenClaims;
-        try {
-            tokenClaims = jwtUtil.getTokenClaims(rtInCookie);
-        } catch (ExpiredJwtException e) {
-            tokenRepository.findByTokenValueAndStatus(rtInCookie, TokenStatus.LIVE)
-                .ifPresent(Token::expire);
-
-            throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_EXPIRED);
-        }
+        TokenClaimInfo tokenClaims = parseTokenOrThrow(rtInCookie);
         log.info("쿠키안에 들어있는 RT : {}", rtInCookie);
 
         Member memberRef = memberQueryService.getReferenceById(tokenClaims.id());
 
-        Token currentLiveRt = tokenRepository
-            .findByTokenValueAndStatus(rtInCookie, TokenStatus.LIVE)
-            .orElseThrow(() -> new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND));
+        RBucket<String> bucket = redissonClient.getBucket(RT_HEADER + memberRef.getId());
+        String storedRt = bucket.get();
+
+        if (storedRt == null || !storedRt.equals(rtInCookie)) {
+            throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND);
+        }
 
         AuthTokens newTokens = tokenGenerator.generateToken(memberRef.getId());
-        tokenRepository.save(new Token(memberRef, TokenStatus.LIVE, newTokens.refreshToken()));
-
-        currentLiveRt.revoke();
+        bucket.set(newTokens.refreshToken(), Duration.ofMillis(refreshTokenTTL));
 
         return newTokens;
+    }
+
+    private TokenClaimInfo parseTokenOrThrow(String token) {
+        try {
+            return jwtUtil.getTokenClaims(token);
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(CustomResponseStatus.REFRESH_TOKEN_EXPIRED);
+        }
     }
 
     /**
