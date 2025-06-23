@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.auth.service.auth;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -22,7 +23,9 @@ import org.choon.careerbee.domain.member.service.MemberCommandService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.util.jwt.JwtUtil;
 import org.choon.careerbee.util.jwt.TokenGenerator;
+import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+
+    @Value("${jwt.expiration_time.refresh_token}")
+    private Long refreshTokenTTL;
+
+    private static final String RT_HEADER = "rt:";
 
     private final JwtUtil jwtUtil;
     private final TokenGenerator tokenGenerator;
@@ -56,13 +64,11 @@ public class AuthServiceImpl implements AuthService {
         OAuthInfoResponse info = requestOAuthInfoService.request(params, origin);
         final Member validMember = findOrCreateMember(info);
 
-        tokenRepository.findByMemberAndStatus(validMember, TokenStatus.LIVE)
-            .ifPresent(Token::revoke);
-
         String accessToken = jwtUtil.createToken(validMember.getId(), TokenType.ACCESS_TOKEN);
         String refreshToken = jwtUtil.createToken(validMember.getId(), TokenType.REFRESH_TOKEN);
 
-        tokenRepository.save(new Token(validMember, TokenStatus.LIVE, refreshToken));
+        RBucket<String> bucket = redissonClient.getBucket(RT_HEADER + validMember.getId());
+        bucket.set(refreshToken, Duration.ofMillis(refreshTokenTTL));
 
         return new AuthTokens(accessToken, refreshToken);
     }
