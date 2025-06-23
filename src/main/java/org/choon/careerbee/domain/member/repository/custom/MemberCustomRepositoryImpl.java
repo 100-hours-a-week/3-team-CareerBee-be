@@ -7,6 +7,7 @@ import static org.choon.careerbee.domain.notification.entity.QNotification.notif
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.springframework.stereotype.Repository;
@@ -39,12 +40,14 @@ public class MemberCustomRepositoryImpl implements MemberCustomRepository {
     }
 
     @Override
-    public String getNicknameByMemberId(Long memberId) {
-        return queryFactory
-            .select(member.nickname)
-            .from(member)
-            .where(member.id.eq(memberId))
-            .fetchOne();
+    public Optional<String> getNicknameByMemberId(Long memberId) {
+        return Optional.ofNullable(
+            queryFactory
+                .select(member.nickname)
+                .from(member)
+                .where(member.id.eq(memberId))
+                .fetchOne()
+        );
     }
 
     @Override

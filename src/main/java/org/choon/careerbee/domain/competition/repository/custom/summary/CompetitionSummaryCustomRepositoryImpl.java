@@ -18,6 +18,7 @@ import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingRes
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp.MemberDayRankInfo;
 import org.choon.careerbee.domain.competition.dto.response.MemberRankingResp.MemberWeekAndMonthRankInfo;
+import org.choon.careerbee.domain.competition.dto.response.Top10Info;
 import org.springframework.stereotype.Repository;
 
 @RequiredArgsConstructor
@@ -132,6 +133,26 @@ public class CompetitionSummaryCustomRepositoryImpl implements
                 competitionSummary.type.eq(summaryType),
                 competitionSummary.periodStart.eq(summaryPeriod.startAt()),
                 competitionSummary.periodEnd.eq(summaryPeriod.endAt()))
+            .fetch();
+    }
+
+    @Override
+    public List<Top10Info> fetchTop10Ranker(
+        SummaryPeriod summaryPeriod, SummaryType summaryType
+    ) {
+        return queryFactory
+            .select(Projections.constructor(
+                Top10Info.class,
+                competitionSummary.ranking,
+                competitionSummary.member
+            ))
+            .from(competitionSummary)
+            .where(
+                competitionSummary.periodStart.eq(summaryPeriod.startAt()),
+                competitionSummary.periodEnd.eq(summaryPeriod.endAt()),
+                competitionSummary.type.eq(summaryType)
+            )
+            .limit(10)
             .fetch();
     }
 

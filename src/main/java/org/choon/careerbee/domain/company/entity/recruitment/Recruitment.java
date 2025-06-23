@@ -16,11 +16,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@SQLRestriction("expired_at is NULL")
 @Table(name = "recruitment")
 public class Recruitment {
 
@@ -47,6 +49,9 @@ public class Recruitment {
     @Column(nullable = false)
     private LocalDateTime endDate;
 
+    @Column(name = "expired_at", nullable = true)
+    private LocalDateTime expiredAt;
+
     @Builder
     private Recruitment(Company company, Long recruitingId, String url, String title,
         LocalDateTime startDate, LocalDateTime endDate) {
@@ -69,4 +74,11 @@ public class Recruitment {
             .endDate(endDate)
             .build();
     }
+
+    public void expired(LocalDateTime when) {
+        if (this.expiredAt == null) {
+            this.expiredAt = when;
+        }
+    }
+
 }
