@@ -177,4 +177,5 @@ public class Member extends BaseEntity {
 
         return false;
     }
+
 }
