@@ -17,8 +17,19 @@ public record MemberRankingResp(
     public record MemberWeekAndMonthRankInfo(
         Long rank,
         Integer continuous,
-        Double correctRate
+        Integer correctRate
     ) {
 
+        public static MemberWeekAndMonthRankInfo from(
+            Long rank,
+            Integer continuous,
+            Double correctRate
+        ) {
+            return new MemberWeekAndMonthRankInfo(
+                rank,
+                continuous,
+                correctRate != null ? correctRate.intValue() : null
+            );
+        }
     }
 }
