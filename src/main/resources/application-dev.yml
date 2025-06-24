@@ -18,6 +18,11 @@ spring:
         jdbc:
           batch_size: 30
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
   cloud:
     aws:
       s3:
