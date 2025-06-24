@@ -100,6 +100,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         );
 
         // 2. 만들어진 정보로 ai서버에 이력서 정보추출 요청
-        return aiApiClient.requestExtractResume(extractResumeReq);
+        return ExtractResumeResp.from(aiApiClient.requestExtractResume(extractResumeReq));
     }
 }
