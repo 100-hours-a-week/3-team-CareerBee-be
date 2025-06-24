@@ -68,7 +68,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> week = rawWeekResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+            .map(tuple -> RankingInfoWithContinuousAndCorrectRate.from(
                 tuple.get(member.nickname),
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
@@ -96,7 +96,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> month = rawMonthResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+            .map(tuple -> RankingInfoWithContinuousAndCorrectRate.from(
                 tuple.get(member.nickname),
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
