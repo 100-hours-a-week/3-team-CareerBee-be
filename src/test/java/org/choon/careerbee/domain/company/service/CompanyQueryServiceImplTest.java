@@ -26,7 +26,6 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
-import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
@@ -463,49 +462,5 @@ class CompanyQueryServiceImplTest {
         assertThat(cursorCaptor.getValue()).isEqualTo(cursor);
         assertThat(sizeCaptor.getValue()).isEqualTo(size);
     }
-
-    @Test
-    @DisplayName("관심기업 진척도 조회 - 유효한 ID 조합 시 응답 반환")
-    void fetchWishCompanyProgress_shouldReturnResponse_whenDataExists() {
-        // given
-        Long wishCompanyId = 1L;
-        Long memberId = 100L;
-        WishCompanyProgressResp expected = new WishCompanyProgressResp(80, 320);
-
-        when(wishCompanyRepository.fetchWishCompanyAndMemberProgress(wishCompanyId, memberId))
-            .thenReturn(Optional.of(expected));
-
-        // when
-        WishCompanyProgressResp actual = companyQueryService.fetchWishCompanyProgress(wishCompanyId,
-            memberId);
-
-        // then
-        assertThat(actual).isEqualTo(expected);
-
-        verify(wishCompanyRepository, times(1))
-            .fetchWishCompanyAndMemberProgress(wishCompanyId, memberId);
-    }
-
-    @Test
-    @DisplayName("관심기업 진척도 조회 - 존재하지 않는 경우 예외 발생")
-    void fetchWishCompanyProgress_shouldThrow_whenWishCompanyNotFound() {
-        // given
-        Long wishCompanyId = 1L;
-        Long memberId = 100L;
-
-        when(wishCompanyRepository.fetchWishCompanyAndMemberProgress(wishCompanyId, memberId))
-            .thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() ->
-            companyQueryService.fetchWishCompanyProgress(wishCompanyId, memberId)
-        )
-            .isInstanceOf(CustomException.class)
-            .hasMessageContaining(CustomResponseStatus.WISH_COMPANY_NOT_FOUND.getMessage());
-
-        verify(wishCompanyRepository, times(1))
-            .fetchWishCompanyAndMemberProgress(wishCompanyId, memberId);
-    }
-
 
 }

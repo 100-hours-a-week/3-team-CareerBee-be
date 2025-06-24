@@ -10,13 +10,11 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
-import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.springframework.stereotype.Repository;
@@ -78,28 +76,6 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
         Long nextCursor = hasNext ? wishCompanyInfos.getLast().get(wishCompany.id) : null;
 
         return new WishCompaniesResp(summaryList, nextCursor, hasNext);
-    }
-
-    @Override
-    public Optional<WishCompanyProgressResp> fetchWishCompanyAndMemberProgress(
-        Long companyId,
-        Long accessMemberId
-    ) {
-        WishCompanyProgressResp resp = queryFactory
-            .select(Projections.constructor(
-                WishCompanyProgressResp.class,
-                wishCompany.company.score,
-                wishCompany.member.progress.add(wishCompany.member.additionalProgress)
-            ))
-            .from(wishCompany)
-            .join(wishCompany.company)
-            .join(wishCompany.member)
-            .where(
-                wishCompany.company.id.eq(companyId),
-                wishCompany.member.id.eq(accessMemberId))
-            .fetchOne();
-
-        return Optional.ofNullable(resp);
     }
 
     @Override

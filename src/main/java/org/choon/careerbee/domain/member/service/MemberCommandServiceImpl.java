@@ -16,7 +16,6 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.entity.Member;
-import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +29,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     private final MemberRepository memberRepository;
     private final ImageService imageService;
     private final AiApiClient aiApiClient;
-    private final ResumeProgressPolicy resumeProgressPolicy;
 
     @Override
     public Member forceJoin(OAuthInfoResponse oAuthInfo) {
@@ -59,8 +57,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             updateResumeReq.position(),
             updateResumeReq.additionalExperiences()
         );
-
-        validMember.recalcProgress(resumeProgressPolicy);
     }
 
     @Override
