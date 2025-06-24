@@ -68,7 +68,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> week = rawWeekResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+            .map(tuple -> RankingInfoWithContinuousAndCorrectRate.from(
                 tuple.get(member.nickname),
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
@@ -96,7 +96,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> month = rawMonthResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+            .map(tuple -> RankingInfoWithContinuousAndCorrectRate.from(
                 tuple.get(member.nickname),
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
@@ -158,12 +158,12 @@ public class CompetitionSummaryCustomRepositoryImpl implements
     private MemberWeekAndMonthRankInfo fetchWeekAndMonthRankingByDate(
         Long memberId, SummaryType type, LocalDate today
     ) {
-        return queryFactory
-            .select(Projections.constructor(
-                MemberWeekAndMonthRankInfo.class,
+        Tuple result = queryFactory
+            .select(
                 competitionSummary.ranking,
                 competitionSummary.maxContinuousDays,
-                competitionSummary.correctRate))
+                competitionSummary.correctRate
+            )
             .from(competitionSummary)
             .where(
                 competitionSummary.member.id.eq(memberId),
@@ -173,5 +173,15 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             )
             .orderBy(competitionSummary.periodEnd.desc())
             .fetchOne();
+
+        if (result == null) {
+            return null;
+        }
+
+        return MemberWeekAndMonthRankInfo.from(
+            result.get(competitionSummary.ranking),
+            result.get(competitionSummary.maxContinuousDays),
+            result.get(competitionSummary.correctRate)
+        );
     }
 }
