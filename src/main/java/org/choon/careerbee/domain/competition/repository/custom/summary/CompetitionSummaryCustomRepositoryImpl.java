@@ -34,7 +34,6 @@ public class CompetitionSummaryCustomRepositoryImpl implements
                 RankingInfo.class,
                 member.nickname,
                 member.imgUrl,
-                member.imgUrl,
                 competitionSummary.elapsedTime,
                 competitionSummary.solvedCount
             ))
@@ -53,7 +52,7 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .select(
                 member.id,
                 member.nickname,
-                member.imgUrl, // Todo : 추후 badge url도 가져와야함
+                member.imgUrl,
                 competitionSummary.correctRate,
                 competitionSummary.maxContinuousDays
             )
@@ -69,9 +68,8 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> week = rawWeekResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+            .map(tuple -> RankingInfoWithContinuousAndCorrectRate.from(
                 tuple.get(member.nickname),
-                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
                 tuple.get(competitionSummary.correctRate)
@@ -98,9 +96,8 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             .fetch();
 
         List<RankingInfoWithContinuousAndCorrectRate> month = rawMonthResults.stream()
-            .map(tuple -> new RankingInfoWithContinuousAndCorrectRate(
+            .map(tuple -> RankingInfoWithContinuousAndCorrectRate.from(
                 tuple.get(member.nickname),
-                tuple.get(member.imgUrl), // Todo : 추후 뱃지 url로 변경
                 tuple.get(member.imgUrl),
                 tuple.get(competitionSummary.maxContinuousDays),
                 tuple.get(competitionSummary.correctRate)
@@ -161,12 +158,12 @@ public class CompetitionSummaryCustomRepositoryImpl implements
     private MemberWeekAndMonthRankInfo fetchWeekAndMonthRankingByDate(
         Long memberId, SummaryType type, LocalDate today
     ) {
-        return queryFactory
-            .select(Projections.constructor(
-                MemberWeekAndMonthRankInfo.class,
+        Tuple result = queryFactory
+            .select(
                 competitionSummary.ranking,
                 competitionSummary.maxContinuousDays,
-                competitionSummary.correctRate))
+                competitionSummary.correctRate
+            )
             .from(competitionSummary)
             .where(
                 competitionSummary.member.id.eq(memberId),
@@ -176,5 +173,15 @@ public class CompetitionSummaryCustomRepositoryImpl implements
             )
             .orderBy(competitionSummary.periodEnd.desc())
             .fetchOne();
+
+        if (result == null) {
+            return null;
+        }
+
+        return MemberWeekAndMonthRankInfo.from(
+            result.get(competitionSummary.ranking),
+            result.get(competitionSummary.maxContinuousDays),
+            result.get(competitionSummary.correctRate)
+        );
     }
 }

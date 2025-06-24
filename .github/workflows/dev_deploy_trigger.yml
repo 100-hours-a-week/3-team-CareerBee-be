@@ -1,0 +1,32 @@
+name: Trigger BE Server CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+  
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Prepare client payload
+      id: prep
+      run: |
+        echo "payload=$(jq -cn \
+          --arg sha '${{ github.sha }}' \
+          --arg branch '${{ github.ref_name }}' \
+          --arg repo '${{ github.repository }}' \
+          --arg msg '${{ github.event.head_commit.message }}' \
+          --arg time '${{ github.event.head_commit.timestamp }}' \
+          '{sha: $sha, branch: $branch, repository: $repo, commit_msg: $msg, timestamp: $time}')" >> $GITHUB_OUTPUT
+
+    - name: Trigger infra CI with commit metadata
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ secrets.DEV_GITHUB_TOKEN }}
+        repository: 100-hours-a-week/3-team-CareerBee-cloud
+        event-type: be-updated
+        client-payload: ${{ steps.prep.outputs.payload }}

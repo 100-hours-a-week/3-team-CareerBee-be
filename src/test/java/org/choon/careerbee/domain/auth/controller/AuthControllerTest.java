@@ -2,7 +2,6 @@ package org.choon.careerbee.domain.auth.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
-import static org.choon.careerbee.fixture.TokenFixture.createToken;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -14,10 +13,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
-import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
-import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthApiClient;
 import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
 import org.choon.careerbee.domain.auth.service.oauth.kakao.KakaoInfoResponse;
@@ -31,6 +30,7 @@ import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -51,6 +51,10 @@ import org.springframework.web.context.WebApplicationContext;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class AuthControllerTest {
 
+    private static final String RT_KEY = "rt:";
+    private static final String BL_KEY = "bl:";
+    private static final Long RT_TTL = (long) (1000 * 600);
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -58,10 +62,10 @@ class AuthControllerTest {
     private MemberRepository memberRepository;
 
     @Autowired
-    private TokenRepository tokenRepository;
+    private JwtUtil jwtUtil;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    private RedissonClient redissonClient;
 
     @Autowired
     private MemberCommandService memberCommandService;
@@ -85,7 +89,7 @@ class AuthControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
             .webAppContextSetup(context)
-            .addFilter(new JwtAuthenticationFilter(jwtUtil, tokenRepository, objectMapper))
+            .addFilter(new JwtAuthenticationFilter(jwtUtil, redissonClient, objectMapper))
             .apply(springSecurity())
             .build();
 
@@ -193,14 +197,43 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("카카오 로그인 요청 실패 - 이미 탈퇴한 회원인 경우 410 예외 발생")
+    void kakaoLogin_fail_withdrawnMember() throws Exception {
+        // given
+        KakaoLoginParams loginParams = new KakaoLoginParams();
+        ReflectionTestUtils.setField(loginParams, "authorizationCode", "test-auth-code");
+
+        KakaoInfoResponse mockOAuthInfo = new KakaoInfoResponse();
+        KakaoInfoResponse.KakaoAccount kakaoAccount = new KakaoInfoResponse.KakaoAccount();
+        ReflectionTestUtils.setField(kakaoAccount, "email", "mock@kakao.com");
+        ReflectionTestUtils.setField(mockOAuthInfo, "kakaoAccount", kakaoAccount);
+        ReflectionTestUtils.setField(mockOAuthInfo, "id", 12345L);
+
+        Member member = memberRepository.saveAndFlush(
+            createMember("testnick", "mock@kakao.com", 12345L));
+        ReflectionTestUtils.setField(member, "withdrawnAt", LocalDateTime.now());
+        when(requestOAuthInfoService.request(any(), any())).thenReturn(mockOAuthInfo);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/auth/oauth/tokens/kakao")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Origin", "http://localhost:5173")
+                .content(objectMapper.writeValueAsString(loginParams)))
+            .andExpect(status().isGone())
+            .andExpect(
+                jsonPath("$.message").value(CustomResponseStatus.WITHDRAWAL_MEMBER.getMessage()))
+            .andExpect(jsonPath("$.httpStatusCode").value(410))
+            .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
     @DisplayName("로그아웃 요청이 성공적으로 처리된다")
     void logout_success() throws Exception {
         // given
         String testRefreshTokenValue = jwtUtil.createToken(testMember.getId(),
             TokenType.REFRESH_TOKEN);
-        tokenRepository.saveAndFlush(
-            createToken(testMember, testRefreshTokenValue, TokenStatus.LIVE)
-        );
+        redissonClient.getBucket(RT_KEY + testMember.getId())
+            .set(testRefreshTokenValue, Duration.ofMillis(RT_TTL));
 
         // when & then
         mockMvc.perform(post("/api/v1/auth/logout")
@@ -227,7 +260,8 @@ class AuthControllerTest {
     void reissue_success() throws Exception {
         // given
         String validRefreshToken = jwtUtil.createToken(testMember.getId(), TokenType.REFRESH_TOKEN);
-        tokenRepository.saveAndFlush(createToken(testMember, validRefreshToken, TokenStatus.LIVE));
+        redissonClient.getBucket(RT_KEY + testMember.getId())
+            .set(validRefreshToken, Duration.ofMillis(RT_TTL));
 
         // when & then
         mockMvc.perform(post("/api/v1/auth/reissue")

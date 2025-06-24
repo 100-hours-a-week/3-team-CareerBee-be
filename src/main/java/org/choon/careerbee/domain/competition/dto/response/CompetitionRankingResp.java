@@ -10,7 +10,6 @@ public record CompetitionRankingResp(
 
     public record RankingInfo(
         String nickname,
-        String badgeUrl,
         String profileUrl,
         long elapsedTime,
         short solvedCount
@@ -20,11 +19,23 @@ public record CompetitionRankingResp(
 
     public record RankingInfoWithContinuousAndCorrectRate(
         String nickname,
-        String badgeUrl,
         String profileUrl,
         int continuous,
-        double correctRate
+        Integer correctRate
     ) {
 
+        public static RankingInfoWithContinuousAndCorrectRate from(
+            String nickname,
+            String imgUrl,
+            Integer maxContinuousDays,
+            Double correctRate
+        ) {
+            return new RankingInfoWithContinuousAndCorrectRate(
+                nickname,
+                imgUrl,
+                maxContinuousDays,
+                correctRate != null ? correctRate.intValue() : null
+            );
+        }
     }
 }

@@ -1,12 +1,14 @@
 package org.choon.careerbee.domain.member.repository.custom;
 
+import static com.querydsl.jpa.JPAExpressions.selectOne;
 import static org.choon.careerbee.domain.member.entity.QMember.member;
+import static org.choon.careerbee.domain.notification.entity.QNotification.notification;
 
 import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.domain.auth.dto.internal.MemberAuthInfo;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.springframework.stereotype.Repository;
 
@@ -17,6 +19,18 @@ public class MemberCustomRepositoryImpl implements MemberCustomRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
+    public MemberAuthInfo getMemberAuthInfo(Long memberId) {
+        return queryFactory.select(
+                Projections.constructor(
+                    MemberAuthInfo.class,
+                    member.id,
+                    member.role)
+            ).from(member)
+            .where(member.id.eq(memberId))
+            .fetchOne();
+    }
+
+    @Override
     public MyInfoResp fetchMyInfoByMemberId(Long memberId) {
         return queryFactory
             .select(Projections.constructor(
@@ -24,9 +38,12 @@ public class MemberCustomRepositoryImpl implements MemberCustomRepository {
                 member.nickname,
                 member.email,
                 member.imgUrl,
-                member.imgUrl, // Todo : badge 엔티티 추가 후 해당 뱃지 이미지로 변경
-                member.imgUrl, // Todo : 프로필 프레임 추가 후 변경
-                Expressions.constant(false), // Todo : 알림 기능 생성시 변경
+                selectOne()
+                    .from(notification)
+                    .where(
+                        notification.member.id.eq(memberId),
+                        notification.isRead.isFalse()
+                    ).exists(),
                 member.points
             ))
             .from(member)

@@ -7,11 +7,10 @@ public record CompetitionProblemResp(
 ) {
 
     public record ProblemInfo(
+        Long id,
         int number,
         String title,
         String description,
-        String solution,
-        int answer,
         List<ProblemChoiceInfo> choices
     ) {
 

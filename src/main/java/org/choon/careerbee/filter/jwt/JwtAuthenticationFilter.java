@@ -15,9 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
-import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
-import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.util.jwt.JwtUtil;
+import org.redisson.api.RedissonClient;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -27,13 +26,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION = "Authorization";
+    private static final String BL_KEY = "bl:";
 
     private final JwtUtil jwtUtil;
-    private final TokenRepository tokenRepository;
+    private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
 
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-        FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+        HttpServletRequest request, HttpServletResponse response, FilterChain filterChain
+    ) throws ServletException, IOException {
         String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
 
         if (Objects.equals(resolveToken, "")) {
@@ -56,8 +57,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void handleBlacklistedToken(String resolveToken) throws CustomException {
-        if (tokenRepository.findByTokenValueAndStatus(resolveToken, TokenStatus.BLACK)
-            .isPresent()) {
+        boolean isBlack = redissonClient.getBucket(BL_KEY + resolveToken).isExists();
+
+        if (isBlack) {
             throw new CustomException(CustomResponseStatus.LOGOUT_MEMBER);
         }
     }
