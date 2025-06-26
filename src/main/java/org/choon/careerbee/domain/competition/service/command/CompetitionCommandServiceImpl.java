@@ -87,7 +87,7 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
         if (competitionResultRepository.existsByMemberIdAndCompetitionId(memberId, competitionId)) {
             throw new CustomException(CustomResponseStatus.RESULT_ALREADY_SUBMIT);
         }
-
+      
         return new SubmissionContext(competition, member);
     }
 
@@ -123,7 +123,7 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
         SubmissionContext context, GradingResult grading, int elapsedTime
     ) {
         context.member().plusPoint(PARTICIPATION_POINT);
-
+      
         competitionResultRepository.save(
             CompetitionResult.of(
                 context.competition(),

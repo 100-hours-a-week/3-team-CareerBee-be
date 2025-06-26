@@ -254,10 +254,10 @@ class CompetitionQueryServiceImplTest {
             new MemberRankingResp.MemberDayRankInfo(5L, 1234L, (short) 3);
 
         MemberRankingResp.MemberWeekAndMonthRankInfo weekRank =
-            new MemberRankingResp.MemberWeekAndMonthRankInfo(3L, 7, 0.75);
+            MemberRankingResp.MemberWeekAndMonthRankInfo.from(3L, 7, 0.75);
 
         MemberRankingResp.MemberWeekAndMonthRankInfo monthRank =
-            new MemberRankingResp.MemberWeekAndMonthRankInfo(2L, 15, 0.88);
+            MemberRankingResp.MemberWeekAndMonthRankInfo.from(2L, 15, 0.88);
 
         MemberRankingResp mockResp = new MemberRankingResp(dayRank, weekRank, monthRank);
 
