@@ -19,7 +19,6 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
-import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,16 +34,13 @@ class MemberCommandServiceImplTest {
     private MemberQueryService memberQueryService;
 
     @Mock
-    private ResumeProgressPolicy progressPolicy;
-
-    @Mock
     private ImageService imageService;
 
     @InjectMocks
     private MemberCommandServiceImpl memberCommandService;
 
     @Test
-    @DisplayName("이력 정보 업데이트 → 필드·progress 반영 확인")
+    @DisplayName("이력 정보 업데이트 → 필드 반영 확인")
     void updateResumeInfo_shouldCallMemberUpdate() {
         // given
         Long accessMemberId = 1L;
@@ -57,7 +53,6 @@ class MemberCommandServiceImplTest {
 
         Member mockMember = createMember("nickname", "test@test.com", 13L);
         when(memberQueryService.findById(accessMemberId)).thenReturn(mockMember);
-        when(progressPolicy.calculate(mockMember)).thenReturn(320);
 
         // when
         memberCommandService.updateResumeInfo(req, accessMemberId);
@@ -66,8 +61,7 @@ class MemberCommandServiceImplTest {
         assertAll(
             () -> assertThat(mockMember.getPreferredJob()).isEqualTo(PreferredJob.BACKEND),
             () -> assertThat(mockMember.getPsTier()).isEqualTo("GL3"),
-            () -> assertThat(mockMember.getProjectCount()).isEqualTo(2),
-            () -> assertThat(mockMember.getProgress()).isEqualTo(320)    // 계산 결과
+            () -> assertThat(mockMember.getProjectCount()).isEqualTo(2)
         );
     }
 
@@ -95,7 +89,6 @@ class MemberCommandServiceImplTest {
                 req.projectCount(), req.majorType(), req.companyName(),
                 req.workPeriod(), req.position(), req.additionalExperiences()
             );
-        order.verify(mockMember).recalcProgress(progressPolicy);
         order.verifyNoMoreInteractions();
     }
 

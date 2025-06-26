@@ -24,7 +24,6 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.entity.enums.RoleType;
-import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 
 @Entity
 @Getter
@@ -147,10 +146,6 @@ public class Member extends BaseEntity {
         member.id = memberId;
 
         return member;
-    }
-
-    public void recalcProgress(ResumeProgressPolicy policy) {
-        this.progress = policy.calculate(this);
     }
 
     public void updateProfileInfo(UpdateProfileCommand command) {
