@@ -6,10 +6,13 @@ import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
@@ -25,6 +28,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 
 @ExtendWith(MockitoExtension.class)
 class CompanyCommandServiceImplTest {
@@ -41,6 +46,9 @@ class CompanyCommandServiceImplTest {
     @Mock
     private WishCompanyRepository wishCompanyRepository;
 
+    @Mock
+    private RedissonClient redissonClient;
+
     @Test
     @DisplayName("관심 회사 등록 - 성공")
     void registWishCompany_success() {
@@ -50,10 +58,13 @@ class CompanyCommandServiceImplTest {
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
 
+        RBucket<String> bucket = mock(RBucket.class);
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             false);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when
         companyCommandService.registWishCompany(memberId, companyId);
@@ -70,11 +81,14 @@ class CompanyCommandServiceImplTest {
         Long companyId = 100L;
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
+        RBucket<String> bucket = mock(RBucket.class);
 
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             true);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when & then
         assertThatThrownBy(() -> companyCommandService.registWishCompany(memberId, companyId))
@@ -93,11 +107,14 @@ class CompanyCommandServiceImplTest {
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
         WishCompany mockWishCompany = createWishCompany(mockCompany, mockMember);
+        RBucket<String> bucket = mock(RBucket.class);
 
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.findByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             Optional.of(mockWishCompany));
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when
         companyCommandService.deleteWishCompany(memberId, companyId);
@@ -122,11 +139,14 @@ class CompanyCommandServiceImplTest {
         Long companyId = 100L;
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
+        RBucket<String> bucket = mock(RBucket.class);
 
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.findByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             Optional.empty());
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when & then
         assertThatThrownBy(() -> companyCommandService.deleteWishCompany(memberId, companyId))
