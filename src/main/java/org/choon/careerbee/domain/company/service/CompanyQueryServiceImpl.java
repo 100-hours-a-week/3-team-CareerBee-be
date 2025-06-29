@@ -2,12 +2,13 @@ package org.choon.careerbee.domain.company.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -34,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     private static final String GEO_KEY_PREFIX = "company:markerInfo:";
+    private static final String COMPANY_SIMPLE_KEY_PREFIX = "company:simple:";
+    private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
+    private static final Long COMPANY_WISH_KEY_TTL = 10L;
 
     private final CompanyRepository companyRepository;
     private final WishCompanyRepository wishCompanyRepository;
@@ -51,8 +55,48 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     @Override
     public CompanySummaryInfo fetchCompanySummary(Long companyId) {
-        return companyRepository.fetchCompanySummaryInfoById(companyId);
+        RBucket<String> simpleInfoBucket = redissonClient.getBucket(
+            COMPANY_SIMPLE_KEY_PREFIX + companyId
+        );
+        RBucket<String> wishCountBucket = redissonClient.getBucket(
+            COMPANY_WISH_KEY_PREFIX + companyId
+        );
+
+        try {
+            CompanySummaryInfoWithoutWish simpleInfo;
+
+            String simpleJson = simpleInfoBucket.get();
+            if (simpleJson != null) {
+                simpleInfo = objectMapper.readValue(simpleInfoBucket.get(),
+                    CompanySummaryInfoWithoutWish.class);
+            } else {
+                simpleInfo = companyRepository.fetchCompanySummaryInfoWithoutWishCount(companyId);
+                simpleInfoBucket.set(objectMapper.writeValueAsString(simpleInfo));
+            }
+
+            Long wishCount = 0L;
+            String wishCountJson = wishCountBucket.get();
+
+            if (wishCountJson != null) {
+                wishCount = Long.valueOf(wishCountBucket.get());
+            } else {
+                wishCount = wishCompanyRepository.fetchWishCountById(companyId);
+                wishCountBucket.set(String.valueOf(wishCount),
+                    Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
+            }
+
+            return new CompanySummaryInfo(
+                simpleInfo.id(),
+                simpleInfo.name(),
+                simpleInfo.logoUrl(),
+                wishCount,
+                simpleInfo.keywords()
+            );
+        } catch (JsonProcessingException e) {
+            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+        }
     }
+
 
     @Override
     public CheckWishCompanyResp checkWishCompany(Long accessMemberId, Long companyId) {
@@ -88,6 +132,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
         RBucket<String> cachedCompanyMarkerInfo = redissonClient.getBucket(
             GEO_KEY_PREFIX + companyId);
+
         String cached = cachedCompanyMarkerInfo.get();
 
         if (cached != null) {
@@ -112,11 +157,6 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public Company findById(Long companyId) {
         return companyRepository.findById(companyId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST));
-    }
-
-    @Override
-    public Optional<Company> findBySaraminName(String name) {
-        return companyRepository.findBySaraminName(name);
     }
 
     @Override

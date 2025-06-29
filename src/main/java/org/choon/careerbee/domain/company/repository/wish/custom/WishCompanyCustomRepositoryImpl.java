@@ -87,6 +87,15 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
             .fetch();
     }
 
+    @Override
+    public Long fetchWishCountById(Long companyId) {
+        return queryFactory
+            .select(wishCompany.count())
+            .from(wishCompany)
+            .where(wishCompany.company.id.eq(companyId))
+            .fetchOne();
+    }
+
     private List<Tuple> fetchWishCompanyInfos(Long memberId, Long cursor, int size) {
         return queryFactory
             .select(wishCompany.id, company.id, company.name, company.logoUrl)

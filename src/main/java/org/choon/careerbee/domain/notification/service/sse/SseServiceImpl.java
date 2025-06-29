@@ -76,7 +76,7 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public void sendPingToAll() {
-        log.info("[BROADCAST] ping 요청 시작", emitters.size());
+//        log.info("[BROADCAST] ping 요청 시작", emitters.size());
 
         emitters.forEach((memberId, emitter) -> {
             try {

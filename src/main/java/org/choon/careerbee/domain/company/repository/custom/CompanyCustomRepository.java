@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.company.repository.custom;
 
 import java.util.List;
+import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
@@ -16,6 +17,10 @@ public interface CompanyCustomRepository {
         CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond);
 
     CompanySummaryInfo fetchCompanySummaryInfoById(Long companyId);
+
+    CompanySummaryInfoWithoutWish fetchCompanySummaryInfoWithoutWishCount(Long companyId);
+
+    Long fetchWishCountById(Long companyId);
 
     CompanyDetailResp fetchCompanyDetailById(Long companyId);
 

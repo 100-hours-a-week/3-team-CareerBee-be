@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
@@ -99,6 +100,48 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             getWishCount(companyId),
             keywords
         );
+    }
+
+    @Override
+    public CompanySummaryInfoWithoutWish fetchCompanySummaryInfoWithoutWishCount(Long companyId) {
+        Tuple tuple = queryFactory
+            .select(
+                company.id,
+                company.name,
+                company.logoUrl
+            )
+            .from(company)
+            .where(company.id.eq(companyId))
+            .fetchOne();
+
+        if (tuple == null) {
+            throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
+        }
+
+        List<CompanySummaryInfo.Keyword> keywords = queryFactory
+            .select(Projections.constructor(
+                CompanySummaryInfo.Keyword.class,
+                companyKeyword.content
+            ))
+            .from(companyKeyword)
+            .where(companyKeyword.company.id.eq(companyId))
+            .fetch();
+
+        return new CompanySummaryInfoWithoutWish(
+            tuple.get(company.id),
+            tuple.get(company.name),
+            tuple.get(company.logoUrl),
+            keywords
+        );
+    }
+
+    @Override
+    public Long fetchWishCountById(Long companyId) {
+        return queryFactory
+            .select(wishCompany.count())
+            .from(wishCompany)
+            .where(wishCompany.company.id.eq(companyId))
+            .fetchOne();
     }
 
     @Override

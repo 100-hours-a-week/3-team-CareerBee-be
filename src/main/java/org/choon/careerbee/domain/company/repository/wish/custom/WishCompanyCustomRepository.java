@@ -12,4 +12,6 @@ public interface WishCompanyCustomRepository {
     WishCompaniesResp fetchWishCompaniesByMemberId(Long memberId, Long cursor, int size);
 
     List<Long> getMemberIdsByCompanyId(Long companyId);
+
+    Long fetchWishCountById(Long companyId);
 }
