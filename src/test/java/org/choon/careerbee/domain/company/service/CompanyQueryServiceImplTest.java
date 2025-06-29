@@ -6,11 +6,15 @@ import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -43,9 +47,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 
 @ExtendWith(MockitoExtension.class)
 class CompanyQueryServiceImplTest {
+
+    private static final String GEO_KEY_PREFIX = "company:markerInfo:";
+
 
     @Mock
     private CompanyRepository companyRepository;
@@ -55,6 +64,12 @@ class CompanyQueryServiceImplTest {
 
     @Mock
     private MemberRepository memberRepository;
+
+    @Mock
+    private RedissonClient redissonClient;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
@@ -100,6 +115,77 @@ class CompanyQueryServiceImplTest {
         assertThat(firstMarker.recruitingStatus()).isEqualTo(RecruitingStatus.ONGOING);
         assertThat(firstMarker.locationInfo().latitude()).isEqualTo(37.4);
         assertThat(firstMarker.locationInfo().longitude()).isEqualTo(127.3);
+    }
+
+    @Test
+    @DisplayName("[기업 위치 정보 조회] 캐시에 기업 위치 정보가 존재하면 DB 조회 없이 캐시에서 반환")
+    void fetchCompanyLocation_whenCacheExists_returnsFromCache() throws Exception {
+        // given
+        Long companyId = 1L;
+        CompanyMarkerInfo expected = new CompanyMarkerInfo(
+            companyId, "test.jpg", BusinessType.COMMERCE, RecruitingStatus.CLOSED,
+            new LocationInfo(37.123, 127.12)
+        );
+        String json = new ObjectMapper().writeValueAsString(expected);
+
+        RBucket<String> bucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
+        when(bucket.get()).thenReturn(json);
+        when(objectMapper.readValue(json, CompanyMarkerInfo.class)).thenReturn(expected);
+
+        // when
+        CompanyMarkerInfo result = companyQueryService.fetchCompanyLocation(companyId);
+
+        // then
+        verify(companyRepository, never()).fetchCompanyMarkerInfo(anyLong());
+        assertThat(result.id()).isEqualTo(expected.id());
+    }
+
+    @Test
+    @DisplayName("[기업 위치 정보 조회] 캐시에 정보가 없으면 DB에서 조회 후 캐시에 저장하고 반환")
+    void fetchCompanyLocation_whenCacheMiss_thenFetchFromDbAndCache() throws Exception {
+        // given
+        Long companyId = 2L;
+        CompanyMarkerInfo markerInfo = new CompanyMarkerInfo(
+            companyId, "marker2.jpg", BusinessType.COMMERCE, RecruitingStatus.ONGOING,
+            new LocationInfo(36.5, 127.0)
+        );
+        String json = new ObjectMapper().writeValueAsString(markerInfo);
+
+        RBucket<String> bucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null);
+        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(markerInfo);
+        when(objectMapper.writeValueAsString(markerInfo)).thenReturn(json);
+
+        // when
+        CompanyMarkerInfo result = companyQueryService.fetchCompanyLocation(companyId);
+
+        // then
+        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(companyId);
+        verify(bucket, times(1)).set(json);
+        assertThat(result).usingRecursiveComparison().isEqualTo(markerInfo);
+    }
+
+    @Test
+    @DisplayName("[기업 위치 정보 조회] 캐시 값 역직렬화 실패 시 CustomException 발생")
+    void fetchCompanyLocation_whenCacheCorrupted_thenThrowException() throws Exception {
+        // given
+        Long companyId = 3L;
+        String corruptedJson = "INVALID_JSON";
+
+        RBucket<String> bucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
+        when(bucket.get()).thenReturn(corruptedJson);
+        when(objectMapper.readValue(corruptedJson, CompanyMarkerInfo.class))
+            .thenThrow(JsonProcessingException.class);
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.fetchCompanyLocation(companyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.JSON_PARSING_ERROR.getMessage());
+
+        verify(companyRepository, never()).fetchCompanyMarkerInfo(anyLong());
     }
 
     @Test
@@ -187,39 +273,6 @@ class CompanyQueryServiceImplTest {
         assertThat(actualResponse.rating()).isEqualTo(expectedResponse.rating());
         assertThat(actualResponse.homepageUrl()).isEqualTo(expectedResponse.homepageUrl());
         assertThat(actualResponse.techStacks()).isEqualTo(expectedResponse.techStacks());
-    }
-
-    @Test
-    @DisplayName("기업 마커 정보 조회 시 repository 호출 및 결과 반환")
-    void fetchCompanyLocation_ShouldReturnMarkerInfo() {
-        // given
-        Long companyId = 1L;
-        CompanyMarkerInfo expectedResponse = new CompanyMarkerInfo(
-            companyId,
-            "testUrl",
-            BusinessType.GAME,
-            RecruitingStatus.ONGOING,
-            new LocationInfo(37.123, 127.01)
-        );
-        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedResponse);
-
-        // when
-        CompanyMarkerInfo actualResponse = companyQueryService.fetchCompanyLocation(companyId);
-
-        // then
-        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
-        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(companyId);
-        assertThat(actualResponse).isEqualTo(expectedResponse);
-        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
-        assertThat(actualResponse.markerUrl()).isEqualTo(expectedResponse.markerUrl());
-        assertThat(actualResponse.businessType()).isEqualTo(expectedResponse.businessType());
-        assertThat(actualResponse.recruitingStatus()).isEqualTo(
-            expectedResponse.recruitingStatus());
-        assertThat(actualResponse.locationInfo().latitude()).isEqualTo(
-            expectedResponse.locationInfo().latitude());
-        assertThat(actualResponse.locationInfo().longitude()).isEqualTo(
-            expectedResponse.locationInfo().longitude());
     }
 
     @Test
