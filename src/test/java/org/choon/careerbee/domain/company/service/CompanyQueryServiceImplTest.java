@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -13,12 +14,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -29,6 +31,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Lo
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo.Keyword;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
@@ -46,6 +49,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
@@ -54,7 +58,9 @@ import org.redisson.api.RedissonClient;
 class CompanyQueryServiceImplTest {
 
     private static final String GEO_KEY_PREFIX = "company:markerInfo:";
-
+    private static final String COMPANY_SIMPLE_KEY_PREFIX = "company:simple:";
+    private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
+    private static final Long COMPANY_WISH_KEY_TTL = 10L;
 
     @Mock
     private CompanyRepository companyRepository;
@@ -68,8 +74,8 @@ class CompanyQueryServiceImplTest {
     @Mock
     private RedissonClient redissonClient;
 
-    @Mock
-    private ObjectMapper objectMapper;
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
@@ -169,7 +175,7 @@ class CompanyQueryServiceImplTest {
 
     @Test
     @DisplayName("[기업 위치 정보 조회] 캐시 값 역직렬화 실패 시 CustomException 발생")
-    void fetchCompanyLocation_whenCacheCorrupted_thenThrowException() throws Exception {
+    void fetchCompanyLocation_whenCacheCorrupted_thenThrowException() {
         // given
         Long companyId = 3L;
         String corruptedJson = "INVALID_JSON";
@@ -177,8 +183,6 @@ class CompanyQueryServiceImplTest {
         RBucket<String> bucket = mock(RBucket.class);
         when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
         when(bucket.get()).thenReturn(corruptedJson);
-        when(objectMapper.readValue(corruptedJson, CompanyMarkerInfo.class))
-            .thenThrow(JsonProcessingException.class);
 
         // when & then
         assertThatThrownBy(() -> companyQueryService.fetchCompanyLocation(companyId))
@@ -189,30 +193,135 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("기업 간단 조회 시 repository 호출 및 결과 반환")
-    void fetchCompanySummary_ShouldReturnSummaryResponse() {
+    @DisplayName("기업 간단 정보 데이터가 캐시에 모두 존재하는 경우")
+    void fetchCompanySummary_allCacheHit_returnsFromCache() throws Exception {
         // given
         Long companyId = 1L;
-        CompanySummaryInfo expectedResponse = new CompanySummaryInfo(
-            companyId,
-            "테스트 회사",
-            "https://test.logo.jpg",
-            1L,
-            List.of()
+        CompanySummaryInfoWithoutWish simpleInfo = new CompanySummaryInfoWithoutWish(
+            companyId, "테스트회사", "https://logo.png", List.of(new Keyword("AI"))
         );
-        when(companyRepository.fetchCompanySummaryInfoById(anyLong())).thenReturn(expectedResponse);
+        String simpleJson = objectMapper.writeValueAsString(simpleInfo);
+        String wishCountJson = "10";
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+        when(simpleBucket.get()).thenReturn(simpleJson);
+        when(wishBucket.get()).thenReturn(wishCountJson);
+        when(objectMapper.readValue(simpleJson, CompanySummaryInfoWithoutWish.class)).thenReturn(
+            simpleInfo);
 
         // when
-        CompanySummaryInfo actualResponse = companyQueryService.fetchCompanySummary(companyId);
+        CompanySummaryInfo result = companyQueryService.fetchCompanySummary(companyId);
 
         // then
-        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
-        verify(companyRepository, times(1)).fetchCompanySummaryInfoById(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(companyId);
-        assertThat(actualResponse.name()).isEqualTo(expectedResponse.name());
-        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
-        assertThat(actualResponse.logoUrl()).isEqualTo(expectedResponse.logoUrl());
-        assertThat(actualResponse.keywords()).isEqualTo(expectedResponse.keywords());
+        verify(companyRepository, never()).fetchCompanySummaryInfoWithoutWishCount(any());
+        verify(wishCompanyRepository, never()).fetchWishCountById(any());
+        assertThat(result.wishCount()).isEqualTo(10L);
+        assertThat(result.name()).isEqualTo("테스트회사");
+    }
+
+    @Test
+    @DisplayName("기업 간단 정보 - 캐시가 존재하지 않는 경우 DB 조회 및 캐시 저장 후 반환")
+    void fetchCompanySummary_allCacheMiss_shouldQueryDbAndCache() throws Exception {
+        // given
+        Long companyId = 2L;
+        CompanySummaryInfoWithoutWish simpleInfo = new CompanySummaryInfoWithoutWish(
+            companyId, "새로운회사", "https://newlogo.png", List.of(new Keyword("Data"))
+        );
+        String simpleJson = objectMapper.writeValueAsString(simpleInfo);
+        Long wishCount = 42L;
+        String wishCountJson = String.valueOf(wishCount);
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+
+        when(simpleBucket.get()).thenReturn(null);
+        when(wishBucket.get()).thenReturn(null);
+
+        when(companyRepository.fetchCompanySummaryInfoWithoutWishCount(companyId)).thenReturn(
+            simpleInfo);
+        when(wishCompanyRepository.fetchWishCountById(companyId)).thenReturn(wishCount);
+        when(objectMapper.writeValueAsString(simpleInfo)).thenReturn(simpleJson);
+
+        // when
+        CompanySummaryInfo result = companyQueryService.fetchCompanySummary(companyId);
+
+        // then
+        verify(companyRepository).fetchCompanySummaryInfoWithoutWishCount(companyId);
+        verify(wishCompanyRepository).fetchWishCountById(companyId);
+        verify(simpleBucket).set(simpleJson);
+        verify(wishBucket).set(wishCountJson, Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
+        assertThat(result.wishCount()).isEqualTo(42L);
+        assertThat(result.name()).isEqualTo("새로운회사");
+    }
+
+    @Test
+    @DisplayName("기업 간단 정보 - 단순 정보 캐시만 존재하는 경우 관심수만 DB 조회 후 캐시 저장")
+    void fetchCompanySummary_onlySimpleInfoCached_shouldFetchWishCountAndCacheIt()
+        throws Exception {
+        // given
+        Long companyId = 3L;
+        CompanySummaryInfoWithoutWish simpleInfo = new CompanySummaryInfoWithoutWish(
+            companyId, "부분캐시회사", "https://logo.partial.png", List.of(new Keyword("Cloud"))
+        );
+        String simpleJson = objectMapper.writeValueAsString(simpleInfo);
+        Long wishCount = 20L;
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+
+        when(simpleBucket.get()).thenReturn(simpleJson);
+        when(wishBucket.get()).thenReturn(null);
+
+        when(objectMapper.readValue(simpleJson, CompanySummaryInfoWithoutWish.class)).thenReturn(
+            simpleInfo);
+        when(wishCompanyRepository.fetchWishCountById(companyId)).thenReturn(wishCount);
+
+        // when
+        CompanySummaryInfo result = companyQueryService.fetchCompanySummary(companyId);
+
+        // then
+        verify(companyRepository, never()).fetchCompanySummaryInfoWithoutWishCount(any());
+        verify(wishCompanyRepository).fetchWishCountById(companyId);
+        verify(wishBucket).set(String.valueOf(wishCount), Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
+        assertThat(result.name()).isEqualTo("부분캐시회사");
+        assertThat(result.wishCount()).isEqualTo(20L);
+    }
+
+    @Test
+    @DisplayName("기업 간단 정보 - 단순 정보 캐시 역직렬화 실패 시 예외 발생")
+    void fetchCompanySummary_whenSimpleJsonParsingFails_shouldThrowException() throws Exception {
+        // given
+        Long companyId = 4L;
+        String invalidJson = "INVALID_JSON";
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+        when(simpleBucket.get()).thenReturn(invalidJson);
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.fetchCompanySummary(companyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.JSON_PARSING_ERROR.getMessage());
     }
 
     @Test
