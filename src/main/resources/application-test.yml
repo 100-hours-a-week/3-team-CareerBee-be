@@ -18,6 +18,8 @@ spring:
     redis:
       host: localhost
       port: 6380
+      repositories:
+        enabled: false
 
   cloud:
     aws:
