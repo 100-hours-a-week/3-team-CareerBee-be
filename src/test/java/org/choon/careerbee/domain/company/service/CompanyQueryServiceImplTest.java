@@ -159,7 +159,7 @@ class CompanyQueryServiceImplTest {
             3000,
             "https://company.nexon.com/",
             "국내 대표 게임 개발사",
-            123,
+            123L,
             4.5,
             financials,
             photos,
