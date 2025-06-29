@@ -1,5 +1,7 @@
 package org.choon.careerbee.domain.company.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,6 +23,8 @@ import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,9 +33,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CompanyQueryServiceImpl implements CompanyQueryService {
 
+    private static final String GEO_KEY_PREFIX = "company:markerInfo:";
+
     private final CompanyRepository companyRepository;
     private final WishCompanyRepository wishCompanyRepository;
     private final MemberRepository memberRepository;
+    private final RedissonClient redissonClient;
+    private final ObjectMapper objectMapper;
 
     @Override
     public CompanyRangeSearchResp fetchCompaniesByDistance(
@@ -78,7 +86,26 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     @Override
     public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
-        return companyRepository.fetchCompanyMarkerInfo(companyId);
+        RBucket<String> cachedCompanyMarkerInfo = redissonClient.getBucket(
+            GEO_KEY_PREFIX + companyId);
+        String cached = cachedCompanyMarkerInfo.get();
+
+        if (cached != null) {
+            try {
+                return objectMapper.readValue(cached, CompanyMarkerInfo.class);
+            } catch (JsonProcessingException e) {
+                throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+            }
+        }
+
+        CompanyMarkerInfo markerInfo = companyRepository.fetchCompanyMarkerInfo(companyId);
+        try {
+            cachedCompanyMarkerInfo.set(objectMapper.writeValueAsString(markerInfo));
+        } catch (JsonProcessingException e) {
+            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+        }
+
+        return markerInfo;
     }
 
     @Override
@@ -100,6 +127,11 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     @Override
     public WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size) {
         return wishCompanyRepository.fetchWishCompaniesByMemberId(id, cursor, size);
+    }
+
+    @Override
+    public List<CompanyMarkerInfo> fetchAllCompanyLocations() {
+        return companyRepository.fetchAllCompanyMarkerInfo();
     }
 
     private String escapeLike(String keyword) {

@@ -1,5 +1,6 @@
 package org.choon.careerbee.common.exception;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.sentry.Sentry;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
@@ -57,6 +58,17 @@ public class CustomExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.BAD_REQUEST)
             .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
+    }
+
+    @ExceptionHandler(JsonMappingException.class)
+    public ResponseEntity<CommonResponse<String>> handleJsonParsing(
+        Exception ex, HttpServletResponse resp
+    ) {
+        log.error("[ERROR] : {}\n{}", ex.getMessage(), getStackTraceAsString(ex));
+
+        return ResponseEntity
+            .status(CustomResponseStatus.JSON_PARSING_ERROR.getHttpStatusCode())
+            .body(CommonResponse.createError(CustomResponseStatus.JSON_PARSING_ERROR));
     }
 
     @ExceptionHandler(CustomException.class)

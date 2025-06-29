@@ -39,4 +39,5 @@ public interface CompanyQueryService {
 
     WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size);
 
+    List<CompanyMarkerInfo> fetchAllCompanyLocations();
 }

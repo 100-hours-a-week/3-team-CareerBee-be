@@ -236,6 +236,26 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .fetch();
     }
 
+    @Override
+    public List<CompanyMarkerInfo> fetchAllCompanyMarkerInfo() {
+        return queryFactory.select(
+                Projections.constructor(
+                    CompanyMarkerInfo.class,
+                    company.id,
+                    company.markerUrl,
+                    company.businessType,
+                    company.recruitingStatus,
+                    Projections.constructor(
+                        LocationInfo.class,
+                        Expressions.numberTemplate(Double.class, "ST_X({0})", company.geoPoint),
+                        Expressions.numberTemplate(Double.class, "ST_Y({0})", company.geoPoint)
+                    )
+                )
+            )
+            .from(company)
+            .fetch();
+    }
+
     private BooleanExpression inDistance(String point, Integer radius) {
         return radius != null
             ? Expressions.booleanTemplate(
