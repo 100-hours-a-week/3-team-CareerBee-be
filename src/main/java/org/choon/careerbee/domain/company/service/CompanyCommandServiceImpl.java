@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +28,7 @@ import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     private static final int RECRUITING_STATUS_CLOSED = 0;
+    private static final long TTL = 3L;
     private static final DateTimeFormatter SARAMIN_DT_FMT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
@@ -48,11 +51,20 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     private final WishCompanyRepository wishCompanyRepository;
     private final MemberQueryService memberQueryService;
     private final CompanyQueryService companyQueryService;
+    private final RedissonClient redissonClient;
 
     @Override
     public void registWishCompany(Long accessMemberId, Long companyId) {
         Member validMember = memberQueryService.findById(accessMemberId);
         Company validCompany = companyQueryService.findById(companyId);
+
+        String key = "wish:register:" + validMember.getId() + ":" + companyId;
+        boolean success = redissonClient.getBucket(key)
+            .setIfAbsent("1", Duration.ofSeconds(TTL));
+
+        if (!success) {
+            throw new CustomException(CustomResponseStatus.DUPLICATE_REQUEST);
+        }
 
         if (wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany)) {
             throw new CustomException(CustomResponseStatus.WISH_ALREADY_EXIST);
@@ -65,6 +77,14 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     public void deleteWishCompany(Long accessMemberId, Long companyId) {
         Member validMember = memberQueryService.findById(accessMemberId);
         Company validCompany = companyQueryService.findById(companyId);
+
+        String key = "wish:delete:" + validMember.getId() + ":" + companyId;
+        boolean success = redissonClient.getBucket(key)
+            .setIfAbsent("1", Duration.ofSeconds(TTL));
+
+        if (!success) {
+            throw new CustomException(CustomResponseStatus.DUPLICATE_REQUEST);
+        }
 
         WishCompany wishCompany = wishCompanyRepository
             .findByMemberAndCompany(validMember, validCompany)
