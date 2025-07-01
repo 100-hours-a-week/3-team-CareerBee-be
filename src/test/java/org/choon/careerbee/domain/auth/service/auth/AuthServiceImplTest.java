@@ -3,15 +3,22 @@ package org.choon.careerbee.domain.auth.service.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
-import static org.choon.careerbee.fixture.TokenFixture.createToken;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -19,11 +26,8 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.choon.careerbee.domain.auth.dto.jwt.TokenClaimInfo;
 import org.choon.careerbee.domain.auth.dto.response.OAuthLoginUrlResp;
-import org.choon.careerbee.domain.auth.entity.Token;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
-import org.choon.careerbee.domain.auth.entity.enums.TokenStatus;
 import org.choon.careerbee.domain.auth.entity.enums.TokenType;
-import org.choon.careerbee.domain.auth.repository.TokenRepository;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProvider;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProviderFactory;
 import org.choon.careerbee.domain.auth.service.oauth.RequestOAuthInfoService;
@@ -39,16 +43,21 @@ import org.choon.careerbee.util.jwt.TokenGenerator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
 class AuthServiceImplTest {
+
+    private static final String RT_KEY = "rt:";
+    private static final String BL_KEY = "bl:";
+    private static final Long RT_TTL = (long) (1000 * 600);
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -66,7 +75,7 @@ class AuthServiceImplTest {
     private MemberQueryService memberQueryService;
 
     @Mock
-    private TokenRepository tokenRepository;
+    private RedissonClient redissonClient;
 
     @Mock
     private TokenGenerator tokenGenerator;
@@ -112,10 +121,11 @@ class AuthServiceImplTest {
         verifyNoInteractions(providerFactory);
     }
 
-    @DisplayName("로그인 성공 – 기존 회원 & 이전 LIVE 토큰 있음 → 새 RT 발급 + 기존 RT REVOKE")
+    @DisplayName("로그인 성공 – 기존 회원, Redis RT 덮어쓰기")
     @Test
-    void login_existingMember_issueNewRefreshToken() {
+    void login_existingMember_overwriteRefreshTokenInRedis() {
         // given
+        // (1) OAuth 파라미터 & 외부 API 응답
         KakaoLoginParams params = new KakaoLoginParams();
         ReflectionTestUtils.setField(params, "authorizationCode", "code123");
 
@@ -124,18 +134,21 @@ class AuthServiceImplTest {
         ReflectionTestUtils.setField(account, "email", "old@kakao.com");
         ReflectionTestUtils.setField(kakaoInfo, "id", 321L);
         ReflectionTestUtils.setField(kakaoInfo, "kakaoAccount", account);
+        ReflectionTestUtils.setField(authService, "refreshTokenTTL", 600_000L);
 
+        when(requestOAuthInfoService.request(params, "http://localhost:5173"))
+            .thenReturn(kakaoInfo);
+
+        // (2) 이미 가입된 멤버
         Member member = createMember("oldnick", "old@kakao.com", 321L);
         ReflectionTestUtils.setField(member, "id", 10L);
-
-        Token oldLiveRt = createToken(member, "old-refresh", TokenStatus.LIVE);
-
-        when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
-            kakaoInfo);
         when(memberQueryService.findMemberByProviderId(321L)).thenReturn(Optional.of(member));
-        when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE))
-            .thenReturn(Optional.of(oldLiveRt));
 
+        // (3) Redis 버킷 mock
+        RBucket<String> rtBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(RT_KEY + member.getId())).thenReturn(rtBucket);
+
+        // (4) 토큰 생성 mock
         when(jwtUtil.createToken(10L, TokenType.ACCESS_TOKEN)).thenReturn("new-access");
         when(jwtUtil.createToken(10L, TokenType.REFRESH_TOKEN)).thenReturn("new-refresh");
 
@@ -145,22 +158,16 @@ class AuthServiceImplTest {
         // then
         assertThat(result.accessToken()).isEqualTo("new-access");
         assertThat(result.refreshToken()).isEqualTo("new-refresh");
-        assertThat(oldLiveRt.getStatus()).isEqualTo(TokenStatus.REVOKED);
 
-        ArgumentCaptor<Token> captor = ArgumentCaptor.forClass(Token.class);
-        verify(tokenRepository).save(captor.capture());
-
-        Token saved = captor.getValue();
-        assertThat(saved.getMember()).isEqualTo(member);
-        assertThat(saved.getStatus()).isEqualTo(TokenStatus.LIVE);
-        assertThat(saved.getTokenValue()).isEqualTo("new-refresh");
+        verify(rtBucket).set(eq("new-refresh"), any(Duration.class));
     }
 
 
+    @DisplayName("로그인 성공 – 신규 회원 force-join, Redis RT 최초 저장")
     @Test
-    @DisplayName("로그인 성공 - 신규 회원 강제가입 & 리프레시 토큰 없음")
-    void login_newMember_noRefreshToken() {
+    void login_newMember_forceJoin_andSaveRefreshToken() {
         // given
+        // (1) OAuth 파라미터 & 외부 API 응답
         KakaoLoginParams params = new KakaoLoginParams();
         ReflectionTestUtils.setField(params, "authorizationCode", "new-code");
 
@@ -169,20 +176,26 @@ class AuthServiceImplTest {
         ReflectionTestUtils.setField(kakaoAccount, "email", "new@kakao.com");
         ReflectionTestUtils.setField(oAuthInfo, "id", 999L);
         ReflectionTestUtils.setField(oAuthInfo, "kakaoAccount", kakaoAccount);
+        ReflectionTestUtils.setField(authService, "refreshTokenTTL", 600_000L);
+
+        when(requestOAuthInfoService.request(params, "http://localhost:5173"))
+            .thenReturn(oAuthInfo);
+
+        // (2) 회원 조회 결과 없음  →  강제 가입
+        when(memberQueryService.findMemberByProviderId(999L)).thenReturn(Optional.empty());
 
         Member newMember = createMember("newnick", "new@kakao.com", 999L);
         ReflectionTestUtils.setField(newMember, "id", 2L);
 
-        when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
-            oAuthInfo);
-        when(memberQueryService.findMemberByProviderId(999L)).thenReturn(Optional.empty());
         when(memberCommandService.forceJoin(oAuthInfo)).thenReturn(newMember);
-        when(jwtUtil.createToken(newMember.getId(), TokenType.ACCESS_TOKEN)).thenReturn(
-            "access-token-new");
-        when(jwtUtil.createToken(newMember.getId(), TokenType.REFRESH_TOKEN)).thenReturn(
-            "refresh-token-new");
-        when(tokenRepository.findByMemberAndStatus(newMember, TokenStatus.LIVE)).thenReturn(
-            Optional.empty());
+
+        // (3) 토큰 생성 mock
+        when(jwtUtil.createToken(2L, TokenType.ACCESS_TOKEN)).thenReturn("access-token-new");
+        when(jwtUtil.createToken(2L, TokenType.REFRESH_TOKEN)).thenReturn("refresh-token-new");
+
+        // (4) Redis 버킷 mock
+        RBucket<String> rtBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(RT_KEY + newMember.getId())).thenReturn(rtBucket);
 
         // when
         AuthTokens result = authService.login(params, "http://localhost:5173");
@@ -191,19 +204,15 @@ class AuthServiceImplTest {
         assertThat(result.accessToken()).isEqualTo("access-token-new");
         assertThat(result.refreshToken()).isEqualTo("refresh-token-new");
 
-        ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
-        verify(tokenRepository).save(tokenCaptor.capture());
-
-        Token savedToken = tokenCaptor.getValue();
-        assertThat(savedToken.getMember().getId()).isEqualTo(2L);
-        assertThat(savedToken.getStatus()).isEqualTo(TokenStatus.LIVE);
-        assertThat(savedToken.getTokenValue()).isEqualTo("refresh-token-new");
+        // Redis 에 새 RT 가 저장되었는지 확인
+        verify(rtBucket).set(eq("refresh-token-new"), any(Duration.class));
     }
 
     @DisplayName("로그인 성공 – 리프레시 토큰이 없던 기존 회원 → 새 RT 발급·저장")
     @Test
     void login_existingMember_withoutRefreshToken() {
         // given
+        // (1) OAuth 로그인 요청/응답
         KakaoLoginParams params = new KakaoLoginParams();
         ReflectionTestUtils.setField(params, "authorizationCode", "code456");
 
@@ -212,18 +221,26 @@ class AuthServiceImplTest {
         ReflectionTestUtils.setField(account, "email", "exist@kakao.com");
         ReflectionTestUtils.setField(kakaoInfo, "id", 654L);
         ReflectionTestUtils.setField(kakaoInfo, "kakaoAccount", account);
+        ReflectionTestUtils.setField(authService, "refreshTokenTTL", 600_000L);
 
+        when(requestOAuthInfoService.request(params, "http://localhost:5173"))
+            .thenReturn(kakaoInfo);
+
+        // (2) 기존 회원 & RT 미보유
         Member member = createMember("existnick", "exist@kakao.com", 654L);
         ReflectionTestUtils.setField(member, "id", 20L);
 
-        when(requestOAuthInfoService.request(params, "http://localhost:5173")).thenReturn(
-            kakaoInfo);
-        when(memberQueryService.findMemberByProviderId(654L)).thenReturn(Optional.of(member));
-        when(tokenRepository.findByMemberAndStatus(member, TokenStatus.LIVE)).thenReturn(
-            Optional.empty());
+        when(memberQueryService.findMemberByProviderId(654L))
+            .thenReturn(Optional.of(member));
 
+        // (3) 토큰 생성 stub
         when(jwtUtil.createToken(20L, TokenType.ACCESS_TOKEN)).thenReturn("access-exist");
         when(jwtUtil.createToken(20L, TokenType.REFRESH_TOKEN)).thenReturn("refresh-exist");
+
+        // (4) Redis 버킷 mock
+        @SuppressWarnings("unchecked")
+        RBucket<String> rtBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(RT_KEY + member.getId())).thenReturn(rtBucket);
 
         // when
         AuthTokens result = authService.login(params, "http://localhost:5173");
@@ -232,13 +249,8 @@ class AuthServiceImplTest {
         assertThat(result.accessToken()).isEqualTo("access-exist");
         assertThat(result.refreshToken()).isEqualTo("refresh-exist");
 
-        ArgumentCaptor<Token> captor = ArgumentCaptor.forClass(Token.class);
-        verify(tokenRepository).save(captor.capture());
-
-        Token saved = captor.getValue();
-        assertThat(saved.getMember()).isEqualTo(member);
-        assertThat(saved.getStatus()).isEqualTo(TokenStatus.LIVE);
-        assertThat(saved.getTokenValue()).isEqualTo("refresh-exist");
+        // Redis에 RT 가 저장되었는지 확인
+        verify(rtBucket).set(eq("refresh-exist"), any(Duration.class));
     }
 
     @DisplayName("로그인 실패 – 탈퇴한 회원인 경우 410 예외 발생")
@@ -268,37 +280,41 @@ class AuthServiceImplTest {
             .hasMessage(CustomResponseStatus.WITHDRAWAL_MEMBER.getMessage());
     }
 
+    @DisplayName("로그아웃 성공 RT 삭제 & AT 블랙리스트 등록")
     @Test
-    @DisplayName("로그아웃 성공 - 토큰 블랙리스트 처리 및 기존 리프레시 토큰 로그아웃")
     void logout_success() {
         // given
-        Member member = createMember("nickname", "email@test.com", 1L);
-        ReflectionTestUtils.setField(member, "id", 1L);
+        long memberId = 1L;
+        Member member = createMember("nickname", "email@test.com", memberId);
+        ReflectionTestUtils.setField(member, "id", memberId);
 
-        String accessToken = "Bearer some-valid-token";
-        String resolvedToken = "some-valid-token";
-        TokenClaimInfo tokenClaims = new TokenClaimInfo(member.getId());
-        Token refreshToken = new Token(member, TokenStatus.LIVE, "refresh-token");
+        String bearerAt = "Bearer some-access-token";
+        String accessToken = "some-access-token";
+        long remainMs = 120_000L;
 
-        when(jwtUtil.resolveToken(anyString())).thenReturn(resolvedToken);
-        when(jwtUtil.getTokenClaims(anyString())).thenReturn(tokenClaims);
-        when(memberQueryService.getReferenceById(anyLong())).thenReturn(member);
-        when(tokenRepository.findByMemberIdAndStatus(anyLong(), any(TokenStatus.class)))
-            .thenReturn(Optional.of(refreshToken));
+        TokenClaimInfo claim = new TokenClaimInfo(memberId);
+
+        // ① JWT 유틸 mock
+        when(jwtUtil.resolveToken(bearerAt)).thenReturn(accessToken);
+        when(jwtUtil.getTokenClaims(accessToken)).thenReturn(claim);
+        when(jwtUtil.getRemainingMillis(accessToken)).thenReturn(remainMs);
+
+        // ② 멤버 조회 mock
+        when(memberQueryService.getReferenceById(memberId)).thenReturn(member);
+
+        // ③ Redis 버킷 mock
+        RBucket<String> rtBucket = mock(RBucket.class);
+        RBucket<String> blBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(RT_KEY + memberId)).thenReturn(rtBucket);
+        when(redissonClient.<String>getBucket(BL_KEY + accessToken)).thenReturn(blBucket);
 
         // when
-        authService.logout(accessToken);
+        assertDoesNotThrow(() -> authService.logout(bearerAt));
 
         // then
-        assertThat(refreshToken.getStatus()).isEqualTo(TokenStatus.BLACK);
-        ArgumentCaptor<Token> tokenCaptor = ArgumentCaptor.forClass(Token.class);
-
-        verify(tokenRepository).save(tokenCaptor.capture());
-
-        Token savedToken = tokenCaptor.getValue();
-        assertThat(savedToken.getMember().getId()).isEqualTo(1L);
-        assertThat(savedToken.getStatus()).isEqualTo(TokenStatus.BLACK);
-        assertThat(savedToken.getTokenValue()).isEqualTo(resolvedToken);
+        verify(rtBucket).delete();
+        verify(blBucket).set(eq(""), argThat(d -> d.toMillis() == remainMs));
+        verifyNoMoreInteractions(rtBucket, blBucket, jwtUtil, memberQueryService);
     }
 
     @Test
@@ -320,31 +336,38 @@ class AuthServiceImplTest {
             .hasMessage(CustomResponseStatus.MEMBER_NOT_EXIST.getMessage());
     }
 
+    @DisplayName("RT - 재발급 성공 – Redis 저장소 버전")
     @Test
-    @DisplayName("토큰 재발급 성공")
     void reissue_success() {
         // given
-        Long memberId = 1L;
+        long memberId = 1L;
+
         Member member = createMember("nickname", "email@test.com", memberId);
-        ReflectionTestUtils.setField(member, "id", 1L);
+        ReflectionTestUtils.setField(member, "id", memberId);
 
-        String oldRefreshToken = "old-refresh-token";
-        TokenClaimInfo tokenClaimInfo = new TokenClaimInfo(memberId);
-        Token storedToken = createToken(member, oldRefreshToken, TokenStatus.LIVE);
-        AuthTokens newAuthTokens = new AuthTokens("new-access-token", "new-refresh-token");
+        String oldRt = "old-refresh-token";
+        String newAt = "new-access-token";
+        String newRt = "new-refresh-token";
+        RBucket<String> bucket = mock(RBucket.class);
 
-        when(jwtUtil.getTokenClaims(oldRefreshToken)).thenReturn(tokenClaimInfo);
-        when(memberQueryService.getReferenceById(anyLong())).thenReturn(member);
-        when(tokenRepository.findByTokenValueAndStatus(anyString(), any(TokenStatus.class)))
-            .thenReturn(Optional.of(storedToken));
-        when(tokenGenerator.generateToken(anyLong())).thenReturn(newAuthTokens);
+        when(jwtUtil.getTokenClaims(oldRt)).thenReturn(new TokenClaimInfo(memberId));
+        when(memberQueryService.getReferenceById(memberId)).thenReturn(member);
+        when(bucket.get()).thenReturn(oldRt);
+        doNothing().when(bucket).set(eq(newRt), any(Duration.class));
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(tokenGenerator.generateToken(memberId)).thenReturn(new AuthTokens(newAt, newRt));
+
+        // refreshTokenTTL 주입 (예: 7일)
+        ReflectionTestUtils.setField(authService, "refreshTokenTTL", RT_TTL);
 
         // when
-        AuthTokens result = authService.reissue(oldRefreshToken);
+        AuthTokens result = authService.reissue(oldRt);
 
         // then
-        assertThat(result.accessToken()).isEqualTo("new-access-token");
-        assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
+        assertThat(result.accessToken()).isEqualTo(newAt);
+        assertThat(result.refreshToken()).isEqualTo(newRt);
+
+        verify(bucket).set(eq(newRt), any(Duration.class));
     }
 
     @Test
@@ -361,24 +384,30 @@ class AuthServiceImplTest {
             .hasMessage(CustomResponseStatus.REFRESH_TOKEN_EXPIRED.getMessage());
     }
 
-    @Test
     @DisplayName("재발급 실패 - 저장된 리프레시 토큰이 없음")
+    @Test
     void reissue_shouldThrow_whenNoStoredRefreshToken() {
         // given
-        Member member = createMember("nickname", "email@test.com", 1234L);
+        Member member = createMember("nick", "email@test.com", 1234L);
         ReflectionTestUtils.setField(member, "id", 1L);
 
-        String refreshToken = "refresh-token";
-        TokenClaimInfo tokenClaimInfo = new TokenClaimInfo(member.getId());
+        String rtInCookie = "refresh-token";
+        TokenClaimInfo claimInfo = new TokenClaimInfo(member.getId());
 
-        when(jwtUtil.getTokenClaims(anyString())).thenReturn(tokenClaimInfo);
-        when(memberQueryService.getReferenceById(anyLong())).thenReturn(member);
-        when(tokenRepository.findByTokenValueAndStatus(anyString(), any(TokenStatus.class)))
-            .thenReturn(Optional.empty());
+        RBucket<String> bucket = mock(RBucket.class);
+
+        when(jwtUtil.getTokenClaims(rtInCookie)).thenReturn(claimInfo);
+        when(memberQueryService.getReferenceById(member.getId())).thenReturn(member);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null);
 
         // when & then
-        assertThatThrownBy(() -> authService.reissue(refreshToken))
+        assertThatThrownBy(() -> authService.reissue(rtInCookie))
             .isInstanceOf(CustomException.class)
-            .hasMessage(CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND.getMessage());
+            .hasFieldOrPropertyWithValue("customResponseStatus",
+                CustomResponseStatus.REFRESH_TOKEN_NOT_FOUND);
+
+        // Redis에 새로운 RT를 저장하려 시도하지 않은 것도 확인
+        verify(bucket, never()).set(anyString(), any(Duration.class));
     }
 }

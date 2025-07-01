@@ -11,7 +11,7 @@ import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.response.AiResumeDraftResp;
 import org.choon.careerbee.domain.member.dto.response.AiResumeExtractResp;
-import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
+import org.choon.careerbee.domain.member.dto.response.ExtractResumeRespFromAi;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
@@ -48,7 +48,7 @@ public class AiApiClient {
         return new ResumeDraftResp(body.data().toString());
     }
 
-    public ExtractResumeResp requestExtractResume(ExtractResumeReq extractResumeReq) {
+    public ExtractResumeRespFromAi requestExtractResume(ExtractResumeReq extractResumeReq) {
         log.info("요청 객체 :  {}", extractResumeReq);
         AiResumeExtractResp body = aiRestClient
             .post()
@@ -68,13 +68,13 @@ public class AiApiClient {
                     log.error("[5xx] ai 서버 에러!! : {}", responseBody);
                     throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
                 } else {
-                    logJson("[1️⃣] 이력서 정보 추출 응답", responseBody);
+                    logJson("1. 이력서 정보 추출 응답", responseBody);
                     return objectMapper.readValue(responseBody, AiResumeExtractResp.class);
                 }
             });
 
-        logJson("[2️⃣] 최종 이력서 정보 추출 응답", body);
-        return objectMapper.convertValue(body.data(), ExtractResumeResp.class);
+        logJson("2. 최종 이력서 정보 추출 응답", body);
+        return objectMapper.convertValue(body.data(), ExtractResumeRespFromAi.class);
     }
 
     private void logJson(String label, Object body) {

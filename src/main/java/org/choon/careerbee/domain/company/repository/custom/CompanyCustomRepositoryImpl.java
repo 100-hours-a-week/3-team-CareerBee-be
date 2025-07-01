@@ -8,6 +8,7 @@ import static org.choon.careerbee.domain.company.entity.techStack.QCompanyTechSt
 import static org.choon.careerbee.domain.company.entity.techStack.QTechStack.techStack;
 import static org.choon.careerbee.domain.company.entity.wish.QWishCompany.wishCompany;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -68,23 +69,17 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
 
     @Override
     public CompanySummaryInfo fetchCompanySummaryInfoById(Long companyId) {
-        CompanySummaryInfo baseInfo = queryFactory
-            .select(Projections.constructor(
-                CompanySummaryInfo.class,
+        Tuple tuple = queryFactory
+            .select(
                 company.id,
                 company.name,
-                company.logoUrl,
-                wishCompany.id.count(),
-                Expressions.constant(Collections.emptyList())
-            ))
+                company.logoUrl
+            )
             .from(company)
-            .leftJoin(wishCompany)
-            .on(wishCompany.company.id.eq(company.id))
             .where(company.id.eq(companyId))
-            .groupBy(company.id, company.name, company.logoUrl)
             .fetchOne();
 
-        if (baseInfo == null) {
+        if (tuple == null) {
             throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
         }
 
@@ -98,10 +93,10 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .fetch();
 
         return new CompanySummaryInfo(
-            baseInfo.id(),
-            baseInfo.name(),
-            baseInfo.logoUrl(),
-            baseInfo.wishCount(),
+            tuple.get(company.id),
+            tuple.get(company.name),
+            tuple.get(company.logoUrl),
+            getWishCount(companyId),
             keywords
         );
     }
@@ -117,11 +112,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
         }
 
-        Integer wishCount = queryFactory
-            .select(wishCompany.count().intValue())
-            .from(wishCompany)
-            .where(wishCompany.company.id.eq(companyId))
-            .fetchOne();
+        Long wishCount = getWishCount(companyId);
 
         List<CompanyDetailResp.Photo> photos = queryFactory
             .select(Projections.constructor(
@@ -267,6 +258,14 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
         }
 
         return company.businessType.eq(businessType);
+    }
+
+    private Long getWishCount(Long companyId) {
+        return queryFactory
+            .select(wishCompany.count())
+            .from(wishCompany)
+            .where(wishCompany.company.id.eq(companyId))
+            .fetchOne();
     }
 
 }

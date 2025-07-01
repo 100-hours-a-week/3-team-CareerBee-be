@@ -107,6 +107,9 @@ dependencies {
 
     // Spring Retry
     implementation 'org.springframework.retry:spring-retry:2.0.12'
+
+    // Redisson
+    implementation "org.redisson:redisson-spring-boot-starter:3.50.0"
 }
 
 sentry {

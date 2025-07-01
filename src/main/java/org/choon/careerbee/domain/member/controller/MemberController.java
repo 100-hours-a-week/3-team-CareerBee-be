@@ -13,8 +13,8 @@ import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.UploadCompleteReq;
-import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
+import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
@@ -114,7 +114,8 @@ public class MemberController {
     public ResponseEntity<CommonResponse<ExtractResumeResp>> extractResumeInfo(
         @RequestBody UploadCompleteReq uploadCompleteReq
     ) {
-        ExtractResumeResp response = commandService.extractResumeInfoFromAi(uploadCompleteReq);
+        ExtractResumeResp response = commandService.extractResumeInfoFromAi(
+            uploadCompleteReq);
 
         return CommonResponseEntity.ok(
             response,

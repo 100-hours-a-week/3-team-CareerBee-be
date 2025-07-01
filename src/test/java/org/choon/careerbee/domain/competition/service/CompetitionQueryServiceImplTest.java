@@ -254,10 +254,10 @@ class CompetitionQueryServiceImplTest {
             new MemberRankingResp.MemberDayRankInfo(5L, 1234L, (short) 3);
 
         MemberRankingResp.MemberWeekAndMonthRankInfo weekRank =
-            new MemberRankingResp.MemberWeekAndMonthRankInfo(3L, 7, 0.75);
+            MemberRankingResp.MemberWeekAndMonthRankInfo.from(3L, 7, 0.75);
 
         MemberRankingResp.MemberWeekAndMonthRankInfo monthRank =
-            new MemberRankingResp.MemberWeekAndMonthRankInfo(2L, 15, 0.88);
+            MemberRankingResp.MemberWeekAndMonthRankInfo.from(2L, 15, 0.88);
 
         MemberRankingResp mockResp = new MemberRankingResp(dayRank, weekRank, monthRank);
 
@@ -334,11 +334,11 @@ class CompetitionQueryServiceImplTest {
         LocalDate today = LocalDate.of(2025, 6, 10);
         LiveRankingResp mockResp = new LiveRankingResp(
             List.of(
-                new RankerInfo(1L, "user1", "url1", "url1", 123000, (short) 5),
-                new RankerInfo(2L, "user2", "url2", "url2", 123001, (short) 4),
-                new RankerInfo(3L, "user3", "url3", "url3", 123002, (short) 3),
-                new RankerInfo(4L, "user4", "url4", "url4", 123003, (short) 3),
-                new RankerInfo(5L, "user5", "url5", "url5", 123004, (short) 2)
+                new RankerInfo(1L, "user1", "url1", 123000, (short) 5),
+                new RankerInfo(2L, "user2", "url2", 123001, (short) 4),
+                new RankerInfo(3L, "user3", "url3", 123002, (short) 3),
+                new RankerInfo(4L, "user4", "url4", 123003, (short) 3),
+                new RankerInfo(5L, "user5", "url5", 123004, (short) 2)
             )
         );
         when(competitionResultRepository.fetchLiveRankingByDate(today)).thenReturn(mockResp);

@@ -18,7 +18,7 @@ public record CompanyDetailResp(
     Integer employeeCount,
     String homepageUrl,
     String description,
-    Integer wishCount,
+    Long wishCount,
     Double rating,
     Financials financials,
     List<Photo> photos,
