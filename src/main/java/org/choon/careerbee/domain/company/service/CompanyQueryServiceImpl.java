@@ -37,7 +37,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CompanyQueryServiceImpl implements CompanyQueryService {
 
-    private static final String GEO_KEY_PREFIX = "company:markerInfo:";
     private static final String COMPANY_SIMPLE_KEY_PREFIX = "company:simple:";
     private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
     private static final Long COMPANY_WISH_KEY_TTL = 10L;
@@ -130,31 +129,6 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
         return wishCompanyRepository.fetchWishCompanyIdsByMember(validMember);
     }
-
-//    @Override
-//    public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
-//        RBucket<String> cachedCompanyMarkerInfo = redissonClient.getBucket(
-//            GEO_KEY_PREFIX + companyId);
-//
-//        String cached = cachedCompanyMarkerInfo.get();
-//
-//        if (cached != null) {
-//            try {
-//                return objectMapper.readValue(cached, CompanyMarkerInfo.class);
-//            } catch (JsonProcessingException e) {
-//                throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
-//            }
-//        }
-//
-//        CompanyMarkerInfo markerInfo = companyRepository.fetchCompanyMarkerInfo(companyId);
-//        try {
-//            cachedCompanyMarkerInfo.set(objectMapper.writeValueAsString(markerInfo));
-//        } catch (JsonProcessingException e) {
-//            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
-//        }
-//
-//        return markerInfo;
-//    }
 
     @Override
     @Cacheable(cacheNames = "companyMarkerInfo", key = "#companyId")
