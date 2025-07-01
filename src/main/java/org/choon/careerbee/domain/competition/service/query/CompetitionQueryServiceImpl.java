@@ -57,6 +57,7 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
+    @Cacheable(cacheNames = "competitionId", key = "#today", unless = "#result == null")
     public CompetitionIdResp fetchCompetitionIdBy(LocalDate today) {
         return competitionRepository.fetchCompetitionIdFromToday(today);
     }
