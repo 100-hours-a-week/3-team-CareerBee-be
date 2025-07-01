@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
@@ -26,10 +27,12 @@ import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class CompanyQueryServiceImpl implements CompanyQueryService {
@@ -128,29 +131,35 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
         return wishCompanyRepository.fetchWishCompanyIdsByMember(validMember);
     }
 
+//    @Override
+//    public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
+//        RBucket<String> cachedCompanyMarkerInfo = redissonClient.getBucket(
+//            GEO_KEY_PREFIX + companyId);
+//
+//        String cached = cachedCompanyMarkerInfo.get();
+//
+//        if (cached != null) {
+//            try {
+//                return objectMapper.readValue(cached, CompanyMarkerInfo.class);
+//            } catch (JsonProcessingException e) {
+//                throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+//            }
+//        }
+//
+//        CompanyMarkerInfo markerInfo = companyRepository.fetchCompanyMarkerInfo(companyId);
+//        try {
+//            cachedCompanyMarkerInfo.set(objectMapper.writeValueAsString(markerInfo));
+//        } catch (JsonProcessingException e) {
+//            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+//        }
+//
+//        return markerInfo;
+//    }
+
     @Override
+    @Cacheable(cacheNames = "companyMarkerInfo", key = "#companyId")
     public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
-        RBucket<String> cachedCompanyMarkerInfo = redissonClient.getBucket(
-            GEO_KEY_PREFIX + companyId);
-
-        String cached = cachedCompanyMarkerInfo.get();
-
-        if (cached != null) {
-            try {
-                return objectMapper.readValue(cached, CompanyMarkerInfo.class);
-            } catch (JsonProcessingException e) {
-                throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
-            }
-        }
-
-        CompanyMarkerInfo markerInfo = companyRepository.fetchCompanyMarkerInfo(companyId);
-        try {
-            cachedCompanyMarkerInfo.set(objectMapper.writeValueAsString(markerInfo));
-        } catch (JsonProcessingException e) {
-            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
-        }
-
-        return markerInfo;
+        return companyRepository.fetchCompanyMarkerInfo(companyId);
     }
 
     @Override

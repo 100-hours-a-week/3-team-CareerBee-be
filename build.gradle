@@ -107,6 +107,9 @@ dependencies {
 
     // Redisson
     implementation "org.redisson:redisson-spring-boot-starter:3.50.0"
+
+    // Cache
+    implementation 'org.springframework.boot:spring-boot-starter-cache:3.5.3'
 }
 
 sentry {
@@ -118,6 +121,10 @@ sentry {
     org = "2-7i"
     projectName = "ssmu-dev-backend"
     authToken = System.getenv("SENTRY_AUTH_TOKEN")
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-parameters'
 }
 
 // build.gradle에 추가
