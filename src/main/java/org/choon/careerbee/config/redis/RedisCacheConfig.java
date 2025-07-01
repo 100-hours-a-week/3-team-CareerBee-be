@@ -37,6 +37,9 @@ public class RedisCacheConfig {
         cacheConfigurations.put("recentIssue", commonConfig.entryTtl(Duration.ofDays(7)));
         cacheConfigurations.put("wishCount", commonConfig.entryTtl(Duration.ofMinutes(10)));
 
+        cacheConfigurations.put("competitionProblem",
+            commonConfig.entryTtl(Duration.ofSeconds(20)));
+
         // 3. CacheManager 빌더를 사용하여 최종 CacheManager 객체 생성
         return RedisCacheManager.RedisCacheManagerBuilder
             .fromConnectionFactory(redisConnectionFactory)

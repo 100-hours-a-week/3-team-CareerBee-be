@@ -15,6 +15,7 @@ import org.choon.careerbee.domain.competition.repository.CompetitionParticipantR
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -41,6 +42,7 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
+    @Cacheable(cacheNames = "competitionProblem", key = "#competitionId", unless = "#result == null")
     public CompetitionProblemResp fetchProblems(Long competitionId) {
         if (!competitionRepository.existsById(competitionId)) {
             throw new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST);
