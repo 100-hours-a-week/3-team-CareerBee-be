@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.service;
+package org.choon.careerbee.domain.company.service.query;
 
 import java.util.List;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;

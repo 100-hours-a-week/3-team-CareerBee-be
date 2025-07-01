@@ -2,7 +2,7 @@ package org.choon.careerbee.domain.company.schedule;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.choon.careerbee.domain.company.service.CompanyCommandService;
+import org.choon.careerbee.domain.company.service.command.CompanyCommandService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

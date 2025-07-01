@@ -1,6 +1,8 @@
 package org.choon.careerbee.config.redis;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -10,33 +12,36 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 @EnableCaching
 public class RedisCacheConfig {
 
+    private static final Long DEFAULT_TTL = 30L;
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
-        // 1. JSON 직렬화를 위한 Serializer 생성
-        RedisSerializer<Object> jsonSerializer = new GenericJackson2JsonRedisSerializer();
-
-        // 2. Redis 캐시 설정 객체 생성
-        RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
-            // Key는 StringRedisSerializer 사용
+        // 1. 공통 직렬화(Serialization) 설정
+        RedisCacheConfiguration commonConfig = RedisCacheConfiguration.defaultCacheConfig()
             .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(
                 new StringRedisSerializer()))
-            // Value는 위에서 만든 jsonSerializer 사용
-            .serializeValuesWith(
-                RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
-            // 캐시 만료 시간 설정 (예: 10분)
-            .entryTtl(Duration.ofMinutes(10));
+            .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
+                new GenericJackson2JsonRedisSerializer()));
 
-        // 3. 설정이 적용된 CacheManager 반환
+        // 2. 캐시 이름별로 TTL을 다르게 설정
+        Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
+
+        cacheConfigurations.put("companyStaticDetail", commonConfig.entryTtl(Duration.ofDays(1)));
+        cacheConfigurations.put("recruitments", commonConfig.entryTtl(Duration.ofHours(24)));
+        cacheConfigurations.put("recentIssue", commonConfig.entryTtl(Duration.ofDays(7)));
+        cacheConfigurations.put("wishCount", commonConfig.entryTtl(Duration.ofMinutes(10)));
+
+        // 3. CacheManager 빌더를 사용하여 최종 CacheManager 객체 생성
         return RedisCacheManager.RedisCacheManagerBuilder
             .fromConnectionFactory(redisConnectionFactory)
-            .cacheDefaults(redisCacheConfiguration)
+            .cacheDefaults(commonConfig.entryTtl(Duration.ofMinutes(DEFAULT_TTL)))
+            .withInitialCacheConfigurations(cacheConfigurations)
             .build();
     }
 }

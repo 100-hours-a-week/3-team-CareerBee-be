@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.service;
+package org.choon.careerbee.domain.company.service.command;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -25,6 +25,7 @@ import org.choon.careerbee.domain.company.entity.recruitment.Recruitment;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;

@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.service;
+package org.choon.careerbee.domain.company.service.query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
+import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
@@ -22,6 +24,9 @@ import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyRecentIssueQueryService;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyRecruitmentQueryService;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyStaticDataQueryService;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -47,45 +52,25 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
 
+    private final CompanyRecruitmentQueryService recruitmentQueryService;
+    private final CompanyStaticDataQueryService staticDataQueryService;
+    private final CompanyRecentIssueQueryService recentIssueQueryService;
+
     @Override
     public CompanyRangeSearchResp fetchCompaniesByDistance(
         CompanyQueryAddressInfo companyQueryAddressInfo, CompanyQueryCond companyQueryCond
     ) {
-        return companyRepository.fetchByDistanceAndCondition(companyQueryAddressInfo,
-            companyQueryCond);
+        return companyRepository.fetchByDistanceAndCondition(
+            companyQueryAddressInfo,
+            companyQueryCond
+        );
     }
 
     @Override
     public CompanySummaryInfo fetchCompanySummary(Long companyId) {
-        RBucket<String> simpleInfoBucket = redissonClient.getBucket(
-            COMPANY_SIMPLE_KEY_PREFIX + companyId
-        );
-        RBucket<String> wishCountBucket = redissonClient.getBucket(
-            COMPANY_WISH_KEY_PREFIX + companyId
-        );
-
         try {
-            CompanySummaryInfoWithoutWish simpleInfo;
-
-            String simpleJson = simpleInfoBucket.get();
-            if (simpleJson != null) {
-                simpleInfo = objectMapper.readValue(simpleInfoBucket.get(),
-                    CompanySummaryInfoWithoutWish.class);
-            } else {
-                simpleInfo = companyRepository.fetchCompanySummaryInfoWithoutWishCount(companyId);
-                simpleInfoBucket.set(objectMapper.writeValueAsString(simpleInfo));
-            }
-
-            Long wishCount = 0L;
-            String wishCountJson = wishCountBucket.get();
-
-            if (wishCountJson != null) {
-                wishCount = Long.valueOf(wishCountBucket.get());
-            } else {
-                wishCount = wishCompanyRepository.fetchWishCountById(companyId);
-                wishCountBucket.set(String.valueOf(wishCount),
-                    Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
-            }
+            CompanySummaryInfoWithoutWish simpleInfo = fetchSimpleInfo(companyId);
+            Long wishCount = fetchWishCount(companyId);
 
             return new CompanySummaryInfo(
                 simpleInfo.id(),
@@ -99,6 +84,23 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
         }
     }
 
+    @Override
+    public CompanyDetailResp fetchCompanyDetail(Long companyId) {
+        CompanyStaticPart companyStaticPart = staticDataQueryService
+            .fetchCompanyStaticPart(companyId);
+        CompanyRecruitInfo companyRecruitInfo = recruitmentQueryService
+            .fetchRecruitmentInfo(companyId);
+        String companyRecentIssue = recentIssueQueryService
+            .fetchRecentIssue(companyStaticPart.id());
+        Long wishCount = fetchWishCount(companyId);
+
+        return CompanyDetailResp.of(
+            companyStaticPart,
+            companyRecentIssue,
+            wishCount,
+            companyRecruitInfo
+        );
+    }
 
     @Override
     public CheckWishCompanyResp checkWishCompany(Long accessMemberId, Long companyId) {
@@ -110,11 +112,6 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
         return new CheckWishCompanyResp(
             wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany));
-    }
-
-    @Override
-    public CompanyDetailResp fetchCompanyDetail(Long companyId) {
-        return companyRepository.fetchCompanyDetailById(companyId);
     }
 
     @Override
@@ -165,5 +162,39 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
                 return (ch == '!' || ch == '_' || ch == '%') ? "!" + ch : String.valueOf(ch);
             })
             .collect(Collectors.joining());
+    }
+
+    private CompanySummaryInfoWithoutWish fetchSimpleInfo(Long companyId)
+        throws JsonProcessingException {
+        RBucket<String> simpleInfoBucket = redissonClient.getBucket(
+            COMPANY_SIMPLE_KEY_PREFIX + companyId
+        );
+
+        String simpleJson = simpleInfoBucket.get();
+
+        if (simpleJson != null) {
+            return objectMapper.readValue(simpleJson, CompanySummaryInfoWithoutWish.class);
+        }
+
+        CompanySummaryInfoWithoutWish simpleInfo =
+            companyRepository.fetchCompanySummaryInfoWithoutWishCount(companyId);
+        simpleInfoBucket.set(objectMapper.writeValueAsString(simpleInfo));
+        return simpleInfo;
+    }
+
+    private Long fetchWishCount(Long companyId) {
+        RBucket<String> wishCountBucket = redissonClient.getBucket(
+            COMPANY_WISH_KEY_PREFIX + companyId
+        );
+
+        String wishCountJson = wishCountBucket.get();
+
+        if (wishCountJson != null) {
+            return Long.valueOf(wishCountJson);
+        }
+
+        Long wishCount = wishCompanyRepository.fetchWishCountById(companyId);
+        wishCountBucket.set(String.valueOf(wishCount), Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
+        return wishCount;
     }
 }
