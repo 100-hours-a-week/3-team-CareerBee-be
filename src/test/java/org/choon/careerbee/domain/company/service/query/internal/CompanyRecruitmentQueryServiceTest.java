@@ -37,7 +37,7 @@ class CompanyRecruitmentQueryServiceCacheTest {
     }
 
     @Test
-    @DisplayName("첫 호출에는 DB를 조회하고, 두 번째 호출에는 캐시에서 결과를 반환한다")
+    @DisplayName("[회사 공고 조회] 첫 호출에는 DB를 조회하고, 두 번째 호출에는 캐시에서 결과를 반환한다")
     void fetchRecruitmentInfo_shouldCacheResult() {
         // given
         Long companyId = 1L;
