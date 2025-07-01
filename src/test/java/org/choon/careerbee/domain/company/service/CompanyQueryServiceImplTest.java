@@ -124,72 +124,27 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("[기업 위치 정보 조회] 캐시에 기업 위치 정보가 존재하면 DB 조회 없이 캐시에서 반환")
-    void fetchCompanyLocation_whenCacheExists_returnsFromCache() throws Exception {
+    @DisplayName("[기업 위치 정보 조회] Repository에 조회를 위임하고 결과를 반환한다")
+    void fetchCompanyLocation_delegatesToRepository() {
         // given
         Long companyId = 1L;
-        CompanyMarkerInfo expected = new CompanyMarkerInfo(
+        CompanyMarkerInfo expectedInfo = new CompanyMarkerInfo(
             companyId, "test.jpg", BusinessType.COMMERCE, RecruitingStatus.CLOSED,
             new LocationInfo(37.123, 127.12)
         );
-        String json = new ObjectMapper().writeValueAsString(expected);
 
-        RBucket<String> bucket = mock(RBucket.class);
-        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
-        when(bucket.get()).thenReturn(json);
-        when(objectMapper.readValue(json, CompanyMarkerInfo.class)).thenReturn(expected);
+        // Repository가 특정 정보를 반환하도록 설정
+        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedInfo);
 
         // when
         CompanyMarkerInfo result = companyQueryService.fetchCompanyLocation(companyId);
 
         // then
-        verify(companyRepository, never()).fetchCompanyMarkerInfo(anyLong());
-        assertThat(result.id()).isEqualTo(expected.id());
-    }
+        // 1. 반환된 결과가 기대와 같은지 확인
+        assertThat(result).isEqualTo(expectedInfo);
 
-    @Test
-    @DisplayName("[기업 위치 정보 조회] 캐시에 정보가 없으면 DB에서 조회 후 캐시에 저장하고 반환")
-    void fetchCompanyLocation_whenCacheMiss_thenFetchFromDbAndCache() throws Exception {
-        // given
-        Long companyId = 2L;
-        CompanyMarkerInfo markerInfo = new CompanyMarkerInfo(
-            companyId, "marker2.jpg", BusinessType.COMMERCE, RecruitingStatus.ONGOING,
-            new LocationInfo(36.5, 127.0)
-        );
-        String json = new ObjectMapper().writeValueAsString(markerInfo);
-
-        RBucket<String> bucket = mock(RBucket.class);
-        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
-        when(bucket.get()).thenReturn(null);
-        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(markerInfo);
-        when(objectMapper.writeValueAsString(markerInfo)).thenReturn(json);
-
-        // when
-        CompanyMarkerInfo result = companyQueryService.fetchCompanyLocation(companyId);
-
-        // then
+        // 2. Repository의 메서드가 정확히 1번 호출되었는지 확인
         verify(companyRepository, times(1)).fetchCompanyMarkerInfo(companyId);
-        verify(bucket, times(1)).set(json);
-        assertThat(result).usingRecursiveComparison().isEqualTo(markerInfo);
-    }
-
-    @Test
-    @DisplayName("[기업 위치 정보 조회] 캐시 값 역직렬화 실패 시 CustomException 발생")
-    void fetchCompanyLocation_whenCacheCorrupted_thenThrowException() {
-        // given
-        Long companyId = 3L;
-        String corruptedJson = "INVALID_JSON";
-
-        RBucket<String> bucket = mock(RBucket.class);
-        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
-        when(bucket.get()).thenReturn(corruptedJson);
-
-        // when & then
-        assertThatThrownBy(() -> companyQueryService.fetchCompanyLocation(companyId))
-            .isInstanceOf(CustomException.class)
-            .hasMessageContaining(CustomResponseStatus.JSON_PARSING_ERROR.getMessage());
-
-        verify(companyRepository, never()).fetchCompanyMarkerInfo(anyLong());
     }
 
     @Test
