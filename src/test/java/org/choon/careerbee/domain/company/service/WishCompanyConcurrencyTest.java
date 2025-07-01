@@ -14,6 +14,7 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.command.CompanyCommandService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;

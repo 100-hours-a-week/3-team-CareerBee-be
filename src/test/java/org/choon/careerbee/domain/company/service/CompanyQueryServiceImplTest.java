@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo.Recruitment;
+import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
@@ -35,9 +38,14 @@ import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo.Keywor
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
+import org.choon.careerbee.domain.company.entity.enums.CompanyType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryServiceImpl;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyRecentIssueQueryService;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyRecruitmentQueryService;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyStaticDataQueryService;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -79,6 +87,15 @@ class CompanyQueryServiceImplTest {
 
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
+
+    @Mock
+    private CompanyRecruitmentQueryService recruitmentQueryService;
+
+    @Mock
+    private CompanyRecentIssueQueryService recentIssueQueryService;
+
+    @Mock
+    private CompanyStaticDataQueryService staticDataQueryService;
 
     @Test
     @DisplayName("정상 주소와 조건으로 회사 조회 시 레포지토리 호출 및 결과 반환")
@@ -269,8 +286,6 @@ class CompanyQueryServiceImplTest {
 
         when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
             simpleBucket);
-        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
-            wishBucket);
         when(simpleBucket.get()).thenReturn(invalidJson);
 
         // when & then
@@ -280,63 +295,71 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("기업 상세 조회 시 repository 호출 및 결과 반환")
+    @DisplayName("기업 상세 조회 - 의존 서비스 호출 및 CompanyDetailResp 반환")
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
-        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000,
-            1000000000L, 200000000L);
-        List<CompanyDetailResp.Photo> photos = List.of(
-            new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
-        List<CompanyDetailResp.Benefit> benefits = List.of(
-            new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
-        List<CompanyDetailResp.TechStack> techStacks = List.of(
-            new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND",
-                "https://example.com/spring.png"));
-        List<CompanyDetailResp.Recruitment> recruitments = List.of(
-            new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01",
-                "2024-12-31"));
-
-        CompanyDetailResp expectedResponse = new CompanyDetailResp(
+        CompanyStaticPart staticPart = new CompanyStaticPart(
             companyId,
             "넥슨코리아",
-            "백엔드 개발자",
+            "testTitle",
             "https://example.com/logo.png",
-            "최근 이슈 설명",
-            "대기업",
-            "채용중",
+            CompanyType.MID_SIZED,
             "경기 성남시 분당구",
             3000,
             "https://company.nexon.com/",
             "국내 대표 게임 개발사",
-            123L,
             4.5,
-            financials,
-            photos,
-            benefits,
-            techStacks,
-            recruitments
+            new CompanyStaticPart.Financials(6000, 4000, 1000000000L, 200000000L),
+            List.of(new CompanyStaticPart.Photo(1, "https://example.com/photo1.png")),
+            List.of(new CompanyStaticPart.Benefit("복지", "자유복장, 점심 제공")),
+            List.of(new CompanyStaticPart.TechStack(1L, "Spring", "BACKEND",
+                "https://example.com/spring.png"))
         );
 
-        when(companyRepository.fetchCompanyDetailById(companyId)).thenReturn(expectedResponse);
+        CompanyRecruitInfo recruitInfo = new CompanyRecruitInfo(
+            RecruitingStatus.ONGOING,
+            List.of(
+                new Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"))
+        );
+
+        RBucket<String> wishBucket = mock(RBucket.class);
+        String recentIssue = "최근 이슈 설명";
+        Long wishCount = 123L;
+
+        when(staticDataQueryService.fetchCompanyStaticPart(companyId)).thenReturn(staticPart);
+        when(recruitmentQueryService.fetchRecruitmentInfo(companyId)).thenReturn(recruitInfo);
+        when(recentIssueQueryService.fetchRecentIssue(companyId)).thenReturn(recentIssue);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+        when(wishBucket.get()).thenReturn("123");
 
         // when
-        CompanyDetailResp actualResponse = companyQueryService.fetchCompanyDetail(companyId);
+        CompanyDetailResp actual = companyQueryService.fetchCompanyDetail(companyId);
 
         // then
-        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
-        verify(companyRepository, times(1)).fetchCompanyDetailById(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(companyId);
-        assertThat(actualResponse).isEqualTo(expectedResponse);
-        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
-        assertThat(actualResponse.companyType()).isEqualTo(expectedResponse.companyType());
-        assertThat(actualResponse.address()).isEqualTo(expectedResponse.address());
-        assertThat(actualResponse.description()).isEqualTo(expectedResponse.description());
-        assertThat(actualResponse.employeeCount()).isEqualTo(expectedResponse.employeeCount());
-        assertThat(actualResponse.wishCount()).isEqualTo(expectedResponse.wishCount());
-        assertThat(actualResponse.rating()).isEqualTo(expectedResponse.rating());
-        assertThat(actualResponse.homepageUrl()).isEqualTo(expectedResponse.homepageUrl());
-        assertThat(actualResponse.techStacks()).isEqualTo(expectedResponse.techStacks());
+        assertThat(actual.id()).isEqualTo(staticPart.id());
+        assertThat(actual.name()).isEqualTo(staticPart.name());
+        assertThat(actual.companyType()).isEqualTo(staticPart.companyType());
+        assertThat(actual.address()).isEqualTo(staticPart.address());
+        assertThat(actual.homepageUrl()).isEqualTo(staticPart.homepageUrl());
+        assertThat(actual.description()).isEqualTo(staticPart.description());
+        assertThat(actual.logoUrl()).isEqualTo(staticPart.logoUrl());
+        assertThat(actual.employeeCount()).isEqualTo(staticPart.employeeCount());
+        assertThat(actual.wishCount()).isEqualTo(wishCount);
+        assertThat(actual.rating()).isEqualTo(staticPart.rating());
+        assertThat(actual.recruitingStatus()).isEqualTo(recruitInfo.recruitingStatus());
+        assertThat(actual.title()).isEqualTo(staticPart.title());
+        assertThat(actual.recruitments()).isEqualTo(recruitInfo.recruitments());
+        assertThat(actual.recentIssue()).isEqualTo(recentIssue);
+        assertThat(actual.financials()).isEqualTo(staticPart.financials());
+        assertThat(actual.photos()).isEqualTo(staticPart.photos());
+        assertThat(actual.benefits()).isEqualTo(staticPart.benefits());
+        assertThat(actual.techStacks()).isEqualTo(staticPart.techStacks());
+
+        verify(staticDataQueryService, times(1)).fetchCompanyStaticPart(companyId);
+        verify(recruitmentQueryService, times(1)).fetchRecruitmentInfo(companyId);
+        verify(recentIssueQueryService, times(1)).fetchRecentIssue(companyId);
     }
 
     @Test

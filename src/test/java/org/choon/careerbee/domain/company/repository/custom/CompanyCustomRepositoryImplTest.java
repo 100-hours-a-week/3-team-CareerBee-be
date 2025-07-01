@@ -8,13 +8,15 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 
 import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
+import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
-import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
@@ -22,6 +24,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
+import org.choon.careerbee.domain.company.entity.recruitment.Recruitment;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.junit.jupiter.api.DisplayName;
@@ -137,48 +140,6 @@ class CompanyCustomRepositoryImplTest {
     }
 
     @Test
-    @DisplayName("존재하는 company id로 기업 상세정보 조회시 정상 조회")
-    void fetchCompanyDetailById_shouldReturnCompanyDetailResp() {
-        // given
-        Company company = createCompany(
-            "테스트 회사", 37.40203443, 127.1034665
-        );
-        em.persist(company);
-        em.flush();
-        em.clear();
-
-        // when
-        CompanyDetailResp actualResp = companyCustomRepository.fetchCompanyDetailById(
-            company.getId());
-
-        // then
-        assertThat(actualResp).isNotNull();
-        assertThat(actualResp.name()).isEqualTo(company.getName());
-        assertThat(actualResp.address()).isEqualTo(company.getAddress());
-        assertThat(actualResp.financials().annualSalary()).isEqualTo(company.getAnnualSalary());
-        assertThat(actualResp.rating()).isEqualTo(company.getRating());
-        assertThat(actualResp.benefits()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 id로 기업 상세정보 조회시 404 예외 발생")
-    void fetchCompanyDetailById_shouldThrowException_whenCompanyNotFound() {
-        // given
-        Company comp = createCompany("테스트기업", 37.123, 127.34);
-        em.persist(comp);
-        em.flush();
-        em.clear();
-
-        Long nonExistCompanyId = comp.getId() + 100L;
-
-        // when & then
-        assertThatThrownBy(() ->
-            companyCustomRepository.fetchCompanyDetailById(nonExistCompanyId)
-        ).hasMessage(CustomResponseStatus.COMPANY_NOT_EXIST.getMessage());
-    }
-
-
-    @Test
     @DisplayName("존재하는 기업의 위치정보 조회시 정상 조회 ")
     void fetchCompanyMarkerInfo_shouldReturnMarkerInfo() {
         // given
@@ -270,5 +231,56 @@ class CompanyCustomRepositoryImplTest {
         assertThat(actualResp.matchingCompanies().size()).isEqualTo(searchMaxCount);
     }
 
+    @Test
+    @DisplayName("기업 정적 정보 조회 - 성공")
+    void fetchCompanyStaticInfoById_shouldReturnStaticPart() {
+        // given
+        Company company = createCompany("정적 회사", 37.1, 127.1);
+        em.persist(company);
+
+        // when
+        CompanyStaticPart result = companyCustomRepository.fetchCompanyStaticInfoById(
+            company.getId());
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(company.getId());
+        assertThat(result.name()).isEqualTo(company.getName());
+    }
+
+    @Test
+    @DisplayName("기업 최근 이슈 조회 - 성공")
+    void fetchCompanyRecentIssueById_shouldReturnRecentIssue() {
+        // given
+        Company company = createCompany("이슈 기업", 37.2, 127.2);
+        em.persist(company);
+
+        // when
+        String recentIssue = companyCustomRepository.fetchCompanyRecentIssueById(company.getId());
+
+        // then
+        assertThat(recentIssue).isEqualTo(company.getRecentIssue());
+    }
+
+    @Test
+    @DisplayName("기업 채용 정보 조회 - 성공")
+    void fetchRecruitmentInfo_shouldReturnRecruitments() {
+        // given
+        Company company = createCompany("채용 기업", 37.5, 127.5);
+        Recruitment recruit = Recruitment.from(
+            company, 12343L, "test.url", "title",
+            LocalDateTime.of(2025, 6, 10, 12, 0, 0),
+            LocalDateTime.of(2025, 6, 19, 12, 0, 0)
+        );
+        em.persist(company);
+        em.persist(recruit);
+
+        // when
+        CompanyRecruitInfo info = companyCustomRepository.fetchRecruitmentInfo(company.getId());
+
+        // then
+        assertThat(info.recruitments()).hasSize(1);
+        assertThat(info.recruitments().get(0).title()).isEqualTo("title");
+    }
 
 }

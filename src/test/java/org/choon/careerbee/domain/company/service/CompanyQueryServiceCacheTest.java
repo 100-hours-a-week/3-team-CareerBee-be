@@ -10,6 +10,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Lo
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
