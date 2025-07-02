@@ -29,6 +29,7 @@ import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
 
+    private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
     private static final int RECRUITING_STATUS_CLOSED = 0;
     private static final long TTL = 3L;
     private static final DateTimeFormatter SARAMIN_DT_FMT =
@@ -59,8 +61,8 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Member validMember = memberQueryService.findById(accessMemberId);
         Company validCompany = companyQueryService.findById(companyId);
 
-        String key = "wish:register:" + validMember.getId() + ":" + companyId;
-        boolean success = redissonClient.getBucket(key)
+        String registKey = "wish:register:" + validMember.getId() + ":" + companyId;
+        boolean success = redissonClient.getBucket(registKey)
             .setIfAbsent("1", Duration.ofSeconds(TTL));
 
         if (!success) {
@@ -72,6 +74,11 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         }
 
         wishCompanyRepository.save(WishCompany.of(validMember, validCompany));
+
+        // 관심수 동시성 제어를 위한 RAtomicLong 활용
+        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
+        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
+        atomicLong.incrementAndGet();
     }
 
     @Override
@@ -92,6 +99,12 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
             .orElseThrow(() -> new CustomException(CustomResponseStatus.WISH_COMPANY_NOT_FOUND));
 
         wishCompanyRepository.delete(wishCompany);
+
+        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
+        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
+        if (atomicLong.isExists() && atomicLong.get() > 0) {
+            atomicLong.decrementAndGet();
+        }
     }
 
     @Override
