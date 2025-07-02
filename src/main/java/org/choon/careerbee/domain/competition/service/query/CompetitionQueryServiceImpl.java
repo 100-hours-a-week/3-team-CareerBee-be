@@ -124,6 +124,6 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
 
     private String getCompetitionParticipantKey(Long memberId) {
         String todayStr = LocalDate.now(clock).format(DATE_FORMATTER);
-        return "member:" + memberId + ":participant" + todayStr;
+        return "member:" + memberId + ":participant:" + todayStr;
     }
 }
