@@ -52,6 +52,9 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
+    @Cacheable(
+        cacheNames = "competitionRank",
+        key = "'competition:rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
     public CompetitionRankingResp fetchRankings(LocalDate today) {
         return competitionSummaryRepository.fetchRankings(today);
     }
@@ -63,6 +66,8 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
+    @Cacheable(cacheNames = "memberRank",
+        key = "'member:' + #accessMemberId + ':rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
     public MemberRankingResp fetchMemberCompetitionRankingById(
         Long accessMemberId, LocalDate today
     ) {
