@@ -142,8 +142,15 @@ public class CompetitionController {
     }
 
     @GetMapping("competitions/ids")
-    public ResponseEntity<CommonResponse<CompetitionIdResp>> fetchTodayCompetitionId() {
-        CompetitionIdResp response = queryService.fetchCompetitionIdBy(LocalDate.now());
+    public ResponseEntity<CommonResponse<CompetitionIdResp>> fetchTodayCompetitionId(
+        @RequestParam(value = "date", required = false)
+        @DateTimeFormat(iso = ISO.DATE)
+        LocalDate todayDate
+    ) {
+        LocalDate today = allowDateParam && todayDate != null
+            ? todayDate
+            : LocalDate.now();
+        CompetitionIdResp response = queryService.fetchCompetitionIdBy(today);
 
         return CommonResponseEntity.ok(
             response,
