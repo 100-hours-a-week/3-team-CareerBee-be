@@ -82,6 +82,12 @@ class CompetitionControllerTest {
 
     @BeforeEach
     void setUp() {
+        competitionParticipantRepository.deleteAllInBatch();
+        problemChoiceRepository.deleteAllInBatch();
+        competitionProblemRepository.deleteAllInBatch();
+        competitionRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
+
         testMember = memberRepository.saveAndFlush(
             createMember("nick", "nick@a.com", 15L));
         testCompetition = competitionRepository.saveAndFlush(
