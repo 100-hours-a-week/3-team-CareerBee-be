@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo.Keyword;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -49,12 +50,14 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
 
         // 3. 회사별 찜 개수 조회
         Map<Long, Long> wishCountMap = fetchWishCounts(companyIds);
+        Map<Long, List<Keyword>> keywordMap = fetchKeywordsInBatch(companyIds);
 
         // 4. 회사 요약 정보 + 키워드 리스트 구성
         List<CompanySummaryInfo> summaryList = wishCompanyInfos.stream()
             .map(tuple -> {
                 Long companyId = tuple.get(company.id);
-                List<CompanySummaryInfo.Keyword> keywords = fetchCompanyKeywords(companyId);
+//                List<CompanySummaryInfo.Keyword> keywords = fetchCompanyKeywords(companyId);
+                List<Keyword> keywords = keywordMap.get(companyId);
 
                 return new CompanySummaryInfo(
                     companyId,
@@ -123,6 +126,32 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
                 tuple -> tuple.get(wishCompany.company.id),
                 tuple -> tuple.get(wishCompany.count())
             ));
+    }
+
+    private Map<Long, List<CompanySummaryInfo.Keyword>> fetchKeywordsInBatch(
+        List<Long> companyIds
+    ) {
+        List<Tuple> tuples = queryFactory
+            .select(
+                companyKeyword.company.id,
+                Projections.constructor(
+                    CompanySummaryInfo.Keyword.class,
+                    companyKeyword.content
+                )
+            )
+            .from(companyKeyword)
+            .where(companyKeyword.company.id.in(companyIds))
+            .fetch();
+
+        return tuples.stream().collect(
+            Collectors.groupingBy(
+                tuple -> tuple.get(companyKeyword.company.id),
+                Collectors.mapping(
+                    tuple -> tuple.get(1, CompanySummaryInfo.Keyword.class),
+                    Collectors.toList()
+                )
+            )
+        );
     }
 
     private List<CompanySummaryInfo.Keyword> fetchCompanyKeywords(Long companyId) {
