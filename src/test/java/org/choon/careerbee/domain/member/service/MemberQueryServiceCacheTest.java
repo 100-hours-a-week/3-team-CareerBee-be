@@ -24,15 +24,12 @@ class MemberQueryServiceCacheTest {
     @Autowired
     private MemberQueryService memberQueryService;
 
-    // ✅ 실제 Repository 대신 Mock Bean을 주입하여 DB 호출을 흉내 냅니다.
     @MockitoBean
     private MemberRepository memberRepository;
 
-    // ✅ 캐시 상태를 제어하기 위해 CacheManager를 주입받습니다.
     @Autowired
     private CacheManager cacheManager;
 
-    // 각 테스트 실행 전에 "myInfo" 캐시를 깨끗하게 비워 테스트 격리를 보장합니다.
     @BeforeEach
     void setUp() {
         Cache myInfoCache = cacheManager.getCache("myInfo");
