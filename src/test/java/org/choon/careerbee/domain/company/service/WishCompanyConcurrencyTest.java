@@ -18,6 +18,7 @@ import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.company.service.command.CompanyCommandService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicLong;
@@ -46,6 +47,14 @@ class WishCompanyConcurrencyTest {
 
     @Autowired
     private RedissonClient redissonClient;
+
+    @BeforeEach
+    void setUp() {
+        wishCompanyRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
+        companyRepository.deleteAllInBatch();
+        redissonClient.getKeys().flushdb();
+    }
 
     @Test
     @DisplayName("Redisson 기반 중복 요청 방지 - 하나만 성공하고 나머지는 CustomException 발생")
@@ -87,33 +96,38 @@ class WishCompanyConcurrencyTest {
     @DisplayName("100개의 스레드에서 동시에 관심 등록 요청 시, wishCount가 정확히 100 증가한다")
     void registWishCompany_concurrencyTest() throws InterruptedException {
         // given
-        for (long i = 1; i <= 100; i++) {
-            memberRepository.save(
-                createMember("user" + i, "test" + i + "@test.com", i)
-            );
-        }
-        companyRepository.save(createCompany("testCompany", 37.1, 127.1));
-
         final int threadCount = 100;
-        final Long companyId = 1L;
+        Company testCompany = companyRepository.save(createCompany("testCompany", 37.1, 127.1));
+        List<Member> members = new ArrayList<>();
 
-        String wishCountKey = "company:wish:" + companyId;
+        for (int i = 1; i <= threadCount; i++) {
+            Member member = memberRepository.save(
+                createMember("user" + i, "user" + i + "@test.com", (long) i));
+            members.add(member);
+        }
+
+        final Long companyId = testCompany.getId();
+        final String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
         RAtomicLong initialCounter = redissonClient.getAtomicLong(wishCountKey);
         initialCounter.set(0);
 
         ExecutorService executorService = Executors.newFixedThreadPool(32);
         CountDownLatch latch = new CountDownLatch(threadCount);
+        List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<>());
 
         // when
-        for (long i = 1; i <= threadCount; i++) {
-            final Long memberId = i;
-
+        for (Member member : members) {
+            Long memberId = member.getId();
             executorService.submit(() -> {
-                try {
-                    companyCommandService.registWishCompany(memberId, companyId);
-                } finally {
-                    latch.countDown();
-                }
+                executorService.submit(() -> {
+                    try {
+                        companyCommandService.registWishCompany(memberId, companyId);
+                    } catch (Throwable e) {
+                        exceptions.add(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
             });
         }
 
@@ -124,7 +138,6 @@ class WishCompanyConcurrencyTest {
         long finalWishCount = redissonClient.getAtomicLong(wishCountKey).get();
         assertThat(finalWishCount).isEqualTo(threadCount);
 
-        // DB의 실제 count도 확인하여 교차 검증
         long dbWishCount = wishCompanyRepository.fetchWishCountById(companyId);
         assertThat(dbWishCount).isEqualTo(threadCount);
     }
@@ -145,7 +158,8 @@ class WishCompanyConcurrencyTest {
             wishCompanyRepository.save(createWishCompany(company, member));
         }
 
-        String wishCountKey = COMPANY_WISH_KEY_PREFIX + company.getId();
+        Long companyId = company.getId();
+        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
         RAtomicLong counter = redissonClient.getAtomicLong(wishCountKey);
         counter.set(threadCount);
 
@@ -156,7 +170,7 @@ class WishCompanyConcurrencyTest {
         for (Member member : members) {
             executorService.submit(() -> {
                 try {
-                    companyCommandService.deleteWishCompany(member.getId(), company.getId());
+                    companyCommandService.deleteWishCompany(member.getId(), companyId);
                 } finally {
                     latch.countDown();
                 }
