@@ -42,6 +42,14 @@ public enum CustomResponseStatus {
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST.value(), "유효하지 않은 입력값 입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "내부 서버 오류입니다."),
     AI_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "AI 서버 오류입니다."),
+    SARAMIN_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "사람인 서버 오류입니다."),
+    SARAMIN_API_KEY_EMPTY_ERROR(HttpStatus.BAD_REQUEST.value(), "사람인 API 요청시 액세스키 누락시 발생한 에러입니다."),
+    SARAMIN_API_KEY_INVALID_ERROR(HttpStatus.BAD_REQUEST.value(),
+        "사람인 API 요청시 유효한지 않은 액세스키로 발생 에러입니다."),
+    SARAMIN_INVALID_PARAM_ERROR(HttpStatus.BAD_REQUEST.value(),
+        "사람인 API 요청시 유효한지 않은 파라미터로 발생 에러입니다."),
+    SARAMIN_TOO_MANY_REQUEST_ERROR(HttpStatus.TOO_MANY_REQUESTS.value(),
+        "사람인 API의 일일 요청 횟수 초과하였습니다."),
     ;
 
     private final int httpStatusCode;

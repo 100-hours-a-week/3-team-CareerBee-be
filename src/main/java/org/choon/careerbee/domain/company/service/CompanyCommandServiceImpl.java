@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.company.service;
 import io.sentry.Sentry;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,22 +15,23 @@ import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.recruitment.Recruitment;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
+import org.choon.careerbee.domain.company.exception.RetryableSaraminException;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.redisson.api.RedissonClient;
+import org.springframework.context.annotation.Profile;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
-import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClientException;
 
 @Service
 @Slf4j
+@Profile("!test")
 @Transactional
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
@@ -89,7 +91,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     }
 
     @Retryable(
-        retryFor = {RestClientException.class},
+        retryFor = {RetryableSaraminException.class},
         maxAttempts = 3,
         backoff = @Backoff(delay = 3000, multiplier = 2))
     @Override
@@ -101,7 +103,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     }
 
     @Retryable(
-        retryFor = {RestClientException.class},
+        retryFor = {RetryableSaraminException.class},
         maxAttempts = 3,
         backoff = @Backoff(delay = 3000, multiplier = 2))
     @Override
@@ -113,8 +115,8 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     }
 
     @Recover
-    public void recruitingRecover(RestClientException ex, String keyword) {
-        log.error("[Saramin API No React] {}에 대한 미응담", keyword);
+    public void recruitingRecover(RetryableSaraminException ex, String keyword) {
+        log.error("[Saramin API No React] {}에 대한 미응답", keyword);
         Sentry.captureException(ex);
     }
 
