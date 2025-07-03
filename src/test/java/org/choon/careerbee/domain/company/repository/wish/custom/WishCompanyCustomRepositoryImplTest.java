@@ -55,7 +55,8 @@ class WishCompanyCustomRepositoryImplTest {
         em.clear();
 
         // when
-        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(member);
+        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(
+            member.getId());
 
         // then
         assertThat(result).isNotNull();
@@ -83,7 +84,8 @@ class WishCompanyCustomRepositoryImplTest {
         em.clear();
 
         // when
-        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(member);
+        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(
+            member.getId());
 
         // then
         assertThat(result).isNotNull();
