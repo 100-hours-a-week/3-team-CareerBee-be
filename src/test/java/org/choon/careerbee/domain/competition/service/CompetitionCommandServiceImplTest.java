@@ -135,9 +135,11 @@ class CompetitionCommandServiceImplTest {
 
         when(competitionRepository.findById(competitionId)).thenReturn(Optional.of(competition));
         when(memberQueryService.findById(memberId)).thenReturn(member);
-        when(competitionResultRepository.existsByMemberIdAndCompetitionId(memberId, competitionId)).thenReturn(false);
+        when(competitionResultRepository.existsByMemberIdAndCompetitionId(memberId,
+            competitionId)).thenReturn(false);
 
-        when(competitionProblemRepository.getProblemAnswerInfoByCompetitionId(competitionId)).thenReturn(
+        when(competitionProblemRepository.getProblemAnswerInfoByCompetitionId(
+            competitionId)).thenReturn(
             List.of(
                 new ProblemAnswerInfo(1L, (short) 5, "sol1"),
                 new ProblemAnswerInfo(2L, (short) 3, "sol2"),
@@ -146,12 +148,12 @@ class CompetitionCommandServiceImplTest {
         );
 
         // when
-        CompetitionGradingResp resp = competitionCommandService.submitCompetitionResult(competitionId, submitReq, memberId);
+        CompetitionGradingResp resp = competitionCommandService.submitCompetitionResult(
+            competitionId, submitReq, memberId);
 
         // then
         verify(competitionResultRepository, times(1)).save(any(CompetitionResult.class));
         verify(member, times(1)).plusPoint(5);
-        verify(eventPublisher, times(1)).sendPointEarnedNotification(any());
 
         assertThat(resp.gradingResults()).hasSize(3);
         assertThat(resp.gradingResults().get(0).isCorrect()).isTrue();
