@@ -34,7 +34,7 @@ public interface CompanyQueryService {
 
     List<Company> findBySaraminNameIn(List<String> companyNames);
 
-    WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size);
+    WishCompaniesResp fetchWishCompanies(Long accessMemberId, Long cursor, int size);
 
     List<CompanyMarkerInfo> fetchAllCompanyLocations();
 }

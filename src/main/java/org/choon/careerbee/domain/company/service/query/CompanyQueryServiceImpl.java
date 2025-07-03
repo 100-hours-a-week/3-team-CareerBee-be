@@ -124,7 +124,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
         Member validMember = memberRepository.findById(accessMemberId)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
 
-        return wishCompanyRepository.fetchWishCompanyIdsByMember(validMember);
+        return wishCompanyRepository.fetchWishCompanyIdsByMember(validMember.getId());
     }
 
     @Override
@@ -145,8 +145,8 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     }
 
     @Override
-    public WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size) {
-        return wishCompanyRepository.fetchWishCompaniesByMemberId(id, cursor, size);
+    public WishCompaniesResp fetchWishCompanies(Long accessMemberId, Long cursor, int size) {
+        return wishCompanyRepository.fetchWishCompaniesByMemberId(accessMemberId, cursor, size);
     }
 
     @Override

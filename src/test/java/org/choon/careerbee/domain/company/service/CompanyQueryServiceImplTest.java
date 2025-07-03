@@ -61,6 +61,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class CompanyQueryServiceImplTest {
@@ -527,10 +528,11 @@ class CompanyQueryServiceImplTest {
         // given
         Long memberId = 1L;
         Member mockMember = createMember("testnick", "test@test.com", memberId);
+        ReflectionTestUtils.setField(mockMember, "id", 1L);
         WishCompanyIdResp mockResp = new WishCompanyIdResp(List.of(10L, 20L, 30L));
 
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
-        when(wishCompanyRepository.fetchWishCompanyIdsByMember(mockMember)).thenReturn(mockResp);
+        when(wishCompanyRepository.fetchWishCompanyIdsByMember(memberId)).thenReturn(mockResp);
 
         // when
         WishCompanyIdResp actualResp = companyQueryService.fetchWishCompanyIds(memberId);
@@ -540,9 +542,10 @@ class CompanyQueryServiceImplTest {
 
         verify(memberRepository, times(1)).findById(memberId);
 
-        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-        verify(wishCompanyRepository, times(1)).fetchWishCompanyIdsByMember(memberCaptor.capture());
-        assertThat(memberCaptor.getValue()).isEqualTo(mockMember); // 객체 동등성 확인
+        ArgumentCaptor<Long> memberIdCaptor = ArgumentCaptor.forClass(Long.class);
+        verify(wishCompanyRepository, times(1)).fetchWishCompanyIdsByMember(
+            memberIdCaptor.capture());
+        assertThat(memberIdCaptor.getValue()).isEqualTo(memberId); // 객체 동등성 확인
     }
 
     @Test
