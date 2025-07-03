@@ -17,7 +17,6 @@ import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo.Keyword;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
-import org.choon.careerbee.domain.member.entity.Member;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -28,11 +27,11 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public WishCompanyIdResp fetchWishCompanyIdsByMember(Member member) {
+    public WishCompanyIdResp fetchWishCompanyIdsByMember(Long memberId) {
         List<Long> companyIds = queryFactory
             .select(wishCompany.company.id)
             .from(wishCompany)
-            .where(wishCompany.member.id.eq(member.getId()))
+            .where(wishCompany.member.id.eq(memberId))
             .fetch();
 
         return new WishCompanyIdResp(companyIds);
