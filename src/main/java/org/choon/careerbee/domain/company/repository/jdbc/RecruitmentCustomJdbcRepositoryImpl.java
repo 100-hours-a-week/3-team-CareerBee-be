@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.repository.jdbc;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -44,8 +45,8 @@ public class RecruitmentCustomJdbcRepositoryImpl implements
 
                 LocalDateTime s = recruitment.getStartDate();
                 LocalDateTime e = recruitment.getEndDate();
-                ps.setTimestamp(5, java.sql.Timestamp.valueOf(s));
-                ps.setTimestamp(6, java.sql.Timestamp.valueOf(e));
+                ps.setTimestamp(5, toTimestamp(recruitment.getStartDate()));
+                ps.setTimestamp(6, toTimestamp(recruitment.getEndDate()));
             }
 
             @Override
@@ -53,5 +54,9 @@ public class RecruitmentCustomJdbcRepositoryImpl implements
                 return recruitments.size();
             }
         });
+    }
+
+    private Timestamp toTimestamp(LocalDateTime ldt) {
+        return ldt != null ? Timestamp.valueOf(ldt) : null;
     }
 }
