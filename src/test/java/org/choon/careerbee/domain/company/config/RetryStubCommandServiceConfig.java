@@ -12,11 +12,13 @@ import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
 @TestConfiguration
 public class RetryStubCommandServiceConfig {
 
     @Bean
+    @Primary
     public CompanyCommandService companyCommandService(
         RecruitmentRepository recruitmentRepository,
         CompanyApiClient companyApiClient,
