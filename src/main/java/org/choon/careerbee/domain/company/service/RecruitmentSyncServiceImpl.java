@@ -16,6 +16,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.domain.company.dto.internal.JobContext;
 import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp;
 import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp.Job;
 import org.choon.careerbee.domain.company.entity.Company;
@@ -45,89 +46,27 @@ public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
     private final WishCompanyRepository wishCompanyRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Override
     @Retryable(
         retryFor = {TransientDataAccessException.class},
         maxAttempts = 3,
         backoff = @Backoff(delay = 3000, multiplier = 2))
-    @Override
     public void persistNewRecruitmentsAndNotify(
         SaraminRecruitingResp apiResp,
         boolean isOpenRecruitment
     ) {
         List<Job> jobs = apiResp.jobs().job();
+        JobContext context = extractJobContext(jobs);
 
-        // 1. ID, 회사명 추출
-        List<String> companyNames = jobs.stream()
-            .map(j -> j.company().detail().name())
-            .distinct()
-            .toList();
-
-        List<Long> jobIds = jobs.stream()
-            .map(SaraminRecruitingResp.Job::id)
-            .toList();
-
-        // 2. DB에서 한 번에 조회
-        List<Company> companies = companyQueryService.findBySaraminNameIn(companyNames);
-        Map<String, Company> companyMap = companies.stream()
-            .collect(Collectors.toMap(Company::getSaraminName, Function.identity()));
-
-        // 이미 등록된 공고 ID만 꺼내오기
-        Set<Long> existingIds = recruitmentRepository
-            .findRecruitingIdByRecruitingIdIn(jobIds)
-            .stream().collect(Collectors.toSet());
-
-        Map<Long, List<Long>> wishMemberMap =
-            wishCompanyRepository.getWishMemberIdsGroupedByCompanyId(
-                companies.stream().map(Company::getId).toList()
-            );
-
-        // 3. 메모리 필터링 & 엔티티 생성
         List<Recruitment> toSave = new ArrayList<>();
         Map<String, Set<Long>> toNoti = new HashMap<>();
-        for (SaraminRecruitingResp.Job job : jobs) {
-            if (job.active() == RECRUITING_STATUS_CLOSED) {
-                continue;
-            }
 
-            Company company = companyMap.get(job.company().detail().name());
-            if (company == null || existingIds.contains(job.id())) {
-                continue;
-            }
-
-            // 상태 변경
-            company.changeRecruitingStatus(RecruitingStatus.ONGOING);
-
-            // 해당 기업을 관심목록으로 등록한 사람들을 넣기
-            if (isOpenRecruitment) {
-                List<Long> wishMemberIds = wishMemberMap
-                    .getOrDefault(company.getId(), Collections.emptyList());
-
-                toNoti
-                    .computeIfAbsent(company.getName(), k -> new HashSet<>())
-                    .addAll(wishMemberIds);
-            }
-
-            toSave.add(Recruitment.from(
-                company,
-                job.id(),
-                job.url(),
-                job.position().title(),
-                parseSaraminDate(job.postingDate()).orElse(null),
-                parseSaraminDate(job.expirationDate()).orElse(null)
-            ));
+        for (Job job : jobs) {
+            processJob(job, context, isOpenRecruitment, toSave, toNoti);
         }
 
-        if (!toSave.isEmpty()) {
-            // 4. Batch Insert
-            recruitmentRepository.batchInsert(toSave);
-        }
-
-        // 5. 알림 이벤트 발행
-        if (isOpenRecruitment && !toNoti.isEmpty()) {
-            eventPublisher.publishEvent(
-                new OpenRecruitingEvent(toNoti)
-            );
-        }
+        saveNewRecruitments(toSave);
+        notifyWishMembersIfNeeded(isOpenRecruitment, toNoti);
     }
 
     @Recover
@@ -139,6 +78,79 @@ public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
         log.error("[공고 저장 실패] 사람인 응답 건수={}, openRecruit={}", apiResp.jobs().job().size(),
             isOpenRecruitment, ex);
         Sentry.captureException(ex);
+    }
+
+    private JobContext extractJobContext(List<Job> jobs) {
+        List<String> companyNames = jobs.stream()
+            .map(j -> j.company().detail().name())
+            .distinct()
+            .toList();
+
+        List<Long> jobIds = jobs.stream()
+            .map(Job::id)
+            .toList();
+
+        List<Company> companies = companyQueryService.findBySaraminNameIn(companyNames);
+        Set<Long> existingIds = recruitmentRepository.findRecruitingIdByRecruitingIdIn(jobIds)
+            .stream().collect(Collectors.toSet());
+
+        Map<String, Company> companyMap = companies.stream()
+            .collect(Collectors.toMap(Company::getSaraminName, Function.identity()));
+
+        Map<Long, List<Long>> wishMemberMap = wishCompanyRepository
+            .getWishMemberIdsGroupedByCompanyId(
+                companies.stream().map(Company::getId).toList()
+            );
+
+        return new JobContext(companyMap, existingIds, wishMemberMap);
+    }
+
+    private void processJob(
+        Job job,
+        JobContext context,
+        boolean isOpenRecruitment,
+        List<Recruitment> toSave,
+        Map<String, Set<Long>> toNoti
+    ) {
+        if (job.active() == RECRUITING_STATUS_CLOSED) {
+            return;
+        }
+
+        Company company = context.companyMap().get(job.company().detail().name());
+        if (company == null || context.existingIds().contains(job.id())) {
+            return;
+        }
+
+        company.changeRecruitingStatus(RecruitingStatus.ONGOING);
+
+        if (isOpenRecruitment) {
+            List<Long> wishMemberIds = context.wishMemberMap()
+                .getOrDefault(company.getId(), Collections.emptyList());
+
+            toNoti.computeIfAbsent(company.getName(), k -> new HashSet<>()).addAll(wishMemberIds);
+        }
+
+        toSave.add(Recruitment.from(
+            company,
+            job.id(),
+            job.url(),
+            job.position().title(),
+            parseSaraminDate(job.postingDate()).orElse(null),
+            parseSaraminDate(job.expirationDate()).orElse(null)
+        ));
+    }
+
+    private void saveNewRecruitments(List<Recruitment> toSave) {
+        if (!toSave.isEmpty()) {
+            recruitmentRepository.batchInsert(toSave);
+        }
+    }
+
+    private void notifyWishMembersIfNeeded(boolean isOpenRecruitment,
+        Map<String, Set<Long>> toNoti) {
+        if (isOpenRecruitment && !toNoti.isEmpty()) {
+            eventPublisher.publishEvent(new OpenRecruitingEvent(toNoti));
+        }
     }
 
     private Optional<LocalDateTime> parseSaraminDate(String dateStr) {

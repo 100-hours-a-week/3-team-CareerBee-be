@@ -87,6 +87,11 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     }
 
     @Override
+    public List<Company> findByIds(List<Long> ids) {
+        return companyRepository.findAllById(ids);
+    }
+
+    @Override
     public Company getRefById(Long companyId) {
         return companyRepository.getReferenceById(companyId);
     }

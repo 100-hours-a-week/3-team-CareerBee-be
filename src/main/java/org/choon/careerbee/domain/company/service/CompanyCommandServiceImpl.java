@@ -3,8 +3,10 @@ package org.choon.careerbee.domain.company.service;
 import io.sentry.Sentry;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -37,10 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     private final RecruitmentRepository recruitmentRepository;
-    private static final int RECRUITING_STATUS_CLOSED = 0;
     private static final long TTL = 3L;
-    private static final DateTimeFormatter SARAMIN_DT_FMT =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
 
     private final CompanyApiClient companyApiClient;
 
@@ -120,20 +119,14 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Sentry.captureException(ex);
     }
 
+    @Override
     @Retryable(
         retryFor = {TransientDataAccessException.class},
         maxAttempts = 3,
         backoff = @Backoff(delay = 3000, multiplier = 2))
-    @Override
     public void cleanExpiredRecruitments(LocalDateTime now) {
-        List<Recruitment> expiredBefore = recruitmentRepository.findExpiredBefore(now);
-        expiredBefore.forEach(r -> r.expired(now));
-
-        List<CompanyActiveCount> activeList = recruitmentRepository.countActiveByCompany();
-        activeList.forEach(c -> {
-            Company company = companyQueryService.getRefById(c.companyId());
-            company.closeRecruitingIfNoActivePostings(c.recruitmentCount());
-        });
+        expireRecruitments(now);
+        closeRecruitingStatusForInactiveCompanies();
     }
 
     @Recover
@@ -144,4 +137,24 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Sentry.captureException(ex);
     }
 
+    private void expireRecruitments(LocalDateTime now) {
+        List<Recruitment> expiredBefore = recruitmentRepository.findExpiredBefore(now);
+        expiredBefore.forEach(r -> r.expired(now));
+    }
+
+    private void closeRecruitingStatusForInactiveCompanies() {
+        List<CompanyActiveCount> activeList = recruitmentRepository.countActiveByCompany();
+
+        List<Long> companyIds = activeList.stream()
+            .map(CompanyActiveCount::companyId)
+            .toList();
+
+        Map<Long, Company> companyMap = companyQueryService.findByIds(companyIds).stream()
+            .collect(Collectors.toMap(Company::getId, Function.identity()));
+
+        for (CompanyActiveCount c : activeList) {
+            Company company = companyMap.get(c.companyId());
+            company.closeRecruitingIfNoActivePostings(c.recruitmentCount());
+        }
+    }
 }

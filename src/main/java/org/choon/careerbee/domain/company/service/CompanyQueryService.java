@@ -32,6 +32,8 @@ public interface CompanyQueryService {
 
     Company findById(Long companyId);
 
+    List<Company> findByIds(List<Long> ids);
+
     Company getRefById(Long companyId);
 
     List<Company> findBySaraminNameIn(List<String> companyNames);
