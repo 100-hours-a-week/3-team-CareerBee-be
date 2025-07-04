@@ -34,4 +34,5 @@ public interface CompanyCustomRepository {
     String fetchCompanyRecentIssueById(Long companyId);
 
     CompanyRecruitInfo fetchRecruitmentInfo(Long companyId);
+
 }

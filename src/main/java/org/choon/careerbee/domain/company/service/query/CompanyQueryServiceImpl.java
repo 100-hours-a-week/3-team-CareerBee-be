@@ -145,6 +145,11 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     }
 
     @Override
+    public List<Company> findByIds(List<Long> ids) {
+        return companyRepository.findAllById(ids);
+    }
+
+    @Override
     public WishCompaniesResp fetchWishCompanies(Long accessMemberId, Long cursor, int size) {
         return wishCompanyRepository.fetchWishCompaniesByMemberId(accessMemberId, cursor, size);
     }

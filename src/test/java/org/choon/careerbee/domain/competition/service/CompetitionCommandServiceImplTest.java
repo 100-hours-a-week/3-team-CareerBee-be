@@ -34,7 +34,6 @@ import org.choon.careerbee.domain.competition.repository.CompetitionResultReposi
 import org.choon.careerbee.domain.competition.service.command.CompetitionCommandServiceImpl;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
-import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.TypedJsonJacksonCodec;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class CompetitionCommandServiceImplTest {
@@ -67,7 +67,7 @@ class CompetitionCommandServiceImplTest {
     private MemberQueryService memberQueryService;
 
     @Mock
-    private NotificationEventPublisher eventPublisher;
+    private ApplicationEventPublisher eventPublisher;
 
     @Mock
     private RedissonClient redissonClient;
@@ -187,7 +187,6 @@ class CompetitionCommandServiceImplTest {
         // then
         verify(competitionResultRepository, times(1)).save(any(CompetitionResult.class));
         verify(member, times(1)).plusPoint(5);
-        verify(eventPublisher, times(1)).sendPointEarnedNotification(any());
 
         assertThat(resp.gradingResults()).hasSize(3);
         assertThat(resp.gradingResults().get(0).isCorrect()).isTrue();

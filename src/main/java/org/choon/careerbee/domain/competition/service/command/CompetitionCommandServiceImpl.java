@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.competition.service.command;
 
+import io.sentry.Sentry;
 import static org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq.SubmitInfo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,30 +22,37 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
+import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
+import org.choon.careerbee.domain.competition.dto.event.PointEvent;
+import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.dto.request.SummaryPeriod;
 import org.choon.careerbee.domain.competition.dto.internal.GradingResult;
 import org.choon.careerbee.domain.competition.dto.internal.ProblemAnswerInfo;
 import org.choon.careerbee.domain.competition.dto.internal.SubmissionContext;
-import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp.CompetitionGradingInfo;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionProblemRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
+import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
-import org.choon.careerbee.domain.notification.dto.request.PointNotiInfo;
 import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
-import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.TypedJsonJacksonCodec;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.TransientDataAccessException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
-@Transactional
 @Slf4j
+@Transactional
 @Service
 public class CompetitionCommandServiceImpl implements CompetitionCommandService {
 
@@ -54,8 +62,9 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
     private final CompetitionRepository competitionRepository;
     private final CompetitionParticipantRepository competitionParticipantRepository;
     private final CompetitionResultRepository competitionResultRepository;
+    private final CompetitionSummaryRepository summaryRepository;
     private final MemberQueryService memberQueryService;
-    private final NotificationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
     private final CompetitionProblemRepository competitionProblemRepository;
     private final RedissonClient redissonClient;
     private final Clock clock;
@@ -157,9 +166,39 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
             )
         );
 
-        eventPublisher.sendPointEarnedNotification(
-            new PointNotiInfo(context.member(), PARTICIPATION_POINT, NotificationType.POINT, false)
+        eventPublisher.publishEvent(
+            new PointEvent(context.member(), PARTICIPATION_POINT, NotificationType.POINT, false)
         );
+    }
+
+    @Retryable(
+        retryFor = {TransientDataAccessException.class},
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 3000, multiplier = 2))
+    @Override
+    public void rewardToWeekOrMonthRanker(SummaryPeriod summaryPeriod, SummaryType summaryType) {
+        summaryRepository.fetchTop10Ranker(summaryPeriod, summaryType)
+            .forEach(info -> {
+                int points = switch (info.ranking().intValue()) {
+                    case 1 -> 5;
+                    case 2 -> 4;
+                    case 3 -> 3;
+                    case 4 -> 2;
+                    default -> 1;
+                };
+                info.member().plusPoint(points);
+            });
+    }
+
+    @Recover
+    public void recoverRewardToRanker(
+        TransientDataAccessException ex,
+        SummaryPeriod summaryPeriod,
+        SummaryType summaryType
+    ) {
+        log.error("[주간, 월간 포인트 지급 실패] 주기={}, 타입={} 포인트 지급 3회 재시도 실패", summaryPeriod, summaryType,
+            ex);
+        Sentry.captureException(ex);
     }
 
     private String getCompetitionParticipantKey(Long memberId) {
