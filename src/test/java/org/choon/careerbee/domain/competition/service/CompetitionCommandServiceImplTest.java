@@ -27,13 +27,13 @@ import org.choon.careerbee.domain.competition.repository.CompetitionResultReposi
 import org.choon.careerbee.domain.competition.service.command.CompetitionCommandServiceImpl;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
-import org.choon.careerbee.domain.notification.service.sse.NotificationEventPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class CompetitionCommandServiceImplTest {
@@ -57,7 +57,7 @@ class CompetitionCommandServiceImplTest {
     private MemberQueryService memberQueryService;
 
     @Mock
-    private NotificationEventPublisher eventPublisher;
+    private ApplicationEventPublisher eventPublisher;
 
     @Test
     @DisplayName("대회 참가 - 성공")
@@ -135,9 +135,11 @@ class CompetitionCommandServiceImplTest {
 
         when(competitionRepository.findById(competitionId)).thenReturn(Optional.of(competition));
         when(memberQueryService.findById(memberId)).thenReturn(member);
-        when(competitionResultRepository.existsByMemberIdAndCompetitionId(memberId, competitionId)).thenReturn(false);
+        when(competitionResultRepository.existsByMemberIdAndCompetitionId(memberId,
+            competitionId)).thenReturn(false);
 
-        when(competitionProblemRepository.getProblemAnswerInfoByCompetitionId(competitionId)).thenReturn(
+        when(competitionProblemRepository.getProblemAnswerInfoByCompetitionId(
+            competitionId)).thenReturn(
             List.of(
                 new ProblemAnswerInfo(1L, (short) 5, "sol1"),
                 new ProblemAnswerInfo(2L, (short) 3, "sol2"),
@@ -146,12 +148,12 @@ class CompetitionCommandServiceImplTest {
         );
 
         // when
-        CompetitionGradingResp resp = competitionCommandService.submitCompetitionResult(competitionId, submitReq, memberId);
+        CompetitionGradingResp resp = competitionCommandService.submitCompetitionResult(
+            competitionId, submitReq, memberId);
 
         // then
         verify(competitionResultRepository, times(1)).save(any(CompetitionResult.class));
         verify(member, times(1)).plusPoint(5);
-        verify(eventPublisher, times(1)).sendPointEarnedNotification(any());
 
         assertThat(resp.gradingResults()).hasSize(3);
         assertThat(resp.gradingResults().get(0).isCorrect()).isTrue();

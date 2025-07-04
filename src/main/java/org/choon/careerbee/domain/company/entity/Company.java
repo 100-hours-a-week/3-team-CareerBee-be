@@ -113,4 +113,10 @@ public class Company {
     public void changeRecruitingStatus(RecruitingStatus status) {
         this.recruitingStatus = status;
     }
+
+    public void closeRecruitingIfNoActivePostings(long activeCount) {
+        if (activeCount == 0) {
+            this.recruitingStatus = RecruitingStatus.CLOSED;
+        }
+    }
 }

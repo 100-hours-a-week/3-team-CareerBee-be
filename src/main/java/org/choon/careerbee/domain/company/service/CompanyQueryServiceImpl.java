@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -88,8 +87,13 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     }
 
     @Override
-    public Optional<Company> findBySaraminName(String name) {
-        return companyRepository.findBySaraminName(name);
+    public List<Company> findByIds(List<Long> ids) {
+        return companyRepository.findAllById(ids);
+    }
+
+    @Override
+    public Company getRefById(Long companyId) {
+        return companyRepository.getReferenceById(companyId);
     }
 
     @Override

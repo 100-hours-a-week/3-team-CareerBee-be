@@ -1,7 +1,6 @@
 package org.choon.careerbee.domain.company.service;
 
 import java.util.List;
-import java.util.Optional;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -33,7 +32,9 @@ public interface CompanyQueryService {
 
     Company findById(Long companyId);
 
-    Optional<Company> findBySaraminName(String name);
+    List<Company> findByIds(List<Long> ids);
+
+    Company getRefById(Long companyId);
 
     List<Company> findBySaraminNameIn(List<String> companyNames);
 

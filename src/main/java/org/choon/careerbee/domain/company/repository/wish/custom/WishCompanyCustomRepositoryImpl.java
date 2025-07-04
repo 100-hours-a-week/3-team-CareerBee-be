@@ -87,6 +87,20 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
             .fetch();
     }
 
+    public Map<Long, List<Long>> getWishMemberIdsGroupedByCompanyId(List<Long> companyIds) {
+        List<Tuple> result = queryFactory
+            .select(wishCompany.company.id, wishCompany.member.id)
+            .from(wishCompany)
+            .where(wishCompany.company.id.in(companyIds))
+            .fetch();
+
+        return result.stream()
+            .collect(Collectors.groupingBy(
+                tuple -> tuple.get(wishCompany.company.id),
+                Collectors.mapping(tuple -> tuple.get(wishCompany.member.id), Collectors.toList())
+            ));
+    }
+
     private List<Tuple> fetchWishCompanyInfos(Long memberId, Long cursor, int size) {
         return queryFactory
             .select(wishCompany.id, company.id, company.name, company.logoUrl)
