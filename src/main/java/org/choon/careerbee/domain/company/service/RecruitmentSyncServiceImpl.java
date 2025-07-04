@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,6 +76,11 @@ public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
             .findRecruitingIdByRecruitingIdIn(jobIds)
             .stream().collect(Collectors.toSet());
 
+        Map<Long, List<Long>> wishMemberMap =
+            wishCompanyRepository.getWishMemberIdsGroupedByCompanyId(
+                companies.stream().map(Company::getId).toList()
+            );
+
         // 3. 메모리 필터링 & 엔티티 생성
         List<Recruitment> toSave = new ArrayList<>();
         Map<String, Set<Long>> toNoti = new HashMap<>();
@@ -93,8 +99,8 @@ public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
 
             // 해당 기업을 관심목록으로 등록한 사람들을 넣기
             if (isOpenRecruitment) {
-                List<Long> wishMemberIds = wishCompanyRepository.getMemberIdsByCompanyId(
-                    company.getId());
+                List<Long> wishMemberIds = wishMemberMap
+                    .getOrDefault(company.getId(), Collections.emptyList());
 
                 toNoti
                     .computeIfAbsent(company.getName(), k -> new HashSet<>())
