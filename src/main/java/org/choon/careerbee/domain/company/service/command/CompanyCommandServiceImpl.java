@@ -26,7 +26,6 @@ import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
-import org.springframework.context.annotation.Profile;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -36,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-@Profile("!test")
 @Transactional
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
@@ -72,7 +70,6 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
         wishCompanyRepository.save(WishCompany.of(validMember, validCompany));
 
-        // 관심수 동시성 제어를 위한 RAtomicLong 활용
         String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
         RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
         atomicLong.incrementAndGet();
