@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -105,8 +106,8 @@ public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
                 job.id(),
                 job.url(),
                 job.position().title(),
-                parseSaraminDate(job.postingDate()),
-                parseSaraminDate(job.expirationDate())
+                parseSaraminDate(job.postingDate()).orElse(null),
+                parseSaraminDate(job.expirationDate()).orElse(null)
             ));
         }
 
@@ -134,11 +135,9 @@ public class RecruitmentSyncServiceImpl implements RecruitmentSyncService {
         Sentry.captureException(ex);
     }
 
-    private LocalDateTime parseSaraminDate(String dateStr) {
-        if (dateStr == null || dateStr.isBlank()) {
-            return null;
-        }
-        return OffsetDateTime.parse(dateStr, SARAMIN_DT_FMT)
-            .toLocalDateTime();
+    private Optional<LocalDateTime> parseSaraminDate(String dateStr) {
+        return Optional.ofNullable(dateStr)
+            .filter(date -> !date.isBlank())
+            .map(date -> OffsetDateTime.parse(date, SARAMIN_DT_FMT).toLocalDateTime());
     }
 }
