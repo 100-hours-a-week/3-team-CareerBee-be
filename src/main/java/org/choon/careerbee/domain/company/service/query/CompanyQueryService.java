@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.service;
+package org.choon.careerbee.domain.company.service.query;
 
 import java.util.List;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
@@ -32,12 +32,11 @@ public interface CompanyQueryService {
 
     Company findById(Long companyId);
 
-    List<Company> findByIds(List<Long> ids);
-
-    Company getRefById(Long companyId);
-
     List<Company> findBySaraminNameIn(List<String> companyNames);
 
-    WishCompaniesResp fetchWishCompanies(Long id, Long cursor, int size);
+    List<Company> findByIds(List<Long> ids);
 
+    WishCompaniesResp fetchWishCompanies(Long accessMemberId, Long cursor, int size);
+
+    List<CompanyMarkerInfo> fetchAllCompanyLocations();
 }

@@ -1,6 +1,5 @@
 package org.choon.careerbee.domain.company.service;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
@@ -19,15 +18,17 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.command.CompanyCommandServiceImpl;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 
@@ -58,19 +59,30 @@ class CompanyCommandServiceImplTest {
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
 
-        RBucket<String> bucket = mock(RBucket.class);
+        // 1. 중복 요청 방지 락 모킹
+        RBucket<String> lockBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(lockBucket);
+        when(lockBucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
+
+        // 2. RAtomicLong 모킹
+        RAtomicLong mockAtomicLong = mock(RAtomicLong.class);
+        // wishCountKey로 getAtomicLong 호출 시, 위에서 만든 mockAtomicLong을 반환하도록 설정
+        when(redissonClient.getAtomicLong(anyString())).thenReturn(mockAtomicLong);
+
+        // 3. DB 관련 모킹
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             false);
-        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
-        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when
         companyCommandService.registWishCompany(memberId, companyId);
 
         // then
+        // DB에 저장이 1번 호출되었는지 검증
         verify(wishCompanyRepository, times(1)).save(any());
+        // 캐시 카운터가 1 증가했는지 검증
+        verify(mockAtomicLong, times(1)).incrementAndGet();
     }
 
     @Test
@@ -107,28 +119,33 @@ class CompanyCommandServiceImplTest {
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
         WishCompany mockWishCompany = createWishCompany(mockCompany, mockMember);
-        RBucket<String> bucket = mock(RBucket.class);
 
+        // 1. 중복 요청 방지 락 모킹
+        RBucket<String> lockBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(lockBucket);
+        when(lockBucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
+
+        // 2. RAtomicLong 모킹
+        RAtomicLong mockAtomicLong = mock(RAtomicLong.class);
+        when(redissonClient.getAtomicLong(anyString())).thenReturn(mockAtomicLong);
+        // 카운터가 존재하고 0보다 크다고 가정 (감소 로직의 if문 통과를 위해)
+        when(mockAtomicLong.isExists()).thenReturn(true);
+        when(mockAtomicLong.get()).thenReturn(5L); // 0보다 큰 임의의 값
+
+        // 3. DB 관련 모킹
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.findByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             Optional.of(mockWishCompany));
-        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
-        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when
         companyCommandService.deleteWishCompany(memberId, companyId);
 
         // then
+        // DB 삭제가 1번 호출되었는지 검증
         verify(wishCompanyRepository, times(1)).delete(mockWishCompany);
-
-        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-        ArgumentCaptor<Company> companyCaptor = ArgumentCaptor.forClass(Company.class);
-
-        verify(wishCompanyRepository, times(1))
-            .findByMemberAndCompany(memberCaptor.capture(), companyCaptor.capture());
-        assertThat(memberCaptor.getValue()).isEqualTo(mockMember);
-        assertThat(companyCaptor.getValue()).isEqualTo(mockCompany);
+        // 캐시 카운터가 1 감소했는지 검증
+        verify(mockAtomicLong, times(1)).decrementAndGet();
     }
 
     @Test

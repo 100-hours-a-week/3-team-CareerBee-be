@@ -37,7 +37,7 @@ class CompetitionRepositoryTest {
     @DisplayName("이미 대회에 참여했다면 true 반환")
     void existsByMemberIdAndCompetitionId_true_whenAlreadyJoined() {
         // given
-        Member member = memberRepository.save(createMember("testNick", "test@test.com", 123L));
+        Member member = memberRepository.save(createMember("testNick", "test1@test.com", 1234L));
         Competition competition = competitionRepository.save(createCompetition(
             LocalDateTime.of(2025, 5, 30, 20, 0, 0),
             LocalDateTime.of(2025, 5, 30, 20, 10, 0)
@@ -60,7 +60,7 @@ class CompetitionRepositoryTest {
     @DisplayName("대회에 참여한적 없다면 false 반환")
     void existsByMemberIdAndCompetitionId_false_whenFirstJoined() {
         // given
-        Member member = memberRepository.save(createMember("testNick", "test@test.com", 123L));
+        Member member = memberRepository.save(createMember("testNick", "test2@test.com", 32142L));
         Competition competition = competitionRepository.save(createCompetition(
             LocalDateTime.of(2025, 5, 30, 20, 0, 0),
             LocalDateTime.of(2025, 5, 30, 20, 10, 0)

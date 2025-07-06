@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.service;
+package org.choon.careerbee.domain.company.service.command;
 
 import java.time.LocalDateTime;
 

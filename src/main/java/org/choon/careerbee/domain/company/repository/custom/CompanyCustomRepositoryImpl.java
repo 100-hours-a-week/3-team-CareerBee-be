@@ -19,9 +19,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo.Recruitment;
+import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
+import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart.Photo;
+import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart.TechStack;
+import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
-import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
@@ -29,6 +34,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.company.entity.QCompany;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.springframework.stereotype.Repository;
@@ -102,80 +108,35 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
     }
 
     @Override
-    public CompanyDetailResp fetchCompanyDetailById(Long companyId) {
-        Company companyEntity = queryFactory
-            .selectFrom(company)
+    public CompanySummaryInfoWithoutWish fetchCompanySummaryInfoWithoutWishCount(Long companyId) {
+        Tuple tuple = queryFactory
+            .select(
+                company.id,
+                company.name,
+                company.logoUrl
+            )
+            .from(company)
             .where(company.id.eq(companyId))
             .fetchOne();
 
-        if (companyEntity == null) {
+        if (tuple == null) {
             throw new CustomException(CustomResponseStatus.COMPANY_NOT_EXIST);
         }
 
-        Long wishCount = getWishCount(companyId);
-
-        List<CompanyDetailResp.Photo> photos = queryFactory
+        List<CompanySummaryInfo.Keyword> keywords = queryFactory
             .select(Projections.constructor(
-                CompanyDetailResp.Photo.class,
-                companyPhoto.displayOrder,
-                companyPhoto.imgUrl
+                CompanySummaryInfo.Keyword.class,
+                companyKeyword.content
             ))
-            .from(companyPhoto)
-            .where(companyPhoto.company.id.eq(companyId))
-            .orderBy(companyPhoto.displayOrder.asc())
+            .from(companyKeyword)
+            .where(companyKeyword.company.id.eq(companyId))
             .fetch();
 
-        List<CompanyDetailResp.TechStack> techStacks = queryFactory
-            .select(Projections.constructor(
-                CompanyDetailResp.TechStack.class,
-                techStack.id,
-                techStack.name,
-                techStack.stackType.stringValue(),
-                techStack.imgUrl
-            ))
-            .from(companyTechStack)
-            .join(companyTechStack.techStack, techStack)
-            .where(companyTechStack.company.id.eq(companyId))
-            .fetch();
-
-        List<CompanyDetailResp.Recruitment> recruitments = queryFactory
-            .select(Projections.constructor(
-                CompanyDetailResp.Recruitment.class,
-                recruitment.recruitingId,
-                recruitment.url,
-                recruitment.title,
-                recruitment.startDate.stringValue(),
-                recruitment.endDate.stringValue()
-            ))
-            .from(recruitment)
-            .where(recruitment.company.id.eq(companyId))
-            .orderBy(recruitment.startDate.desc())
-            .fetch();
-
-        return new CompanyDetailResp(
-            companyEntity.getId(),
-            companyEntity.getName(),
-            companyEntity.getTitle(),
-            companyEntity.getLogoUrl(),
-            companyEntity.getRecentIssue(),
-            companyEntity.getCompanyType().name(),
-            companyEntity.getRecruitingStatus().name(),
-            companyEntity.getAddress(),
-            companyEntity.getEmployeeCount(),
-            companyEntity.getHomeUrl(),
-            companyEntity.getDescription(),
-            wishCount != null ? wishCount : 0,
-            companyEntity.getRating() != null ? companyEntity.getRating() : 0.0,
-            new CompanyDetailResp.Financials(
-                companyEntity.getAnnualSalary(),
-                companyEntity.getStartingSalary(),
-                companyEntity.getRevenue(),
-                companyEntity.getOperatingProfit()
-            ),
-            photos,
-            CompanyDetailResp.convertBenefitMap(companyEntity.getBenefits()),
-            techStacks,
-            recruitments
+        return new CompanySummaryInfoWithoutWish(
+            tuple.get(company.id),
+            tuple.get(company.name),
+            tuple.get(company.logoUrl),
+            keywords
         );
     }
 
@@ -236,6 +197,48 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .fetch();
     }
 
+    @Override
+    public List<CompanyMarkerInfo> fetchAllCompanyMarkerInfo() {
+        return queryFactory.select(
+                Projections.constructor(
+                    CompanyMarkerInfo.class,
+                    company.id,
+                    company.markerUrl,
+                    company.businessType,
+                    company.recruitingStatus,
+                    Projections.constructor(
+                        LocationInfo.class,
+                        Expressions.numberTemplate(Double.class, "ST_X({0})", company.geoPoint),
+                        Expressions.numberTemplate(Double.class, "ST_Y({0})", company.geoPoint)
+                    )
+                )
+            )
+            .from(company)
+            .fetch();
+    }
+
+    @Override
+    public CompanyStaticPart fetchCompanyStaticInfoById(Long companyId) {
+        Company company = queryFactory
+            .selectFrom(QCompany.company)
+            .where(QCompany.company.id.eq(companyId))
+            .fetchOne();
+
+        List<Photo> companyPhotos = fetchPhotos(companyId);
+        List<TechStack> companyTechStacks = fetchTechStacks(companyId);
+
+        return CompanyStaticPart.of(company, companyPhotos, companyTechStacks);
+    }
+
+    @Override
+    public String fetchCompanyRecentIssueById(Long companyId) {
+        return queryFactory
+            .select(company.recentIssue)
+            .from(company)
+            .where(company.id.eq(companyId))
+            .fetchOne();
+    }
+
     private BooleanExpression inDistance(String point, Integer radius) {
         return radius != null
             ? Expressions.booleanTemplate(
@@ -266,6 +269,59 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .from(wishCompany)
             .where(wishCompany.company.id.eq(companyId))
             .fetchOne();
+    }
+
+    private List<Photo> fetchPhotos(Long companyId) {
+        return queryFactory
+            .select(Projections.constructor(
+                Photo.class,
+                companyPhoto.displayOrder,
+                companyPhoto.imgUrl
+            ))
+            .from(companyPhoto)
+            .where(companyPhoto.company.id.eq(companyId))
+            .orderBy(companyPhoto.displayOrder.asc())
+            .fetch();
+    }
+
+    private List<TechStack> fetchTechStacks(Long companyId) {
+        return queryFactory
+            .select(Projections.constructor(
+                TechStack.class,
+                techStack.id,
+                techStack.name,
+                techStack.stackType.stringValue(),
+                techStack.imgUrl
+            ))
+            .from(companyTechStack)
+            .join(companyTechStack.techStack, techStack)
+            .where(companyTechStack.company.id.eq(companyId))
+            .fetch();
+    }
+
+    @Override
+    public CompanyRecruitInfo fetchRecruitmentInfo(Long companyId) {
+        List<Recruitment> recruitments = queryFactory
+            .select(Projections.constructor(
+                Recruitment.class,
+                recruitment.recruitingId,
+                recruitment.url,
+                recruitment.title,
+                recruitment.startDate.stringValue(),
+                recruitment.endDate.stringValue()
+            ))
+            .from(recruitment)
+            .where(recruitment.company.id.eq(companyId))
+            .orderBy(recruitment.startDate.desc())
+            .fetch();
+
+        RecruitingStatus recruitingStatus = queryFactory
+            .select(company.recruitingStatus)
+            .from(company)
+            .where(company.id.eq(companyId))
+            .fetchOne();
+
+        return new CompanyRecruitInfo(recruitingStatus, recruitments);
     }
 
 }

@@ -14,6 +14,9 @@ plugins {
 
     // PMD Plugin - 코드 스멜/잠재적 버그 검사
     id 'pmd'
+
+    // JaCoCo - 테스트 커버리지
+    id 'jacoco'
 }
 
 
@@ -110,6 +113,9 @@ dependencies {
 
     // Redisson
     implementation "org.redisson:redisson-spring-boot-starter:3.50.0"
+
+    // Cache
+    implementation 'org.springframework.boot:spring-boot-starter-cache:3.5.3'
 }
 
 sentry {
@@ -123,6 +129,10 @@ sentry {
     authToken = System.getenv("SENTRY_AUTH_TOKEN")
 }
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-parameters'
+}
+
 // build.gradle에 추가
 tasks.named('check') {
     dependsOn 'checkstyleMain', 'pmdMain', 'spotbugsMain'
@@ -130,4 +140,85 @@ tasks.named('check') {
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy(jacocoTestReport)
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+    layout.buildDirectory.dir("reports/jacoco")
+}
+
+jacocoTestReport {
+    dependsOn test // test 종속성 추가
+
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+
+    def QDomainList = []
+    for (qPattern in '**/QA'..'**/QZ') { // QClass 대응
+        QDomainList.add(qPattern + '*')
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    '**/dto/**',
+                    '**/event/**',
+                    '**/*InitData*',
+                    '**/*Application*',
+                    '**/exception/**',
+                    '**/service/alarm/**',
+                    '**/aop/**',
+                    '**/config/**',
+                    '**/MemberRole*'
+            ] + QDomainList)
+        }))
+    }
+
+    finalizedBy 'jacocoTestCoverageVerification' // jacocoTestReport 태스크가 끝난 후 실행
+}
+
+// jacoco Test 유효성 확인
+jacocoTestCoverageVerification {
+    def QDomainList = []
+    for (qPattern in '*.QA'..'*.QZ') { // QClass 대응
+        QDomainList.add(qPattern + '*')
+    }
+
+    violationRules {
+        rule {
+            enabled = true // 규칙 활성화 여부
+            element = 'CLASS' // 커버리지를 체크할 단위 설정
+
+            // 코드 커버리지를 측정할 때 사용되는 지표
+            /*
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.10
+            }
+
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.10
+            }
+            */
+
+            excludes = [
+                    '**.dto.**',
+                    '**.event.**',
+                    '**.*InitData*',
+                    '**.*Application*',
+                    '**.exception.**',
+                    '**.service.alarm.**',
+                    '**.aop.**',
+                    '**.config.**',
+                    '**.MemberRole*'
+            ] + QDomainList
+        }
+    }
 }

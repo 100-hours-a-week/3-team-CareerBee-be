@@ -4,6 +4,8 @@ import org.choon.careerbee.domain.company.api.CompanyApiClient;
 import org.choon.careerbee.domain.company.exception.RetryableSaraminException;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.command.CompanyCommandServiceImpl;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.redisson.api.RedissonClient;
 import org.springframework.retry.annotation.Backoff;

@@ -3,8 +3,8 @@ package org.choon.careerbee.domain.company.schedule;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.domain.company.service.command.CompanyCommandService;
 import lombok.extern.slf4j.Slf4j;
-import org.choon.careerbee.domain.company.service.CompanyCommandService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

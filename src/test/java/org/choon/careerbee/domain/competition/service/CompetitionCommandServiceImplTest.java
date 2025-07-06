@@ -3,14 +3,21 @@ package org.choon.careerbee.domain.competition.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.domain.Competition;
@@ -33,6 +40,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import org.redisson.codec.TypedJsonJacksonCodec;
 import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,23 +69,46 @@ class CompetitionCommandServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private RedissonClient redissonClient;
+
+    @Mock
+    private Clock clock;
+
     @Test
-    @DisplayName("대회 참가 - 성공")
+    @DisplayName("대회 참가 - DB 저장 및 캐시 갱신(Write-Through) 성공")
     void joinCompetition_success() {
+        // given
         Long competitionId = 1L;
         Long memberId = 10L;
         Competition competition = mock(Competition.class);
         Member member = mock(Member.class);
+        RBucket<Boolean> participantBucket = mock(RBucket.class);
+
+        Instant fixedInstant = Instant.parse("2025-07-02T15:00:00Z"); // UTC 기준
+        ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+        when(clock.instant()).thenReturn(fixedInstant);
+        when(clock.getZone()).thenReturn(seoulZone);
 
         when(competitionRepository.findById(competitionId)).thenReturn(Optional.of(competition));
         when(memberQueryService.findById(memberId)).thenReturn(member);
-        when(competitionParticipantRepository
-            .existsByMemberIdAndCompetitionId(memberId, competitionId))
+        when(competitionParticipantRepository.existsByMemberIdAndCompetitionId(memberId,
+            competitionId))
             .thenReturn(false);
 
+        // 캐시 관련 Mock 설정
+        when(redissonClient.<Boolean>getBucket(anyString(), any(TypedJsonJacksonCodec.class)))
+            .thenReturn(participantBucket);
+
+        // when
         competitionCommandService.joinCompetition(competitionId, memberId);
 
+        // then
+        // 1. DB에 저장이 1번 호출되었는지 검증
         verify(competitionParticipantRepository, times(1)).save(any(CompetitionParticipant.class));
+
+        // 2. 캐시가 'true' 값으로 1번 덮어쓰기 되었는지 검증
+        verify(participantBucket, times(1)).set(eq(true), anyLong(), eq(TimeUnit.SECONDS));
     }
 
     @Test

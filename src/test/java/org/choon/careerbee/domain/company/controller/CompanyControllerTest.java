@@ -234,7 +234,7 @@ class CompanyControllerTest {
         em.flush();
         em.clear();
 
-        Long nonExistCompanyId = 2L;
+        Long nonExistCompanyId = 22222L;
 
         // when & then
         mockMvc.perform(get("/api/v1/companies/{companyId}/locations", nonExistCompanyId)

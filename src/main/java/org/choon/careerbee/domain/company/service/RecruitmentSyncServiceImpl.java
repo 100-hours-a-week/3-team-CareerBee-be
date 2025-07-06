@@ -24,6 +24,7 @@ import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.entity.recruitment.Recruitment;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.choon.careerbee.domain.notification.dto.event.OpenRecruitingEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.TransientDataAccessException;

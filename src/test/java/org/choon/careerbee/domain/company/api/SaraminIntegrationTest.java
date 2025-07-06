@@ -4,9 +4,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import org.choon.careerbee.domain.company.config.RetryStubCommandServiceConfig;
 import org.choon.careerbee.domain.company.exception.RetryableSaraminException;
-import org.choon.careerbee.domain.company.service.CompanyCommandService;
-import org.choon.careerbee.domain.company.service.RetryStubCompanyCommandService;
+import org.choon.careerbee.domain.company.service.command.CompanyCommandService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Import(RetryStubCompanyCommandService.class)
+@Import(RetryStubCommandServiceConfig.class)
 class SaraminIntegrationTest {
 
     @MockitoBean

@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.service;
+package org.choon.careerbee.domain.company.service.command;
 
 import io.sentry.Sentry;
 import java.time.Duration;
@@ -20,10 +20,12 @@ import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.company.exception.RetryableSaraminException;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.RecruitmentSyncService;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
-import org.springframework.context.annotation.Profile;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -33,11 +35,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-@Profile("!test")
 @Transactional
 @RequiredArgsConstructor
 public class CompanyCommandServiceImpl implements CompanyCommandService {
 
+    private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
     private final RecruitmentRepository recruitmentRepository;
     private static final long TTL = 3L;
 
@@ -54,8 +56,8 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Member validMember = memberQueryService.findById(accessMemberId);
         Company validCompany = companyQueryService.findById(companyId);
 
-        String key = "wish:register:" + validMember.getId() + ":" + companyId;
-        boolean success = redissonClient.getBucket(key)
+        String registKey = "wish:register:" + validMember.getId() + ":" + companyId;
+        boolean success = redissonClient.getBucket(registKey)
             .setIfAbsent("1", Duration.ofSeconds(TTL));
 
         if (!success) {
@@ -67,6 +69,10 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         }
 
         wishCompanyRepository.save(WishCompany.of(validMember, validCompany));
+
+        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
+        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
+        atomicLong.incrementAndGet();
     }
 
     @Override
@@ -87,6 +93,12 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
             .orElseThrow(() -> new CustomException(CustomResponseStatus.WISH_COMPANY_NOT_FOUND));
 
         wishCompanyRepository.delete(wishCompany);
+
+        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
+        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
+        if (atomicLong.isExists() && atomicLong.get() > 0) {
+            atomicLong.decrementAndGet();
+        }
     }
 
     @Retryable(
