@@ -9,6 +9,7 @@ import java.util.List;
 import org.choon.careerbee.domain.store.domain.Ticket;
 import org.choon.careerbee.domain.store.domain.enums.TicketType;
 import org.choon.careerbee.domain.store.dto.response.TicketQuantityResp;
+import org.choon.careerbee.domain.store.repository.PurchaseHistoryRepository;
 import org.choon.careerbee.domain.store.repository.TicketRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,10 @@ class StoreQueryServiceImplTest {
 
     @Mock
     private TicketRepository ticketRepository;
+
+    @Mock
+    private PurchaseHistoryRepository purchaseHistoryRepository;
+
 
     @Test
     @DisplayName("[티켓 수량 조회] 티켓 수량 조회시 DB 조회")
@@ -46,5 +51,25 @@ class StoreQueryServiceImplTest {
         assertThat(actualTicketList.redCount()).isEqualTo(3);
         assertThat(actualTicketList.greenCount()).isEqualTo(5);
         assertThat(actualTicketList.blueCount()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("[회원별 티켓 수량 조회] 특정 회원이 구매한 RED, GREEN, BLUE 수량을 반환한다")
+    void fetchMemberTicketQuantity_shouldReturnCorrectTicketCounts() {
+        // given
+        Long memberId = 1L;
+        TicketQuantityResp expectedResp = new TicketQuantityResp(2, 5, 7);
+
+        when(purchaseHistoryRepository.fetchMemberTicketQuantity(memberId))
+            .thenReturn(expectedResp);
+
+        // when
+        TicketQuantityResp actualResp = storeQueryService.fetchMemberTicketQuantity(memberId);
+
+        // then
+        verify(purchaseHistoryRepository, times(1)).fetchMemberTicketQuantity(memberId);
+        assertThat(actualResp.redCount()).isEqualTo(2);
+        assertThat(actualResp.greenCount()).isEqualTo(5);
+        assertThat(actualResp.blueCount()).isEqualTo(7);
     }
 }
