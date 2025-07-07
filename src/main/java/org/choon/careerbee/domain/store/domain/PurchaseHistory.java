@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
@@ -31,4 +32,18 @@ public class PurchaseHistory extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ticket_id", nullable = false)
     private Ticket ticket;
+
+    private PurchaseHistory(
+        Member member, Ticket ticket
+    ) {
+        this.member = member;
+        this.ticket = ticket;
+    }
+
+    @Builder
+    public static PurchaseHistory of(Member member, Ticket ticket) {
+        return new PurchaseHistory(
+            member, ticket
+        );
+    }
 }

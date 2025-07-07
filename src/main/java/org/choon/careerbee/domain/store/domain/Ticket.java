@@ -28,6 +28,9 @@ public class Ticket extends BaseEntity {
     @Column(name = "price")
     private Integer price;
 
+    @Column(name = "quantity")
+    private Integer quantity;
+
     @Column(length = 500, nullable = false)
     private String imgUrl;
 
@@ -35,18 +38,19 @@ public class Ticket extends BaseEntity {
     @Column(name = "type", nullable = false)
     private TicketType type;
 
-    private Ticket(Integer price, String imgUrl, TicketType type) {
+    private Ticket(Integer price, Integer quantity, String imgUrl, TicketType type) {
         this.price = price;
+        this.quantity = quantity;
         this.imgUrl = imgUrl;
         this.type = type;
     }
 
     @Builder
     public static Ticket of(
-        Integer price, String imgUrl, TicketType type
+        Integer price, Integer quantity, String imgUrl, TicketType type
     ) {
         return new Ticket(
-            price, imgUrl, type
+            price, quantity, imgUrl, type
         );
     }
 }
