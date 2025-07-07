@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.store.domain.Ticket;
 import org.choon.careerbee.domain.store.domain.enums.TicketType;
 import org.choon.careerbee.domain.store.dto.response.TicketQuantityResp;
+import org.choon.careerbee.domain.store.repository.PurchaseHistoryRepository;
 import org.choon.careerbee.domain.store.repository.TicketRepository;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class StoreQueryServiceImpl implements StoreQueryService {
 
     private final TicketRepository ticketRepository;
+    private final PurchaseHistoryRepository purchaseHistoryRepository;
 
     @Override
     public TicketQuantityResp fetchTicketQuantity() {
@@ -30,5 +32,10 @@ public class StoreQueryServiceImpl implements StoreQueryService {
             quantityMap.getOrDefault(TicketType.GREEN, 0),
             quantityMap.getOrDefault(TicketType.BLUE, 0)
         );
+    }
+
+    @Override
+    public TicketQuantityResp fetchMemberTicketQuantity(Long accessMemberId) {
+        return purchaseHistoryRepository.fetchMemberTicketQuantity(accessMemberId);
     }
 }

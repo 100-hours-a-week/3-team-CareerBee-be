@@ -72,7 +72,7 @@ public class SecurityConfig {
                 )
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
                 .requestMatchers(
-                    "/users/**",
+                    "/members/**",
                     "/api/v1/members/competitions/rankings",
                     "/api/v1/members/competitions/rankings/live",
                     "/api/v1/members/tickets"

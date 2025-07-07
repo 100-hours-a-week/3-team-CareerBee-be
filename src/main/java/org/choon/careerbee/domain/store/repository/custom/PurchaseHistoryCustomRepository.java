@@ -1,10 +1,9 @@
-package org.choon.careerbee.domain.store.service.query;
+package org.choon.careerbee.domain.store.repository.custom;
 
 import org.choon.careerbee.domain.store.dto.response.TicketQuantityResp;
 
-public interface StoreQueryService {
-
-    TicketQuantityResp fetchTicketQuantity();
+public interface PurchaseHistoryCustomRepository {
 
     TicketQuantityResp fetchMemberTicketQuantity(Long accessMemberId);
+
 }

@@ -37,6 +37,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
 
+        System.out.println("resolveToken = " + resolveToken);
+        log.info("filter here?");
         if (Objects.equals(resolveToken, "")) {
             writeErrorResponse(response, CustomResponseStatus.NULL_JWT);
             return;
@@ -97,7 +99,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return false;
         }
 
-        if (path.equals("/api/v1/tickets") && method.equals("POST")) {
+        if (path.equals("/api/v1/tickets") && method.equals("POST")
+            ||
+            path.equals("/api/v1/members/tickets")
+        ) {
             return false;
         }
         return Arrays.stream(excludePath).anyMatch(path::contains);

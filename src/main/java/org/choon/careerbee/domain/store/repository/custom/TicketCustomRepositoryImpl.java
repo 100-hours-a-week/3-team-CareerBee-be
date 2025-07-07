@@ -9,5 +9,4 @@ import org.springframework.stereotype.Repository;
 public class TicketCustomRepositoryImpl implements TicketCustomRepository {
 
     private final JPAQueryFactory queryFactory;
-
 }
