@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.member.dto.response;
+package org.choon.careerbee.domain.member.dto.internal;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;

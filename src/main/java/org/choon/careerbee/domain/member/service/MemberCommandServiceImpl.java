@@ -5,7 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
+import org.choon.careerbee.domain.image.dto.response.GetPresignedUrlResp;
 import org.choon.careerbee.domain.image.service.ImageService;
+import org.choon.careerbee.domain.member.dto.request.AdvancedResumeUpdateReq;
+import org.choon.careerbee.domain.member.dto.request.AdvancedResumeUpdateReqToAi;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
@@ -13,7 +16,10 @@ import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.UploadCompleteReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
+import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
+import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
+import org.choon.careerbee.domain.member.dto.response.ResumeCompleteResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -97,5 +103,36 @@ public class MemberCommandServiceImpl implements MemberCommandService {
 
         // 2. 만들어진 정보로 ai서버에 이력서 정보추출 요청
         return ExtractResumeResp.from(aiApiClient.requestExtractResume(extractResumeReq));
+    }
+
+    @Override
+    public AdvancedResumeInitResp generateAdvancedResumeInit(Long accessMemberId) {
+        Member validMember = memberQueryService.findById(accessMemberId);
+
+        return aiApiClient.requestAdvancedResumeInit(ResumeDraftReq.from(validMember));
+    }
+
+    @Override
+    public AdvancedResumeResp generateAdvancedResumeUpdate(
+        AdvancedResumeUpdateReq advancedResumeUpdateReq,
+        Long accessMemberId
+    ) {
+        AdvancedResumeResp result = aiApiClient.requestAdvancedResumeUpdate(
+            AdvancedResumeUpdateReqToAi.of(accessMemberId, advancedResumeUpdateReq.answer())
+        );
+
+        if (result instanceof ResumeCompleteResp completeResp) {
+            GetPresignedUrlResp getPresignedUrlResp = imageService.generateGetPresignedUrlByObjectKey(
+                new UploadCompleteReq(completeResp.resumeObjectKey())
+            );
+
+            return new ResumeCompleteResp(
+                completeResp.memberId(),
+                completeResp.isComplete(),
+                getPresignedUrlResp.presignedUrl()
+            );
+        }
+
+        return result;
     }
 }
