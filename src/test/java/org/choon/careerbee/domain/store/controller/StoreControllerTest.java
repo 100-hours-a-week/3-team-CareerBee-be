@@ -1,0 +1,56 @@
+package org.choon.careerbee.domain.store.controller;
+
+import static org.choon.careerbee.fixture.ticket.TicketFixture.createTicket;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import org.choon.careerbee.domain.store.domain.enums.TicketType;
+import org.choon.careerbee.domain.store.repository.TicketRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class StoreControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private TicketRepository ticketRepository;
+
+    @Test
+    @DisplayName("티켓 수량 조회 API가 정상적으로 티켓 수량을 반환한다")
+    void fetchTicketQuantity_success() throws Exception {
+        // given
+        ticketRepository.saveAllAndFlush(
+            List.of(
+                createTicket(1000, 3, "red.png", TicketType.RED),
+                createTicket(1200, 5, "green.png", TicketType.GREEN),
+                createTicket(1500, 7, "blue.png", TicketType.BLUE)
+            )
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/tickets")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("티켓 수량 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.redCount").value(3))
+            .andExpect(jsonPath("$.data.greenCount").value(5))
+            .andExpect(jsonPath("$.data.blueCount").value(7));
+    }
+}
