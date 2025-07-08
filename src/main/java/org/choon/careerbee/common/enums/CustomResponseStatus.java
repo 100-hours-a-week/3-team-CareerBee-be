@@ -41,6 +41,7 @@ public enum CustomResponseStatus {
     INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 면접문제 입니다."),
     SOLVED_INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "풀지않은 문제입니다."),
     INTERVIEW_PROBLEM_ALREADY_SAVED(HttpStatus.CONFLICT.value(), "이미 저장한 문제입니다."),
+    INTERVIEW_PROBLEM_ALREADY_UNSAVED(HttpStatus.CONFLICT.value(), "저장안된 문제입니다."),
 
     BAD_JWT(HttpStatus.BAD_REQUEST.value(), "잘못된 토큰입니다."),
     EXPIRED_JWT(HttpStatus.UNAUTHORIZED.value(), "만료된 토큰입니다."),

@@ -29,4 +29,13 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
 
         solvedProblem.save();
     }
+
+    @Override
+    public void cancelSaveInterviewProblem(Long problemIdToCancelSave, Long accessMemberId) {
+        SolvedInterviewProblem solvedProblem = queryService.findSolvedProblemById(
+            problemIdToCancelSave, accessMemberId
+        );
+
+        solvedProblem.cancelSave();
+    }
 }

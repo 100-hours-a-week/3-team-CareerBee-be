@@ -85,4 +85,12 @@ public class SolvedInterviewProblem extends BaseEntity {
 
         this.saveStatus = SaveStatus.SAVED;
     }
+
+    public void cancelSave() {
+        if (this.saveStatus.equals(SaveStatus.UNSAVED)) {
+            throw new CustomException(CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_UNSAVED);
+        }
+
+        this.saveStatus = SaveStatus.UNSAVED;
+    }
 }
