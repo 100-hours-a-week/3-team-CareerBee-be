@@ -1,0 +1,75 @@
+package org.choon.careerbee.domain.interview.controller;
+
+import static org.choon.careerbee.fixture.interview.InterviewProblemFixture.createInterviewProblem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
+import java.util.List;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
+import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class InterviewControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private InterviewProblemRepository interviewProblemRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        interviewProblemRepository.deleteAllInBatch();
+
+        // 각 타입별 문제 생성
+        interviewProblemRepository.saveAll(List.of(
+            createInterviewProblem("백엔드 질문입니다", ProblemType.BACKEND),
+            createInterviewProblem("프론트엔드 질문입니다", ProblemType.FRONTEND),
+            createInterviewProblem("AI 질문입니다", ProblemType.AI),
+            createInterviewProblem("데브옵스 질문입니다", ProblemType.DEVOPS)
+        ));
+    }
+
+    @Test
+    @DisplayName("면접 문제 조회 API - 각 타입별 첫 번째 문제 조회 성공")
+    void fetchInterviewProblem_success() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/v1/interview-problems")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value("면접문제 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.interviewProblems").isArray())
+            .andExpect(jsonPath("$.data.interviewProblems.length()").value(4))
+            .andExpect(jsonPath("$.data.interviewProblems[?(@.type == 'BACKEND')].question")
+                .value("백엔드 질문입니다"))
+            .andExpect(jsonPath("$.data.interviewProblems[?(@.type == 'FRONTEND')].question")
+                .value("프론트엔드 질문입니다"))
+            .andExpect(jsonPath("$.data.interviewProblems[?(@.type == 'AI')].question")
+                .value("AI 질문입니다"))
+            .andExpect(jsonPath("$.data.interviewProblems[?(@.type == 'DEVOPS')].question")
+                .value("데브옵스 질문입니다"));
+    }
+}
