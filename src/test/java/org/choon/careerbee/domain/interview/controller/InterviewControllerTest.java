@@ -4,6 +4,7 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.interview.InterviewProblemFixture.createInterviewProblem;
 import static org.choon.careerbee.fixture.interview.SolvedInterviewProblemFixture.createSolvedProblem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -216,4 +217,68 @@ class InterviewControllerTest {
                 .value(CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_SAVED.getMessage()));
     }
 
+    @Test
+    @DisplayName("면접 문제 저장 취소 - 성공")
+    void cancelSaveInterviewProblem_success() throws Exception {
+        // given
+        Member member = memberRepository.save(createMember("testNick", "user@bee.com", 1L));
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("백엔드 문제", ProblemType.BACKEND));
+        solvedProblemRepository.save(
+            createSolvedProblem(member, problem, "answer", "feedback", SaveStatus.SAVED));
+
+        String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode").value(204))
+            .andExpect(jsonPath("$.message").value("면접문제 저장 취소에 성공하였습니다."));
+    }
+
+    @Test
+    @DisplayName("면접 문제 저장 취소 - 문제를 푼 기록이 없을 경우 예외")
+    void cancelSaveInterviewProblem_notSolved() throws Exception {
+        // given
+        Member member = memberRepository.save(createMember("tester", "test@naver.com", 2L));
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("AI 문제", ProblemType.AI));
+
+        String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SOLVED_INTERVIEW_PROBLEM_NOT_EXIST.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value(
+                CustomResponseStatus.SOLVED_INTERVIEW_PROBLEM_NOT_EXIST.getMessage()));
+    }
+
+    @Test
+    @DisplayName("면접 문제 저장 취소 - 이미 취소된 경우 예외")
+    void cancelSaveInterviewProblem_alreadyCanceled() throws Exception {
+        // given
+        Member member = memberRepository.save(createMember("tester", "cancel@test.com", 3L));
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("DevOps 문제", ProblemType.DEVOPS));
+        solvedProblemRepository.save(
+            createSolvedProblem(member, problem, "answer", "feedback", SaveStatus.UNSAVED));
+
+        String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_UNSAVED.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value(
+                CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_UNSAVED.getMessage()));
+    }
 }
