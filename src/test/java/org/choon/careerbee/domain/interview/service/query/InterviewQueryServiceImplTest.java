@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
+import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp.InterviewProblemInfo;
 import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
@@ -59,5 +60,43 @@ class InterviewQueryServiceImplTest {
             assertThat(problem.type()).isEqualTo(ProblemType.FRONTEND);
             assertThat(problem.question()).isEqualTo("프론트엔드 문제입니다.");
         });
+    }
+
+    @Test
+    @DisplayName("회원이 해당 면접 문제를 풀었는지 확인 - 문제를 푼 경우 true 반환")
+    void checkInterviewProblemSolved_true() {
+        // given
+        Long memberId = 1L;
+        Long problemId = 100L;
+        when(solvedProblemRepository.existsByMemberIdAndInterviewProblemId(memberId, problemId))
+            .thenReturn(true);
+
+        // when
+        CheckProblemSolveResp result =
+            interviewQueryService.checkInterviewProblemSolved(problemId, memberId);
+
+        // then
+        assertThat(result.isSolved()).isTrue();
+        verify(solvedProblemRepository, times(1))
+            .existsByMemberIdAndInterviewProblemId(memberId, problemId);
+    }
+
+    @Test
+    @DisplayName("회원이 해당 면접 문제를 풀었는지 확인 - 풀지 않은 경우 false 반환")
+    void checkInterviewProblemSolved_false() {
+        // given
+        Long memberId = 1L;
+        Long problemId = 200L;
+        when(solvedProblemRepository.existsByMemberIdAndInterviewProblemId(memberId, problemId))
+            .thenReturn(false);
+
+        // when
+        CheckProblemSolveResp result =
+            interviewQueryService.checkInterviewProblemSolved(problemId, memberId);
+
+        // then
+        assertThat(result.isSolved()).isFalse();
+        verify(solvedProblemRepository, times(1))
+            .existsByMemberIdAndInterviewProblemId(memberId, problemId);
     }
 }
