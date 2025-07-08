@@ -5,11 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.domain.auth.security.PrincipalDetails;
+import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
 import org.choon.careerbee.domain.interview.service.command.InterviewCommandService;
 import org.choon.careerbee.domain.interview.service.query.InterviewQueryService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,6 +34,22 @@ public class InterviewController {
             response,
             CustomResponseStatus.SUCCESS,
             "면접문제 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("members/interview-problems/{problemId}")
+    public ResponseEntity<CommonResponse<CheckProblemSolveResp>> checkInterviewProblemSolved(
+        @PathVariable Long problemId,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        CheckProblemSolveResp response = queryService.checkInterviewProblemSolved(
+            problemId, principalDetails.getId()
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "면접문제 풀이 여부 조회에 성공하였습니다."
         );
     }
 }

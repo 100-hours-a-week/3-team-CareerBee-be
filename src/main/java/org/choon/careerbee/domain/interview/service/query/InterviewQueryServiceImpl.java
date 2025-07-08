@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.interview.service.query;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp.InterviewProblemInfo;
 import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
@@ -21,5 +22,14 @@ public class InterviewQueryServiceImpl implements InterviewQueryService {
     public InterviewProblemResp fetchInterviewProblem() {
         List<InterviewProblemInfo> problemInfos = problemRepository.fetchFirstInterviewProblemsByType();
         return new InterviewProblemResp(problemInfos);
+    }
+
+    @Override
+    public CheckProblemSolveResp checkInterviewProblemSolved(
+        Long problemId, Long accessMemberId
+    ) {
+        return new CheckProblemSolveResp(
+            solvedProblemRepository.existsByMemberIdAndInterviewProblemId(accessMemberId, problemId)
+        );
     }
 }

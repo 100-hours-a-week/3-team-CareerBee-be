@@ -76,7 +76,8 @@ public class SecurityConfig {
                     "/members/**",
                     "/api/v1/members/competitions/rankings",
                     "/api/v1/members/competitions/rankings/live",
-                    "/api/v1/members/tickets"
+                    "/api/v1/members/tickets",
+                    "/api/v1/members/interview-problems"
                 ).hasRole("MEMBER")
                 .anyRequest().permitAll()  // 그 외 요청은 인가처리를 할 필요가 없음
             )
