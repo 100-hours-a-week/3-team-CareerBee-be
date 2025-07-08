@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
@@ -10,6 +11,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
@@ -126,6 +128,17 @@ public class CompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "기업 위치 정보 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/ids")
+    public ResponseEntity<CommonResponse<List<CompanyIdResp>>> fetchAllCompanyIds() {
+        List<CompanyIdResp> response = queryService.fetchAllCompanyIds();
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "기업 ID 목록 조회에 성공하였습니다."
         );
     }
 }
