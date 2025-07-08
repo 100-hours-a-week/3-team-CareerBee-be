@@ -18,6 +18,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.member.entity.Member;
 
@@ -74,5 +76,13 @@ public class SolvedInterviewProblem extends BaseEntity {
         return new SolvedInterviewProblem(
             member, interviewProblem, answer, feedback, saveStatus
         );
+    }
+
+    public void save() {
+        if (this.saveStatus.equals(SaveStatus.SAVED)) {
+            throw new CustomException(CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_SAVED);
+        }
+
+        this.saveStatus = SaveStatus.SAVED;
     }
 }

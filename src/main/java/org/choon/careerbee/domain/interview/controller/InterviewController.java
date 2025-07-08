@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,6 +51,19 @@ public class InterviewController {
             response,
             CustomResponseStatus.SUCCESS,
             "면접문제 풀이 여부 조회에 성공하였습니다."
+        );
+    }
+
+    @PostMapping("members/interview-problems/{problemId}")
+    public ResponseEntity<CommonResponse<Void>> saveInterviewProblem(
+        @PathVariable Long problemId,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.saveInterviewProblem(problemId, principalDetails.getId());
+
+        return CommonResponseEntity.ok(
+            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            "면접문제 저장에 성공하였습니다."
         );
     }
 }
