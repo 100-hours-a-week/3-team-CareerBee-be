@@ -1,6 +1,8 @@
 package org.choon.careerbee.domain.interview.controller;
 
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.interview.InterviewProblemFixture.createInterviewProblem;
+import static org.choon.careerbee.fixture.interview.SolvedInterviewProblemFixture.createSolvedProblem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,8 +11,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.domain.auth.entity.enums.TokenType;
+import org.choon.careerbee.domain.interview.domain.InterviewProblem;
 import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
+import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
+import org.choon.careerbee.domain.interview.repository.SolvedInterviewProblemRepository;
+import org.choon.careerbee.domain.member.entity.Member;
+import org.choon.careerbee.domain.member.repository.MemberRepository;
+import org.choon.careerbee.util.jwt.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,24 +45,41 @@ class InterviewControllerTest {
     private InterviewProblemRepository interviewProblemRepository;
 
     @Autowired
+    private SolvedInterviewProblemRepository solvedProblemRepository;
+
+    @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    private Member testMember;
+    private String accessToken;
 
     @BeforeEach
     void setUp() {
+        solvedProblemRepository.deleteAllInBatch();
         interviewProblemRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
 
-        // 각 타입별 문제 생성
+        testMember = memberRepository.save(createMember("solveUser", "solve@bee.com", 33L));
+        accessToken = "Bearer " + jwtUtil.createToken(testMember.getId(), TokenType.ACCESS_TOKEN);
+    }
+
+    @Test
+    @DisplayName("면접 문제 조회 API - 각 타입별 첫 번째 문제 조회 성공")
+    void fetchInterviewProblem_success() throws Exception {
+        // then
         interviewProblemRepository.saveAll(List.of(
             createInterviewProblem("백엔드 질문입니다", ProblemType.BACKEND),
             createInterviewProblem("프론트엔드 질문입니다", ProblemType.FRONTEND),
             createInterviewProblem("AI 질문입니다", ProblemType.AI),
             createInterviewProblem("데브옵스 질문입니다", ProblemType.DEVOPS)
         ));
-    }
 
-    @Test
-    @DisplayName("면접 문제 조회 API - 각 타입별 첫 번째 문제 조회 성공")
-    void fetchInterviewProblem_success() throws Exception {
         // when & then
         mockMvc.perform(get("/api/v1/interview-problems")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -71,5 +97,47 @@ class InterviewControllerTest {
                 .value("AI 질문입니다"))
             .andExpect(jsonPath("$.data.interviewProblems[?(@.type == 'DEVOPS')].question")
                 .value("데브옵스 질문입니다"));
+    }
+
+    @Test
+    @DisplayName("면접문제 풀이 여부 조회 - 사용자가 문제를 푼 경우 true 반환")
+    void checkInterviewProblemSolved_true() throws Exception {
+        // given
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("문제1", ProblemType.BACKEND)
+        );
+
+        solvedProblemRepository.save(
+            createSolvedProblem(testMember, problem, "답변입니다", "피드백입니다", SaveStatus.SAVED)
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/interview-problems/{problemId}", problem.getId())
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value("면접문제 풀이 여부 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.isSolved").value(true));
+    }
+
+    @Test
+    @DisplayName("면접문제 풀이 여부 조회 - 사용자가 문제를 풀지 않은 경우 false 반환")
+    void checkInterviewProblemSolved_false() throws Exception {
+        // given
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("문제2", ProblemType.DEVOPS)
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/interview-problems/{problemId}", problem.getId())
+                .header("Authorization", accessToken)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value("면접문제 풀이 여부 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.isSolved").value(false));
     }
 }
