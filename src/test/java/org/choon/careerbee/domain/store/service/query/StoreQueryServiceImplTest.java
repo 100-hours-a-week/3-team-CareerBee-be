@@ -72,4 +72,37 @@ class StoreQueryServiceImplTest {
         assertThat(actualResp.greenCount()).isEqualTo(5);
         assertThat(actualResp.blueCount()).isEqualTo(7);
     }
+
+    @Test
+    @DisplayName("[티켓 단건 조회] TicketType에 해당하는 티켓이 존재하면 반환한다")
+    void findTicketByType_shouldReturnTicket_whenTicketExists() {
+        // given
+        TicketType ticketType = TicketType.RED;
+        Ticket expectedTicket = Ticket.of(1000, 10, "red.png", ticketType);
+        when(ticketRepository.findTicketByType(ticketType)).thenReturn(
+            java.util.Optional.of(expectedTicket));
+
+        // when
+        Ticket actualTicket = storeQueryService.findTicketByType(ticketType);
+
+        // then
+        verify(ticketRepository, times(1)).findTicketByType(ticketType);
+        assertThat(actualTicket).isEqualTo(expectedTicket);
+    }
+
+    @Test
+    @DisplayName("[티켓 단건 조회] TicketType에 해당하는 티켓이 없으면 예외를 발생시킨다")
+    void findTicketByType_shouldThrowException_whenTicketNotExists() {
+        // given
+        TicketType ticketType = TicketType.RED;
+        when(ticketRepository.findTicketByType(ticketType)).thenReturn(java.util.Optional.empty());
+
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                storeQueryService.findTicketByType(ticketType))
+            .isInstanceOf(org.choon.careerbee.common.exception.CustomException.class)
+            .hasMessageContaining("티켓 정보가 존재하지 않습니다.");
+
+        verify(ticketRepository, times(1)).findTicketByType(ticketType);
+    }
 }
