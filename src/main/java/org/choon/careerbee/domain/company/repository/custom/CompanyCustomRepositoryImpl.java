@@ -27,6 +27,7 @@ import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart.TechSta
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
+import org.choon.careerbee.domain.company.dto.response.CompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.LocationInfo;
@@ -322,6 +323,17 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .fetchOne();
 
         return new CompanyRecruitInfo(recruitingStatus, recruitments);
+    }
+
+    @Override
+    public List<CompanyIdResp> fetchAllCompanyIds() {
+        return queryFactory.select(
+                Projections.constructor(
+                    CompanyIdResp.class,
+                    company.id
+                ))
+            .from(company)
+            .fetch();
     }
 
 }
