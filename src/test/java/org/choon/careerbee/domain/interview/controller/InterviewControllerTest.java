@@ -4,6 +4,7 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.interview.InterviewProblemFixture.createInterviewProblem;
 import static org.choon.careerbee.fixture.interview.SolvedInterviewProblemFixture.createSolvedProblem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -140,4 +141,79 @@ class InterviewControllerTest {
             .andExpect(jsonPath("$.message").value("면접문제 풀이 여부 조회에 성공하였습니다."))
             .andExpect(jsonPath("$.data.isSolved").value(false));
     }
+
+    @Test
+    @DisplayName("면접 문제 저장 - 성공")
+    void saveInterviewProblem_success() throws Exception {
+        // given
+        Member member = memberRepository.save(createMember("interviewUser", "user@test.com", 99L));
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("백엔드 문제입니다.", ProblemType.BACKEND)
+        );
+        String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
+        solvedProblemRepository.save(
+            createSolvedProblem(member, problem, "answer", "feedback", SaveStatus.UNSAVED));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/members/interview-problems/{problemId}", problem.getId())
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNoContent())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SUCCESS_WITH_NO_CONTENT.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value("면접문제 저장에 성공하였습니다."));
+    }
+
+    @Test
+    @DisplayName("면접 문제 저장 - 문제 풀이 이력이 없는 경우 예외 발생")
+    void saveInterviewProblem_notSolvedYet() throws Exception {
+        // given
+        Member member = memberRepository.save(
+            createMember("interviewUser", "user@test.com", 99L));
+
+        InterviewProblem unsolvedProblem = interviewProblemRepository.save(
+            createInterviewProblem("AI 문제입니다.", ProblemType.AI));
+
+        String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
+
+        // when & then
+        mockMvc.perform(
+                post("/api/v1/members/interview-problems/{problemId}", unsolvedProblem.getId())
+                    .header("Authorization", token)
+                    .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.SOLVED_INTERVIEW_PROBLEM_NOT_EXIST.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.SOLVED_INTERVIEW_PROBLEM_NOT_EXIST.getMessage()));
+    }
+
+    @Test
+    @DisplayName("면접 문제 저장 - 이미 저장한 문제일 경우 예외 발생")
+    void saveInterviewProblem_alreadySaved() throws Exception {
+        // given
+        Member member = memberRepository.save(
+            createMember("interviewUser", "user@test.com", 99L));
+
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("프론트 문제", ProblemType.FRONTEND));
+
+        solvedProblemRepository.save(
+            createSolvedProblem(member, problem, "answer", "feedback", SaveStatus.SAVED)
+        );
+
+        String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/members/interview-problems/{problemId}", problem.getId())
+                .header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.httpStatusCode")
+                .value(CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_SAVED.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message")
+                .value(CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_SAVED.getMessage()));
+    }
+
 }
