@@ -23,6 +23,19 @@ jobs:
           --arg time '${{ github.event.head_commit.timestamp }}' \
           '{sha: $sha, branch: $branch, repository: $repo, commit_msg: $msg, timestamp: $time}')" >> $GITHUB_OUTPUT
 
+    - name: Debug individual commit metadata
+      run: |
+        echo "🔍 Commit SHA: ${{ github.sha }}"
+        echo "🔍 Branch: ${{ github.ref_name }}"
+        echo "🔍 Repository: ${{ github.repository }}"
+        echo "🔍 Commit Message: ${{ github.event.head_commit.message }}"
+        echo "🔍 Commit Timestamp: ${{ github.event.head_commit.timestamp }}"
+
+    - name: Debug full payload
+      run: |
+        echo "📦 Full Payload JSON:"
+        echo '${{ steps.prep.outputs.payload }}'
+
     - name: Trigger infra CI with commit metadata
       uses: peter-evans/repository-dispatch@v3
       with:

@@ -165,6 +165,14 @@ public class Member extends BaseEntity {
         this.points += point;
     }
 
+    public void minusPoint(int usePoint) {
+        if (this.points < usePoint) {
+            throw new CustomException(CustomResponseStatus.NOT_ENOUGH_POINT);
+        }
+
+        this.points -= usePoint;
+    }
+
     public boolean isWithDrawn() {
         if (this.withdrawnAt != null) {
             return true;

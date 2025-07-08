@@ -10,6 +10,8 @@ public enum CustomResponseStatus {
     ACCESS_DENIED(HttpStatus.FORBIDDEN.value(), "권한이 없습니다."),
 
     DUPLICATE_REQUEST(HttpStatus.TOO_MANY_REQUESTS.value(), "중복된 요청입니다. 잠시 후 다시 시도해주세요."),
+    LOCK_ACQUISITION_FAILED(HttpStatus.TOO_MANY_REQUESTS.value(),
+        "현재 요청이 많아 처리할 수 없습니다. 잠시 후 다시 시도해주세요."),
 
     INVALID_LOGIN_LOGIC(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비정상적인 로그인 로직이 감지되었습니다."),
     MEMBER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 회원입니다."),
@@ -17,6 +19,7 @@ public enum CustomResponseStatus {
     MEMBER_ALREADY_WITHDRAWAL(HttpStatus.CONFLICT.value(), "이미 탈퇴한 회원입니다."),
     WITHDRAWAL_MEMBER(HttpStatus.GONE.value(), "탈퇴한 회원입니다."),
     NOTIFICATION_UPDATE_INVALID(HttpStatus.BAD_REQUEST.value(), "일부 알림은 존재하지 않거나 접근 권한이 없습니다."),
+    NOT_ENOUGH_POINT(HttpStatus.BAD_REQUEST.value(), "포인트가 부족합니다."),
 
     INVALID_LATITUDE_ERROR(HttpStatus.BAD_REQUEST.value(), "위도를 정확하게 입력해주세요 : 34~44"),
     INVALID_LONGITUDE_ERROR(HttpStatus.BAD_REQUEST.value(), "경도를 정확하게 입력해주세요 : 124~134"),
@@ -28,6 +31,9 @@ public enum CustomResponseStatus {
     COMPETITION_ALREADY_JOIN(HttpStatus.CONFLICT.value(), "이미 참여한 대회입니다."),
     RESULT_ALREADY_SUBMIT(HttpStatus.CONFLICT.value(), "이미 제출하였습니다."),
     RANKING_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "대회 랭킹 정보가 존재하지 않습니다."),
+
+    TICKET_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "티켓 정보가 존재하지 않습니다."),
+    TICKET_OUT_OF_STOCK(HttpStatus.BAD_REQUEST.value(), "해당 티켓이 품절되었습니다."),
 
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
     EXTENSION_NOT_EXIST(HttpStatus.BAD_REQUEST.value(), "제공하지 않는 확장자입니다."),
