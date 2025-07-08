@@ -13,6 +13,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
+import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.store.domain.enums.TicketType;
 
 @Entity
@@ -52,5 +54,13 @@ public class Ticket extends BaseEntity {
         return new Ticket(
             price, quantity, imgUrl, type
         );
+    }
+
+
+    public void use() {
+        if (this.quantity == null || this.quantity <= 0) {
+            throw new CustomException(CustomResponseStatus.TICKET_OUT_OF_STOCK);
+        }
+        this.quantity -= 1;
     }
 }
