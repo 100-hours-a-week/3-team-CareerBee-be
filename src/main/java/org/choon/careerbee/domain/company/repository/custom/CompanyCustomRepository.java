@@ -6,6 +6,7 @@ import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
+import org.choon.careerbee.domain.company.dto.response.CompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
@@ -35,4 +36,5 @@ public interface CompanyCustomRepository {
 
     CompanyRecruitInfo fetchRecruitmentInfo(Long companyId);
 
+    List<CompanyIdResp> fetchAllCompanyIds();
 }

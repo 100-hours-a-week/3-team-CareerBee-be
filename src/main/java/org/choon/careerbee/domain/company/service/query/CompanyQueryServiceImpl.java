@@ -16,6 +16,7 @@ import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
@@ -157,6 +158,11 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     @Override
     public List<CompanyMarkerInfo> fetchAllCompanyLocations() {
         return companyRepository.fetchAllCompanyMarkerInfo();
+    }
+
+    @Override
+    public List<CompanyIdResp> fetchAllCompanyIds() {
+        return companyRepository.fetchAllCompanyIds();
     }
 
     private String escapeLike(String keyword) {
