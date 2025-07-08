@@ -37,8 +37,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String resolveToken = jwtUtil.resolveToken(request.getHeader(AUTHORIZATION));
 
-        System.out.println("resolveToken = " + resolveToken);
-        log.info("filter here?");
         if (Objects.equals(resolveToken, "")) {
             writeErrorResponse(response, CustomResponseStatus.NULL_JWT);
             return;
