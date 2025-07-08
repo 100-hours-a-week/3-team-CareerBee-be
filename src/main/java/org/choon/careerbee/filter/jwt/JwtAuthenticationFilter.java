@@ -87,7 +87,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/swagger-ui",
             "/v3/api-docs",
             "/actuator",
-            "/tickets"
+            "/tickets",
+            "/interview-problems"
         };
 
         String path = request.getRequestURI();

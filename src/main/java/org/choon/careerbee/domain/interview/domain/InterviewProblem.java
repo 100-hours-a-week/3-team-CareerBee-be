@@ -10,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.choon.careerbee.common.entity.BaseEntity;
@@ -38,7 +37,6 @@ public class InterviewProblem extends BaseEntity {
         this.type = type;
     }
 
-    @Builder
     public static InterviewProblem of(String question, ProblemType type) {
         return new InterviewProblem(question, type);
     }

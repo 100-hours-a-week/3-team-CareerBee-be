@@ -68,7 +68,8 @@ public class SecurityConfig {
                     "/competitions/rankings",
                     "/competitions/ids",
                     "/actuator/**",
-                    "/tickets"
+                    "/tickets",
+                    "/api/v1/interview-problems"
                 )
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
                 .requestMatchers(
