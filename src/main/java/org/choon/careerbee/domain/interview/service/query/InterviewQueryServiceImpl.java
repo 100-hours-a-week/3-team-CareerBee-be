@@ -10,6 +10,7 @@ import org.choon.careerbee.domain.interview.domain.SolvedInterviewProblem;
 import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp.InterviewProblemInfo;
+import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp;
 import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
 import org.choon.careerbee.domain.interview.repository.SolvedInterviewProblemRepository;
 import org.springframework.stereotype.Service;
@@ -51,5 +52,12 @@ public class InterviewQueryServiceImpl implements InterviewQueryService {
         return solvedProblemRepository.findByMemberIdAndInterviewProblemId(memberId, problemId)
             .orElseThrow(
                 () -> new CustomException(CustomResponseStatus.SOLVED_INTERVIEW_PROBLEM_NOT_EXIST));
+    }
+
+    @Override
+    public SaveInterviewProblemResp fetchSaveInterviewProblem(
+        Long accessMemberId, Long cursor, int size
+    ) {
+        return solvedProblemRepository.fetchSaveProblemIdsByMemberId(accessMemberId, cursor, size);
     }
 }

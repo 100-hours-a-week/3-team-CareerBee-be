@@ -4,6 +4,7 @@ import org.choon.careerbee.domain.interview.domain.InterviewProblem;
 import org.choon.careerbee.domain.interview.domain.SolvedInterviewProblem;
 import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
+import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp;
 
 public interface InterviewQueryService {
 
@@ -14,4 +15,6 @@ public interface InterviewQueryService {
     InterviewProblem findById(Long problemId);
 
     SolvedInterviewProblem findSolvedProblemById(Long problemId, Long memberId);
+
+    SaveInterviewProblemResp fetchSaveInterviewProblem(Long accessMemberId, Long cursor, int size);
 }
