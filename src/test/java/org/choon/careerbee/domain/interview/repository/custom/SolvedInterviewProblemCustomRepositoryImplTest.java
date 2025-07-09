@@ -8,7 +8,6 @@ import static org.choon.careerbee.fixture.interview.SolvedInterviewProblemFixtur
 import java.util.List;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.interview.domain.InterviewProblem;
-import org.choon.careerbee.domain.interview.domain.SolvedInterviewProblem;
 import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
 import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp;
@@ -86,21 +85,23 @@ class SolvedInterviewProblemCustomRepositoryTest {
         // given
         Member mockMember = memberRepository.save(createMember("testnick", "test@test.com", 2L));
 
-        List<InterviewProblem> problems = interviewProblemRepository.saveAll(List.of(
-            createInterviewProblem("문제1", ProblemType.BACKEND),
-            createInterviewProblem("문제2", ProblemType.FRONTEND),
-            createInterviewProblem("문제3", ProblemType.AI),
-            createInterviewProblem("문제4", ProblemType.DEVOPS)
+        InterviewProblem problem1 = interviewProblemRepository.save(
+            createInterviewProblem("문제1", ProblemType.BACKEND));
+        InterviewProblem problem2 = interviewProblemRepository.save(
+            createInterviewProblem("문제2", ProblemType.FRONTEND));
+        InterviewProblem problem3 = interviewProblemRepository.save(
+            createInterviewProblem("문제3", ProblemType.AI));
+        InterviewProblem problem4 = interviewProblemRepository.save(
+            createInterviewProblem("문제4", ProblemType.DEVOPS));
+
+        solvedInterviewProblemRepository.saveAll(List.of(
+            createSolvedProblem(mockMember, problem1, "answer", "feedback", SaveStatus.SAVED),
+            createSolvedProblem(mockMember, problem2, "answer", "feedback", SaveStatus.SAVED),
+            createSolvedProblem(mockMember, problem3, "answer", "feedback", SaveStatus.SAVED),
+            createSolvedProblem(mockMember, problem4, "answer", "feedback", SaveStatus.SAVED)
         ));
 
-        List<SolvedInterviewProblem> solvedProblems = problems.stream()
-            .map(problem -> createSolvedProblem(mockMember, problem, "answer", "feedback",
-                SaveStatus.SAVED))
-            .toList();
-
-        solvedInterviewProblemRepository.saveAll(solvedProblems);
-
-        // 최신 순 정렬 기준으로 first page 조회
+        // when - first page
         SaveInterviewProblemResp firstPage = customRepository.fetchSaveProblemIdsByMemberId(
             mockMember.getId(), null, 2
         );
@@ -110,7 +111,7 @@ class SolvedInterviewProblemCustomRepositoryTest {
 
         Long nextCursor = firstPage.nextCursor();
 
-        // when: 두 번째 페이지 조회
+        // when - second page
         SaveInterviewProblemResp secondPage = customRepository.fetchSaveProblemIdsByMemberId(
             mockMember.getId(), nextCursor, 2
         );
@@ -141,6 +142,30 @@ class SolvedInterviewProblemCustomRepositoryTest {
         assertThat(resp.savedProblems()).isEmpty();
         assertThat(resp.hasNext()).isFalse();
         assertThat(resp.nextCursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("saveStatus가 SAVED가 아닌 경우 필터링됨")
+    void fetchSaveProblemIdsByMemberId_filterBySaveStatus() {
+        // given
+        Member member = memberRepository.save(createMember("test", "test@bee.com", 44L));
+        InterviewProblem p1 = interviewProblemRepository.save(
+            createInterviewProblem("문제1", ProblemType.BACKEND));
+        InterviewProblem p2 = interviewProblemRepository.save(
+            createInterviewProblem("문제2", ProblemType.BACKEND));
+
+        solvedInterviewProblemRepository.saveAll(List.of(
+            createSolvedProblem(member, p1, "answer", "feedback", SaveStatus.SAVED),
+            createSolvedProblem(member, p2, "answer", "feedback", SaveStatus.UNSAVED)
+        ));
+
+        // when
+        SaveInterviewProblemResp result = customRepository.fetchSaveProblemIdsByMemberId(
+            member.getId(), null, 10);
+
+        // then
+        assertThat(result.savedProblems()).hasSize(1);
+        assertThat(result.savedProblems().get(0).question()).isEqualTo("문제1");
     }
 
 }

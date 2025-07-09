@@ -8,6 +8,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp;
 import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp.SaveProblemInfo;
 import org.springframework.stereotype.Repository;
@@ -37,6 +38,7 @@ public class SolvedInterviewProblemCustomRepositoryImpl implements
             .from(solvedInterviewProblem)
             .where(
                 solvedInterviewProblem.member.id.eq(memberId),
+                solvedInterviewProblem.saveStatus.eq(SaveStatus.SAVED),
                 cursorCondition(cursor)
             )
             .join(solvedInterviewProblem.interviewProblem, interviewProblem)
@@ -56,7 +58,7 @@ public class SolvedInterviewProblemCustomRepositoryImpl implements
 
     private BooleanExpression cursorCondition(Long cursor) {
         return cursor != null
-            ? solvedInterviewProblem.id.lt(cursor)
+            ? interviewProblem.id.lt(cursor)
             : null;
     }
 }
