@@ -281,4 +281,72 @@ class InterviewControllerTest {
             .andExpect(jsonPath("$.message").value(
                 CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_UNSAVED.getMessage()));
     }
+
+    @Test
+    @DisplayName("저장한 면접 문제 조회 - 저장된 문제 없을 경우 빈 배열 반환")
+    void fetchSavedInterviewProblem_empty() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/v1/members/interview-problems/saved")
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value("저장된 면접문제 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.savedProblems").isArray())
+            .andExpect(jsonPath("$.data.savedProblems.length()").value(0))
+            .andExpect(jsonPath("$.data.hasNext").value(false))
+            .andExpect(jsonPath("$.data.nextCursor").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("저장한 면접 문제 조회 - 저장된 문제가 있는 경우 페이징 없이 조회")
+    void fetchSavedInterviewProblem_withSavedData() throws Exception {
+        // given
+        InterviewProblem problem = interviewProblemRepository.save(
+            createInterviewProblem("백엔드 질문입니다", ProblemType.BACKEND)
+        );
+        solvedProblemRepository.save(
+            createSolvedProblem(testMember, problem, "답변", "피드백", SaveStatus.SAVED)
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/interview-problems/saved")
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.message").value("저장된 면접문제 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.savedProblems.length()").value(1))
+            .andExpect(jsonPath("$.data.savedProblems[0].question").value("백엔드 질문입니다"))
+            .andExpect(jsonPath("$.data.savedProblems[0].answer").value("답변"))
+            .andExpect(jsonPath("$.data.savedProblems[0].feedback").value("피드백"))
+            .andExpect(jsonPath("$.data.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("저장한 면접 문제 조회 - size 파라미터가 적용되어 일부만 조회")
+    void fetchSavedInterviewProblem_withSizeLimit() throws Exception {
+        // given
+        for (int i = 1; i <= 6; i++) {
+            InterviewProblem problem = interviewProblemRepository.save(
+                createInterviewProblem("문제" + i, ProblemType.BACKEND)
+            );
+            solvedProblemRepository.save(
+                createSolvedProblem(testMember, problem, "답변", "피드백", SaveStatus.SAVED)
+            );
+        }
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/interview-problems/saved?size=5")
+                .header("Authorization", accessToken)
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.httpStatusCode").value(
+                CustomResponseStatus.SUCCESS.getHttpStatusCode()))
+            .andExpect(jsonPath("$.data.savedProblems.length()").value(5))
+            .andExpect(jsonPath("$.data.hasNext").value(true))
+            .andExpect(jsonPath("$.data.nextCursor").isNumber());
+    }
 }

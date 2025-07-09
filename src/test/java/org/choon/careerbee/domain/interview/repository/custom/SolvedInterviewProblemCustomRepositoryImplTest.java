@@ -117,7 +117,7 @@ class SolvedInterviewProblemCustomRepositoryTest {
 
         // then
         assertThat(secondPage.savedProblems()).hasSize(2);
-        assertThat(secondPage.hasNext()).isFalse(); // 총 4개, 2개씩 두 페이지
+        assertThat(secondPage.hasNext()).isFalse();
 
         List<String> remainingQuestions = secondPage.savedProblems().stream()
             .map(SaveProblemInfo::question)
