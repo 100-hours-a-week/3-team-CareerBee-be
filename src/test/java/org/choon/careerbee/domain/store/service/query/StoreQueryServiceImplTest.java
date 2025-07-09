@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.store.service.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.choon.careerbee.fixture.ticket.TicketFixture.createTicket;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,9 +37,9 @@ class StoreQueryServiceImplTest {
     void fetchTicketQuantity_shouldCacheResult() {
         // given
         List<Ticket> expectedTickets = List.of(
-            Ticket.of(1000, 3, "red.png", TicketType.RED),
-            Ticket.of(1200, 5, "green.png", TicketType.GREEN),
-            Ticket.of(1500, 7, "blue.png", TicketType.BLUE)
+            Ticket.of(1000, 3, "무뜨", "red.png", TicketType.RED),
+            Ticket.of(1200, 5, "요아정", "green.png", TicketType.GREEN),
+            Ticket.of(1500, 7, "하겐다즈", "blue.png", TicketType.BLUE)
         );
 
         when(ticketRepository.findAll()).thenReturn(expectedTickets);
@@ -78,7 +79,7 @@ class StoreQueryServiceImplTest {
     void findTicketByType_shouldReturnTicket_whenTicketExists() {
         // given
         TicketType ticketType = TicketType.RED;
-        Ticket expectedTicket = Ticket.of(1000, 10, "red.png", ticketType);
+        Ticket expectedTicket = Ticket.of(1000, 10, "무뜨", "red.png", ticketType);
         when(ticketRepository.findTicketByType(ticketType)).thenReturn(
             java.util.Optional.of(expectedTicket));
 
@@ -104,5 +105,59 @@ class StoreQueryServiceImplTest {
             .hasMessageContaining("티켓 정보가 존재하지 않습니다.");
 
         verify(ticketRepository, times(1)).findTicketByType(ticketType);
+    }
+
+    @Test
+    @DisplayName("[티켓 정보 조회] 티켓 정보 조회 시 RED, GREEN, BLUE 티켓 정보를 반환한다")
+    void fetchTicketInfo_shouldReturnCorrectTicketInfo() {
+        // given
+        List<Ticket> expectedTickets = List.of(
+            createTicket(1000, 3, "무뜨", "red.png", TicketType.RED),
+            createTicket(1200, 5, "요아정", "green.png", TicketType.GREEN),
+            createTicket(1500, 7, "하겐다즈", "blue.png", TicketType.BLUE)
+        );
+
+        when(ticketRepository.findAll()).thenReturn(expectedTickets);
+
+        // when
+        var actualResp = storeQueryService.fetchTicketInfo();
+
+        // then
+        verify(ticketRepository, times(1)).findAll();
+
+        assertThat(actualResp.redTicket()).isNotNull();
+        assertThat(actualResp.redTicket().prizeName()).isEqualTo("무뜨");
+        assertThat(actualResp.redTicket().prizeImgUrl()).isEqualTo("red.png");
+
+        assertThat(actualResp.greenTicket().prizeImgUrl()).isNotNull();
+        assertThat(actualResp.greenTicket().prizeName()).isEqualTo("요아정");
+        assertThat(actualResp.greenTicket().prizeImgUrl()).isEqualTo("green.png");
+
+        assertThat(actualResp.blueTicket().prizeImgUrl()).isNotNull();
+        assertThat(actualResp.blueTicket().prizeName()).isEqualTo("하겐다즈");
+        assertThat(actualResp.blueTicket().prizeImgUrl()).isEqualTo("blue.png");
+    }
+
+    @Test
+    @DisplayName("[티켓 정보 조회] 특정 티켓이 없는 경우 null을 반환한다")
+    void fetchTicketInfo_shouldReturnNullForMissingTypes() {
+        // given
+        List<Ticket> partialTickets = List.of(
+            Ticket.of(1000, 3, "무뜨", "red.png", TicketType.RED),
+            Ticket.of(1200, 5, "요아정", "green.png", TicketType.GREEN)
+            // BLUE 없음
+        );
+
+        when(ticketRepository.findAll()).thenReturn(partialTickets);
+
+        // when
+        var actualResp = storeQueryService.fetchTicketInfo();
+
+        // then
+        verify(ticketRepository, times(1)).findAll();
+
+        assertThat(actualResp.redTicket()).isNotNull();
+        assertThat(actualResp.greenTicket()).isNotNull();
+        assertThat(actualResp.blueTicket()).isNull();
     }
 }
