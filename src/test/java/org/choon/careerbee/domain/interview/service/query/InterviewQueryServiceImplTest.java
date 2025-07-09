@@ -20,6 +20,7 @@ import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp.InterviewProblemInfo;
+import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp;
 import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
 import org.choon.careerbee.domain.interview.repository.SolvedInterviewProblemRepository;
 import org.choon.careerbee.domain.member.entity.Member;
@@ -153,6 +154,31 @@ class InterviewQueryServiceImplTest {
 
         verify(solvedProblemRepository, times(1))
             .findByMemberIdAndInterviewProblemId(memberId, problemId);
+    }
+
+    @Test
+    @DisplayName("회원이 저장한 면접 문제 목록 조회 - 정상적으로 응답 반환")
+    void fetchSaveInterviewProblem_success() {
+        // given
+        Long memberId = 1L;
+        Long cursor = null;
+        int size = 10;
+
+        SaveInterviewProblemResp mockResp = new SaveInterviewProblemResp(
+            List.of(), null, false
+        );
+
+        when(solvedProblemRepository.fetchSaveProblemIdsByMemberId(memberId, cursor, size))
+            .thenReturn(mockResp);
+
+        // when
+        SaveInterviewProblemResp result =
+            interviewQueryService.fetchSaveInterviewProblem(memberId, cursor, size);
+
+        // then
+        assertThat(result).isEqualTo(mockResp);
+        verify(solvedProblemRepository, times(1))
+            .fetchSaveProblemIdsByMemberId(memberId, cursor, size);
     }
 
 }
