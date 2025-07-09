@@ -54,7 +54,7 @@ public class TicketConcurrencyTest {
         int requestCount = 100;
 
         // given
-        ticket = createTicket(initialStock, 100, "test.url", RED);
+        ticket = createTicket(initialStock, 100, "무뜨", "test.url", RED);
         ticketRepository.save(ticket);
 
         ExecutorService executorService = Executors.newFixedThreadPool(5);

@@ -57,7 +57,7 @@ class StoreControllerTest {
             createMember("buyer", "buyer@test.com", 10_000L)
         );
         member.plusPoint(1000);
-        ticketRepository.save(createTicket(10, 10, "red.png", TicketType.RED));
+        ticketRepository.save(createTicket(10, 10, "무뜨", "red.png", TicketType.RED));
 
         String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
         TicketPurchaseReq ticketPurchaseReq = new TicketPurchaseReq(TicketType.RED);
@@ -80,9 +80,9 @@ class StoreControllerTest {
         // given
         ticketRepository.saveAllAndFlush(
             List.of(
-                createTicket(1000, 3, "red.png", TicketType.RED),
-                createTicket(1200, 5, "green.png", TicketType.GREEN),
-                createTicket(1500, 7, "blue.png", TicketType.BLUE)
+                createTicket(1000, 3, "무뜨", "red.png", TicketType.RED),
+                createTicket(1200, 5, "요아정", "green.png", TicketType.GREEN),
+                createTicket(1500, 7, "하겐다즈", "blue.png", TicketType.BLUE)
             )
         );
 
@@ -113,5 +113,51 @@ class StoreControllerTest {
             .andExpect(jsonPath("$.data.redCount").value(0))
             .andExpect(jsonPath("$.data.greenCount").value(0))
             .andExpect(jsonPath("$.data.blueCount").value(0));
+    }
+
+    @Test
+    @DisplayName("티켓 정보 조회 API - 각 티켓 타입에 대한 정보가 정상적으로 반환된다")
+    void fetchTicketInfo_success() throws Exception {
+        // given
+        ticketRepository.saveAllAndFlush(
+            List.of(
+                createTicket(1000, 3, "무뜨", "red.png", TicketType.RED),
+                createTicket(1200, 5, "요아정", "green.png", TicketType.GREEN),
+                createTicket(1500, 7, "하겐다즈", "blue.png", TicketType.BLUE)
+            )
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/tickets/info")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("티켓 정보 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.redTicket.prizeName").value("무뜨"))
+            .andExpect(jsonPath("$.data.redTicket.prizeImgUrl").value("red.png"))
+            .andExpect(jsonPath("$.data.greenTicket.prizeName").value("요아정"))
+            .andExpect(jsonPath("$.data.greenTicket.prizeImgUrl").value("green.png"))
+            .andExpect(jsonPath("$.data.blueTicket.prizeName").value("하겐다즈"))
+            .andExpect(jsonPath("$.data.blueTicket.prizeImgUrl").value("blue.png"));
+    }
+
+    @Test
+    @DisplayName("티켓 정보 조회 API - 일부 티켓 타입이 없을 경우 null로 반환된다")
+    void fetchTicketInfo_partialTicketTypes_returnsNull() throws Exception {
+        // given
+        ticketRepository.saveAllAndFlush(
+            List.of(
+                createTicket(1000, 3, "무뜨", "red.png", TicketType.RED),
+                createTicket(1200, 5, "요아정", "green.png", TicketType.GREEN)
+            )
+        );
+
+        // when & then
+        mockMvc.perform(get("/api/v1/tickets/info")
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("티켓 정보 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.data.redTicket.prizeName").value("무뜨"))
+            .andExpect(jsonPath("$.data.greenTicket.prizeImgUrl").value("green.png"))
+            .andExpect(jsonPath("$.data.blueTicket").doesNotExist());
     }
 }

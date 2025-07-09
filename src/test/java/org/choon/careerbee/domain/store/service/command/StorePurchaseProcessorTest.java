@@ -45,7 +45,7 @@ class StorePurchaseProcessorTest {
         TicketPurchaseReq request = new TicketPurchaseReq(TicketType.RED);
 
         Member mockMember = createMember("testNick", "test@test.com", 3452L);
-        Ticket mockTicket = createTicket(5, 10, "test.jpg", TicketType.RED);
+        Ticket mockTicket = createTicket(5, 10, "무뜨", "test.jpg", TicketType.RED);
 
         mockMember.plusPoint(10);
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
