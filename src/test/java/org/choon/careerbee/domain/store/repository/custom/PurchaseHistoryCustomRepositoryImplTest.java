@@ -43,9 +43,11 @@ class PurchaseHistoryCustomRepositoryTest {
         // given
         Member member = memberRepository.save(createMember("ticketUser", "ticket@test.com", 77L));
 
-        Ticket red = ticketRepository.save(createTicket(1000, 1, "red.png", TicketType.RED));
-        Ticket green = ticketRepository.save(createTicket(1200, 1, "green.png", TicketType.GREEN));
-        Ticket blue = ticketRepository.save(createTicket(1500, 1, "blue.png", TicketType.BLUE));
+        Ticket red = ticketRepository.save(createTicket(1000, 1, "무뜨", "red.png", TicketType.RED));
+        Ticket green = ticketRepository.save(
+            createTicket(1200, 1, "요아정", "green.png", TicketType.GREEN));
+        Ticket blue = ticketRepository.save(
+            createTicket(1500, 1, "하겐다즈", "blue.png", TicketType.BLUE));
 
         purchaseHistoryRepository.save(PurchaseHistory.of(member, red));
         purchaseHistoryRepository.save(PurchaseHistory.of(member, red));

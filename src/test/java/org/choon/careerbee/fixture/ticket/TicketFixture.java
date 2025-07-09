@@ -7,8 +7,8 @@ public class TicketFixture {
 
 
     public static Ticket createTicket(
-        Integer price, Integer quantity, String imgUrl, TicketType type
+        Integer price, Integer quantity, String prizeName, String imgUrl, TicketType type
     ) {
-        return Ticket.of(price, quantity, imgUrl, type);
+        return Ticket.of(price, quantity, prizeName, imgUrl, type);
     }
 }
