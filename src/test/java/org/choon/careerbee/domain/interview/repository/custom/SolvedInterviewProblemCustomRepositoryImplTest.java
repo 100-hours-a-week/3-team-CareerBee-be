@@ -126,4 +126,21 @@ class SolvedInterviewProblemCustomRepositoryTest {
         assertThat(remainingQuestions).containsExactlyInAnyOrder("문제1", "문제2");
     }
 
+    @Test
+    @DisplayName("저장된 면접 문제가 없을 경우 빈 리스트 반환")
+    void fetchSaveProblemIdsByMemberId_empty() {
+        // given
+        Member member = memberRepository.save(createMember("emptyUser", "empty@test.com", 99L));
+
+        // when
+        SaveInterviewProblemResp resp = customRepository.fetchSaveProblemIdsByMemberId(
+            member.getId(), null, 10
+        );
+
+        // then
+        assertThat(resp.savedProblems()).isEmpty();
+        assertThat(resp.hasNext()).isFalse();
+        assertThat(resp.nextCursor()).isNull();
+    }
+
 }
