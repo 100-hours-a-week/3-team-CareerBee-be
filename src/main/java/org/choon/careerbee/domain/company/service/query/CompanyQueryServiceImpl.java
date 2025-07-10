@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
-import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
 import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
@@ -23,6 +22,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.company.service.query.internal.CompanyRecentIssueQueryService;
@@ -89,17 +89,12 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public CompanyDetailResp fetchCompanyDetail(Long companyId) {
         CompanyStaticPart companyStaticPart = staticDataQueryService
             .fetchCompanyStaticPart(companyId);
-        CompanyRecruitInfo companyRecruitInfo = recruitmentQueryService
-            .fetchRecruitmentInfo(companyId);
-        String companyRecentIssue = recentIssueQueryService
-            .fetchRecentIssue(companyStaticPart.id());
-        Long wishCount = fetchWishCount(companyId);
+        RecruitingStatus recruitingStatus = recruitmentQueryService
+            .fetchCompanyRecruitStatus(companyId);
 
         return CompanyDetailResp.of(
             companyStaticPart,
-            companyRecentIssue,
-            wishCount,
-            companyRecruitInfo
+            recruitingStatus
         );
     }
 

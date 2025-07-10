@@ -20,8 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
-import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
-import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo.Recruitment;
 import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
@@ -296,7 +294,7 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("기업 상세 조회 - 의존 서비스 호출 및 CompanyDetailResp 반환")
+    @DisplayName("기업 상세 조회 - 기업 고정데이터 및 채용 상태 반환 성공")
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
@@ -318,22 +316,9 @@ class CompanyQueryServiceImplTest {
                 "https://example.com/spring.png"))
         );
 
-        CompanyRecruitInfo recruitInfo = new CompanyRecruitInfo(
-            RecruitingStatus.ONGOING,
-            List.of(
-                new Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"))
-        );
-
-        RBucket<String> wishBucket = mock(RBucket.class);
-        String recentIssue = "최근 이슈 설명";
-        Long wishCount = 123L;
-
         when(staticDataQueryService.fetchCompanyStaticPart(companyId)).thenReturn(staticPart);
-        when(recruitmentQueryService.fetchRecruitmentInfo(companyId)).thenReturn(recruitInfo);
-        when(recentIssueQueryService.fetchRecentIssue(companyId)).thenReturn(recentIssue);
-        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
-            wishBucket);
-        when(wishBucket.get()).thenReturn("123");
+        when(recruitmentQueryService.fetchCompanyRecruitStatus(companyId)).thenReturn(
+            RecruitingStatus.ONGOING);
 
         // when
         CompanyDetailResp actual = companyQueryService.fetchCompanyDetail(companyId);
@@ -347,20 +332,16 @@ class CompanyQueryServiceImplTest {
         assertThat(actual.description()).isEqualTo(staticPart.description());
         assertThat(actual.logoUrl()).isEqualTo(staticPart.logoUrl());
         assertThat(actual.employeeCount()).isEqualTo(staticPart.employeeCount());
-        assertThat(actual.wishCount()).isEqualTo(wishCount);
         assertThat(actual.rating()).isEqualTo(staticPart.rating());
-        assertThat(actual.recruitingStatus()).isEqualTo(recruitInfo.recruitingStatus());
+        assertThat(actual.recruitingStatus()).isEqualTo(RecruitingStatus.ONGOING);
         assertThat(actual.title()).isEqualTo(staticPart.title());
-        assertThat(actual.recruitments()).isEqualTo(recruitInfo.recruitments());
-        assertThat(actual.recentIssue()).isEqualTo(recentIssue);
         assertThat(actual.financials()).isEqualTo(staticPart.financials());
         assertThat(actual.photos()).isEqualTo(staticPart.photos());
         assertThat(actual.benefits()).isEqualTo(staticPart.benefits());
         assertThat(actual.techStacks()).isEqualTo(staticPart.techStacks());
 
         verify(staticDataQueryService, times(1)).fetchCompanyStaticPart(companyId);
-        verify(recruitmentQueryService, times(1)).fetchRecruitmentInfo(companyId);
-        verify(recentIssueQueryService, times(1)).fetchRecentIssue(companyId);
+        verify(recruitmentQueryService, times(1)).fetchCompanyRecruitStatus(companyId);
     }
 
     @Test
