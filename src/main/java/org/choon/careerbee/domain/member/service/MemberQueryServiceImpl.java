@@ -9,7 +9,6 @@ import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +20,6 @@ public class MemberQueryServiceImpl implements MemberQueryService {
     private final MemberRepository memberRepository;
 
     @Override
-    @Cacheable(cacheNames = "myInfo", key = "#memberId", unless = "#result == null")
     public MyInfoResp getMyInfoByMemberId(Long memberId) {
         return memberRepository.fetchMyInfoByMemberId(memberId);
     }
