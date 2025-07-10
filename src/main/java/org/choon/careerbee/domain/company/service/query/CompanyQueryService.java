@@ -13,6 +13,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCountResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 
@@ -48,4 +49,6 @@ public interface CompanyQueryService {
     RecentIssueResp fetchCompanyRecentIssue(Long companyId);
 
     CompanyRecruitInfo fetchCompanyRecruitments(Long companyId);
+
+    WishCountResp fetchCompanyWishCount(Long companyId);
 }

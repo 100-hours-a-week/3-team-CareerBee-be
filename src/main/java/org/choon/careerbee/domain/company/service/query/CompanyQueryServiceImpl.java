@@ -23,6 +23,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCountResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
@@ -172,6 +173,11 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     @Override
     public CompanyRecruitInfo fetchCompanyRecruitments(Long companyId) {
         return recruitmentQueryService.fetchRecruitmentInfo(companyId);
+    }
+
+    @Override
+    public WishCountResp fetchCompanyWishCount(Long companyId) {
+        return new WishCountResp(fetchWishCount(companyId));
     }
 
     private String escapeLike(String keyword) {
