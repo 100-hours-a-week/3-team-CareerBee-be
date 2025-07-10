@@ -27,7 +27,8 @@ spring:
         credentials:
           accessKey: sdifuasdiofuapsiodfuaopsidufpaosiduf
           secretKey: qwpeiorupoerifgscvvujhakhfweoafoweoiu
-        bucket: testbucket
+        image-bucket: imagetestbucket
+        resume-bucket: resumetestbucket
       region:
         static: ap-northeast-3
       stack:

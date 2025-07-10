@@ -29,7 +29,8 @@ spring:
         credentials:
           accessKey: ${AWS_S3_ACCESSKEY}
           secretKey: ${AWS_S3_SECRETKEY}
-        bucket: ${AWS_S3_BUCKET}
+        image-bucket: ${AWS_S3_IMAGE_BUCKET}
+        resume-bucket: ${AWS_S3_RESUME_BUCKET}
       region:
         static: ${AWS_REGION}
       stack:

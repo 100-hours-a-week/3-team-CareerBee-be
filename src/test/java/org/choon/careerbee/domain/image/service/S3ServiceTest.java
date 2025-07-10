@@ -39,7 +39,8 @@ class S3ServiceTest {
     @BeforeEach
     void setUp() {
         s3Service = new S3Service(s3Presigner);
-        ReflectionTestUtils.setField(s3Service, "bucket", "test-bucket");
+        ReflectionTestUtils.setField(s3Service, "imageBucket", "image-test-bucket");
+        ReflectionTestUtils.setField(s3Service, "resumeBucket", "resume-test-bucket");
     }
 
     @Test

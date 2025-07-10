@@ -27,22 +27,24 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 @Service
 public class S3Service implements ImageService {
 
+    private static final Duration PRESIGNED_URL_EXPIRATION = Duration.ofMinutes(15);
+
     private static final String PROFILE_IMAGE_BASE_PATH = "profile_images/";
     private static final String RESUME_BASE_PATH = "user_resume/";
 
     private final S3Presigner s3Presigner;
 
-    @Value("${spring.cloud.aws.s3.bucket}")
-    private String bucket;
+    @Value("${spring.cloud.aws.s3.image-bucket}")
+    private String imageBucket;
+
+    @Value("${spring.cloud.aws.s3.resume-bucket}")
+    private String resumeBucket;
 
     @Value("${spring.cloud.aws.region.static}")
     private String region;
 
-    private static final Duration PRESIGNED_URL_EXPIRATION = Duration.ofMinutes(15);
-
     @Override
     public PresignedUrlResp generatePresignedUrl(PresignedUrlReq request) {
-        log.info("S3 bucket property={}", bucket);
         SupportedExtension extension = request.extension();
         UploadType uploadType = request.uploadType();
 
@@ -53,10 +55,15 @@ public class S3Service implements ImageService {
             case RESUME -> RESUME_BASE_PATH;
         };
 
+        String targetBucket = switch (uploadType) {
+            case PROFILE_IMAGE -> imageBucket;
+            case RESUME -> resumeBucket;
+        };
+
         String key = basePath + UUID.randomUUID() + "." + extension.getExt();
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-            .bucket(bucket)
+            .bucket(targetBucket)
             .key(key)
             .contentType(extension.getMimeType())
             .build();
@@ -68,9 +75,7 @@ public class S3Service implements ImageService {
 
         URL uploadUrl = s3Presigner.presignPutObject(presignRequest).url();
 
-        return new PresignedUrlResp(
-            uploadUrl.toString(), key
-        );
+        return new PresignedUrlResp(uploadUrl.toString(), key);
     }
 
     @Override
@@ -78,7 +83,7 @@ public class S3Service implements ImageService {
         UploadCompleteReq uploadCompleteReq
     ) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-            .bucket(bucket)
+            .bucket(resumeBucket)
             .key(uploadCompleteReq.objectKey())
             .build();
 
@@ -96,7 +101,8 @@ public class S3Service implements ImageService {
 
     @Override
     public ObjectUrlResp getObjectUrlByKey(String objectKey) {
-        String objectUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + objectKey;
+        String objectUrl =
+            "https://" + imageBucket + ".s3." + region + ".amazonaws.com/" + objectKey;
         return new ObjectUrlResp(objectUrl);
     }
 
