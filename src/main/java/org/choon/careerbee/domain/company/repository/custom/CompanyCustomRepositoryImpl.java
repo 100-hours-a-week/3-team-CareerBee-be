@@ -316,13 +316,7 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .orderBy(recruitment.startDate.desc())
             .fetch();
 
-        RecruitingStatus recruitingStatus = queryFactory
-            .select(company.recruitingStatus)
-            .from(company)
-            .where(company.id.eq(companyId))
-            .fetchOne();
-
-        return new CompanyRecruitInfo(recruitingStatus, recruitments);
+        return new CompanyRecruitInfo(recruitments);
     }
 
     @Override

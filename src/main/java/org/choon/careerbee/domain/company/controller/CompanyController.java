@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
@@ -153,6 +154,19 @@ public class CompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "최근이슈 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/{companyId}/recruitments")
+    public ResponseEntity<CommonResponse<CompanyRecruitInfo>> fetchCompanyRecruitments(
+        @PathVariable Long companyId
+    ) {
+        CompanyRecruitInfo response = queryService.fetchCompanyRecruitments(companyId);
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "채용공고 조회에 성공하였습니다."
         );
     }
 }

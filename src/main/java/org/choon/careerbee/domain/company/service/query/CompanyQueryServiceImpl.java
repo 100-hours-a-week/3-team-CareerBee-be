@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
 import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
@@ -166,6 +167,11 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
         return new RecentIssueResp(
             recentIssueQueryService.fetchRecentIssue(companyId)
         );
+    }
+
+    @Override
+    public CompanyRecruitInfo fetchCompanyRecruitments(Long companyId) {
+        return recruitmentQueryService.fetchRecruitmentInfo(companyId);
     }
 
     private String escapeLike(String keyword) {

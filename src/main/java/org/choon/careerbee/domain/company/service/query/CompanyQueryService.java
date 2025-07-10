@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.company.service.query;
 
 import java.util.List;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -45,4 +46,6 @@ public interface CompanyQueryService {
     List<CompanyIdResp> fetchAllCompanyIds();
 
     RecentIssueResp fetchCompanyRecentIssue(Long companyId);
+
+    CompanyRecruitInfo fetchCompanyRecruitments(Long companyId);
 }
