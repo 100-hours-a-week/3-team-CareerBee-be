@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo.Recruitment;
 import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
 import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
@@ -586,5 +588,63 @@ class CompanyQueryServiceImplTest {
         assertThat(cursorCaptor.getValue()).isEqualTo(cursor);
         assertThat(sizeCaptor.getValue()).isEqualTo(size);
     }
+
+    @Test
+    @DisplayName("기업 최근 이슈 조회 - 내부 서비스 위임 및 결과 반환")
+    void fetchCompanyRecentIssue_shouldReturnResponseFromService() {
+        // given
+        Long companyId = 1L;
+        String issueContent = "최근 이슈 내용입니다.";
+        when(recentIssueQueryService.fetchRecentIssue(companyId)).thenReturn(issueContent);
+
+        // when
+        var result = companyQueryService.fetchCompanyRecentIssue(companyId);
+
+        // then
+        assertThat(result.recentIssue()).isEqualTo(issueContent);
+        verify(recentIssueQueryService, times(1)).fetchRecentIssue(companyId);
+    }
+
+    @Test
+    @DisplayName("기업 채용 정보 조회 - 내부 서비스 위임 및 결과 반환")
+    void fetchCompanyRecruitments_shouldReturnResponseFromService() {
+        // given
+        Long companyId = 2L;
+        CompanyRecruitInfo expected = new CompanyRecruitInfo(
+            List.of(
+                new Recruitment(3L, "test.url", "title", "2025-04-24", "2025-05-24")
+            )
+        );
+        when(recruitmentQueryService.fetchRecruitmentInfo(companyId)).thenReturn(expected);
+
+        // when
+        var result = companyQueryService.fetchCompanyRecruitments(companyId);
+
+        // then
+        assertThat(result).isEqualTo(expected);
+        verify(recruitmentQueryService, times(1)).fetchRecruitmentInfo(companyId);
+    }
+
+    @Test
+    @DisplayName("기업 관심수 조회 - 내부 메서드 호출 및 응답 래핑 확인")
+    void fetchCompanyWishCount_shouldReturnWrappedWishCount() {
+        // given
+        Long companyId = 3L;
+        Long wishCount = 77L;
+
+        RBucket<String> wishBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+        when(wishBucket.get()).thenReturn(null);
+        when(wishCompanyRepository.fetchWishCountById(companyId)).thenReturn(wishCount);
+
+        // when
+        var result = companyQueryService.fetchCompanyWishCount(companyId);
+
+        // then
+        assertThat(result.wishCount()).isEqualTo(wishCount);
+        verify(wishCompanyRepository, times(1)).fetchWishCountById(companyId);
+    }
+
 
 }

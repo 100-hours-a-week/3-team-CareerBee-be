@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
-import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +41,6 @@ class CompanyRecruitmentQueryServiceCacheTest {
         // given
         Long companyId = 1L;
         CompanyRecruitInfo expected = new CompanyRecruitInfo(
-            RecruitingStatus.ONGOING,
             List.of(
                 new CompanyRecruitInfo.Recruitment(
                     1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"
