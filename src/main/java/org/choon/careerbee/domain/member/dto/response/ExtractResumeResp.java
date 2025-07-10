@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.member.dto.response;
 
+import org.choon.careerbee.domain.member.dto.internal.ExtractResumeRespFromAi;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 
 // [2] camelCase로 응답하는 프론트 전달용 DTO
