@@ -16,6 +16,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
 import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -139,6 +140,19 @@ public class CompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "기업 ID 목록 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/{companyId}/recent-issue")
+    public ResponseEntity<CommonResponse<RecentIssueResp>> fetchCompanyRecentIssue(
+        @PathVariable Long companyId
+    ) {
+        RecentIssueResp response = queryService.fetchCompanyRecentIssue(companyId);
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "최근이슈 조회에 성공하였습니다."
         );
     }
 }

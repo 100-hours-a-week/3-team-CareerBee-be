@@ -10,6 +10,7 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
@@ -42,4 +43,6 @@ public interface CompanyQueryService {
     List<CompanyMarkerInfo> fetchAllCompanyLocations();
 
     List<CompanyIdResp> fetchAllCompanyIds();
+
+    RecentIssueResp fetchCompanyRecentIssue(Long companyId);
 }
