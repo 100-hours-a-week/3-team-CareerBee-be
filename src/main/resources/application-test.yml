@@ -65,3 +65,7 @@ careerbee:
 ai:
   api:
     base-url: https://dev-ai.careerbee.co.kr
+
+next:
+  api:
+    base-url: https://dev.asdf.co.kr

@@ -12,12 +12,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.company.api.CompanyApiClient;
+import org.choon.careerbee.domain.company.api.NextApiClient;
+import org.choon.careerbee.domain.company.dto.request.CompanyRevalidateReq;
+import org.choon.careerbee.domain.company.dto.request.RecentIssueUpdateReq;
 import org.choon.careerbee.domain.company.dto.response.CompanyActiveCount;
 import org.choon.careerbee.domain.company.dto.response.SaraminRecruitingResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.recruitment.Recruitment;
 import org.choon.careerbee.domain.company.entity.wish.WishCompany;
 import org.choon.careerbee.domain.company.exception.RetryableSaraminException;
+import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.company.service.RecruitmentSyncService;
@@ -30,6 +34,7 @@ import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,10 +45,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
-    private final RecruitmentRepository recruitmentRepository;
     private static final long TTL = 3L;
+    private final RecruitmentRepository recruitmentRepository;
+    private final CompanyRepository companyRepository;
 
     private final CompanyApiClient companyApiClient;
+    private final NextApiClient nextApiClient;
 
     private final WishCompanyRepository wishCompanyRepository;
     private final MemberQueryService memberQueryService;
@@ -139,6 +146,25 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
     public void cleanExpiredRecruitments(LocalDateTime now) {
         expireRecruitments(now);
         closeRecruitingStatusForInactiveCompanies();
+    }
+
+    @Async
+    @Override
+    public void updateRecentIssue(List<RecentIssueUpdateReq> updateRequests) {
+        // 1. 최근 이슈 배치 업데이트
+        companyRepository.batchUpdateRecentIssues(updateRequests);
+        log.info("기업 최근이슈 배치 업데이트 완료");
+
+        // 2. 기업 이름 목록 추출
+        List<String> companyNames = updateRequests.stream()
+            .map(RecentIssueUpdateReq::companyName)
+            .toList();
+
+        // 3. 이름 기반 기업 ID 조회
+        List<Long> companyIds = companyQueryService.findIdByCompanyNameIn(companyNames);
+
+        // 4. Next 서버에 revalidate 요청
+        nextApiClient.revalidateRecentIssue(new CompanyRevalidateReq(companyIds));
     }
 
     @Recover

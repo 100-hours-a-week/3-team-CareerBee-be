@@ -37,4 +37,6 @@ public interface CompanyCustomRepository {
     CompanyRecruitInfo fetchRecruitmentInfo(Long companyId);
 
     List<CompanyIdResp> fetchAllCompanyIds();
+
+    List<Long> findIdByCompanyNameIn(List<String> companyNames);
 }

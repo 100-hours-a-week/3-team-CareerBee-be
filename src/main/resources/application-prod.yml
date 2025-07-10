@@ -67,6 +67,10 @@ ai:
   api:
     base-url: ${AI_BASE_URL}
 
+next:
+  api:
+    base-url: ${NEXT_BASE_URL}
+
 sentry:
   dsn: ${SENTRY_DSN}  # 필수: Sentry DSN을 환경변수로 주입
   environment: prod     # 선택: dev, prod 등 환경 구분
