@@ -4,17 +4,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.choon.careerbee.fixture.CompanyFixture.createCompany;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo.Recruitment;
+import org.choon.careerbee.domain.company.dto.internal.CompanyStaticPart;
+import org.choon.careerbee.domain.company.dto.internal.CompanySummaryInfoWithoutWish;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -25,13 +34,18 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.Lo
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp.CompanySearchInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo.Keyword;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
-import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.company.entity.enums.BusinessType;
+import org.choon.careerbee.domain.company.entity.enums.CompanyType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryServiceImpl;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyRecentIssueQueryService;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyRecruitmentQueryService;
+import org.choon.careerbee.domain.company.service.query.internal.CompanyStaticDataQueryService;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
@@ -43,10 +57,19 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class CompanyQueryServiceImplTest {
+
+    private static final String GEO_KEY_PREFIX = "company:markerInfo:";
+    private static final String COMPANY_SIMPLE_KEY_PREFIX = "company:simple:";
+    private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
+    private static final Long COMPANY_WISH_KEY_TTL = 10L;
 
     @Mock
     private CompanyRepository companyRepository;
@@ -57,8 +80,23 @@ class CompanyQueryServiceImplTest {
     @Mock
     private MemberRepository memberRepository;
 
+    @Mock
+    private RedissonClient redissonClient;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @InjectMocks
     private CompanyQueryServiceImpl companyQueryService;
+
+    @Mock
+    private CompanyRecruitmentQueryService recruitmentQueryService;
+
+    @Mock
+    private CompanyRecentIssueQueryService recentIssueQueryService;
+
+    @Mock
+    private CompanyStaticDataQueryService staticDataQueryService;
 
     @Test
     @DisplayName("정상 주소와 조건으로 회사 조회 시 레포지토리 호출 및 결과 반환")
@@ -104,123 +142,208 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("기업 간단 조회 시 repository 호출 및 결과 반환")
-    void fetchCompanySummary_ShouldReturnSummaryResponse() {
+    @DisplayName("[기업 위치 정보 조회] Repository에 조회를 위임하고 결과를 반환한다")
+    void fetchCompanyLocation_delegatesToRepository() {
         // given
         Long companyId = 1L;
-        CompanySummaryInfo expectedResponse = new CompanySummaryInfo(
-            companyId,
-            "테스트 회사",
-            "https://test.logo.jpg",
-            1L,
-            List.of()
+        CompanyMarkerInfo expectedInfo = new CompanyMarkerInfo(
+            companyId, "test.jpg", BusinessType.COMMERCE, RecruitingStatus.CLOSED,
+            new LocationInfo(37.123, 127.12)
         );
-        when(companyRepository.fetchCompanySummaryInfoById(anyLong())).thenReturn(expectedResponse);
+
+        // Repository가 특정 정보를 반환하도록 설정
+        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedInfo);
 
         // when
-        CompanySummaryInfo actualResponse = companyQueryService.fetchCompanySummary(companyId);
+        CompanyMarkerInfo result = companyQueryService.fetchCompanyLocation(companyId);
 
         // then
-        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
-        verify(companyRepository, times(1)).fetchCompanySummaryInfoById(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(companyId);
-        assertThat(actualResponse.name()).isEqualTo(expectedResponse.name());
-        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
-        assertThat(actualResponse.logoUrl()).isEqualTo(expectedResponse.logoUrl());
-        assertThat(actualResponse.keywords()).isEqualTo(expectedResponse.keywords());
+        // 1. 반환된 결과가 기대와 같은지 확인
+        assertThat(result).isEqualTo(expectedInfo);
+
+        // 2. Repository의 메서드가 정확히 1번 호출되었는지 확인
+        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(companyId);
     }
 
     @Test
-    @DisplayName("기업 상세 조회 시 repository 호출 및 결과 반환")
+    @DisplayName("기업 간단 정보 데이터가 캐시에 모두 존재하는 경우")
+    void fetchCompanySummary_allCacheHit_returnsFromCache() throws Exception {
+        // given
+        Long companyId = 1L;
+        CompanySummaryInfoWithoutWish simpleInfo = new CompanySummaryInfoWithoutWish(
+            companyId, "테스트회사", "https://logo.png", List.of(new Keyword("AI"))
+        );
+        String simpleJson = objectMapper.writeValueAsString(simpleInfo);
+        String wishCountJson = "10";
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+        when(simpleBucket.get()).thenReturn(simpleJson);
+        when(wishBucket.get()).thenReturn(wishCountJson);
+        when(objectMapper.readValue(simpleJson, CompanySummaryInfoWithoutWish.class)).thenReturn(
+            simpleInfo);
+
+        // when
+        CompanySummaryInfo result = companyQueryService.fetchCompanySummary(companyId);
+
+        // then
+        verify(companyRepository, never()).fetchCompanySummaryInfoWithoutWishCount(any());
+        verify(wishCompanyRepository, never()).fetchWishCountById(any());
+        assertThat(result.wishCount()).isEqualTo(10L);
+        assertThat(result.name()).isEqualTo("테스트회사");
+    }
+
+    @Test
+    @DisplayName("기업 간단 정보 - 캐시가 존재하지 않는 경우 DB 조회 및 캐시 저장 후 반환")
+    void fetchCompanySummary_allCacheMiss_shouldQueryDbAndCache() throws Exception {
+        // given
+        Long companyId = 2L;
+        CompanySummaryInfoWithoutWish simpleInfo = new CompanySummaryInfoWithoutWish(
+            companyId, "새로운회사", "https://newlogo.png", List.of(new Keyword("Data"))
+        );
+        String simpleJson = objectMapper.writeValueAsString(simpleInfo);
+        Long wishCount = 42L;
+        String wishCountJson = String.valueOf(wishCount);
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+
+        when(simpleBucket.get()).thenReturn(null);
+        when(wishBucket.get()).thenReturn(null);
+
+        when(companyRepository.fetchCompanySummaryInfoWithoutWishCount(companyId)).thenReturn(
+            simpleInfo);
+        when(wishCompanyRepository.fetchWishCountById(companyId)).thenReturn(wishCount);
+        when(objectMapper.writeValueAsString(simpleInfo)).thenReturn(simpleJson);
+
+        // when
+        CompanySummaryInfo result = companyQueryService.fetchCompanySummary(companyId);
+
+        // then
+        verify(companyRepository).fetchCompanySummaryInfoWithoutWishCount(companyId);
+        verify(wishCompanyRepository).fetchWishCountById(companyId);
+        verify(simpleBucket).set(simpleJson);
+        verify(wishBucket).set(wishCountJson, Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
+        assertThat(result.wishCount()).isEqualTo(42L);
+        assertThat(result.name()).isEqualTo("새로운회사");
+    }
+
+    @Test
+    @DisplayName("기업 간단 정보 - 단순 정보 캐시만 존재하는 경우 관심수만 DB 조회 후 캐시 저장")
+    void fetchCompanySummary_onlySimpleInfoCached_shouldFetchWishCountAndCacheIt()
+        throws Exception {
+        // given
+        Long companyId = 3L;
+        CompanySummaryInfoWithoutWish simpleInfo = new CompanySummaryInfoWithoutWish(
+            companyId, "부분캐시회사", "https://logo.partial.png", List.of(new Keyword("Cloud"))
+        );
+        String simpleJson = objectMapper.writeValueAsString(simpleInfo);
+        Long wishCount = 20L;
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+
+        when(simpleBucket.get()).thenReturn(simpleJson);
+        when(wishBucket.get()).thenReturn(null);
+
+        when(objectMapper.readValue(simpleJson, CompanySummaryInfoWithoutWish.class)).thenReturn(
+            simpleInfo);
+        when(wishCompanyRepository.fetchWishCountById(companyId)).thenReturn(wishCount);
+
+        // when
+        CompanySummaryInfo result = companyQueryService.fetchCompanySummary(companyId);
+
+        // then
+        verify(companyRepository, never()).fetchCompanySummaryInfoWithoutWishCount(any());
+        verify(wishCompanyRepository).fetchWishCountById(companyId);
+        verify(wishBucket).set(String.valueOf(wishCount), Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
+        assertThat(result.name()).isEqualTo("부분캐시회사");
+        assertThat(result.wishCount()).isEqualTo(20L);
+    }
+
+    @Test
+    @DisplayName("기업 간단 정보 - 단순 정보 캐시 역직렬화 실패 시 예외 발생")
+    void fetchCompanySummary_whenSimpleJsonParsingFails_shouldThrowException() throws Exception {
+        // given
+        Long companyId = 4L;
+        String invalidJson = "INVALID_JSON";
+
+        RBucket<String> simpleBucket = mock(RBucket.class);
+        RBucket<String> wishBucket = mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(COMPANY_SIMPLE_KEY_PREFIX + companyId)).thenReturn(
+            simpleBucket);
+        when(simpleBucket.get()).thenReturn(invalidJson);
+
+        // when & then
+        assertThatThrownBy(() -> companyQueryService.fetchCompanySummary(companyId))
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.JSON_PARSING_ERROR.getMessage());
+    }
+
+    @Test
+    @DisplayName("기업 상세 조회 - 기업 고정데이터 및 채용 상태 반환 성공")
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
-        CompanyDetailResp.Financials financials = new CompanyDetailResp.Financials(6000, 4000,
-            1000000000L, 200000000L);
-        List<CompanyDetailResp.Photo> photos = List.of(
-            new CompanyDetailResp.Photo(1, "https://example.com/photo1.png"));
-        List<CompanyDetailResp.Benefit> benefits = List.of(
-            new CompanyDetailResp.Benefit("복지", "자유복장, 점심 제공"));
-        List<CompanyDetailResp.TechStack> techStacks = List.of(
-            new CompanyDetailResp.TechStack(1L, "Spring", "BACKEND",
-                "https://example.com/spring.png"));
-        List<CompanyDetailResp.Recruitment> recruitments = List.of(
-            new CompanyDetailResp.Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01",
-                "2024-12-31"));
-
-        CompanyDetailResp expectedResponse = new CompanyDetailResp(
+        CompanyStaticPart staticPart = new CompanyStaticPart(
             companyId,
             "넥슨코리아",
-            "백엔드 개발자",
+            "testTitle",
             "https://example.com/logo.png",
-            "최근 이슈 설명",
-            "대기업",
-            "채용중",
+            CompanyType.MID_SIZED,
             "경기 성남시 분당구",
             3000,
             "https://company.nexon.com/",
             "국내 대표 게임 개발사",
-            123,
             4.5,
-            financials,
-            photos,
-            benefits,
-            techStacks,
-            recruitments
+            new CompanyStaticPart.Financials(6000, 4000, 1000000000L, 200000000L),
+            List.of(new CompanyStaticPart.Photo(1, "https://example.com/photo1.png")),
+            List.of(new CompanyStaticPart.Benefit("복지", "자유복장, 점심 제공")),
+            List.of(new CompanyStaticPart.TechStack(1L, "Spring", "BACKEND",
+                "https://example.com/spring.png"))
         );
 
-        when(companyRepository.fetchCompanyDetailById(companyId)).thenReturn(expectedResponse);
+        when(staticDataQueryService.fetchCompanyStaticPart(companyId)).thenReturn(staticPart);
+        when(recruitmentQueryService.fetchCompanyRecruitStatus(companyId)).thenReturn(
+            RecruitingStatus.ONGOING);
 
         // when
-        CompanyDetailResp actualResponse = companyQueryService.fetchCompanyDetail(companyId);
+        CompanyDetailResp actual = companyQueryService.fetchCompanyDetail(companyId);
 
         // then
-        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
-        verify(companyRepository, times(1)).fetchCompanyDetailById(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(companyId);
-        assertThat(actualResponse).isEqualTo(expectedResponse);
-        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
-        assertThat(actualResponse.companyType()).isEqualTo(expectedResponse.companyType());
-        assertThat(actualResponse.address()).isEqualTo(expectedResponse.address());
-        assertThat(actualResponse.description()).isEqualTo(expectedResponse.description());
-        assertThat(actualResponse.employeeCount()).isEqualTo(expectedResponse.employeeCount());
-        assertThat(actualResponse.wishCount()).isEqualTo(expectedResponse.wishCount());
-        assertThat(actualResponse.rating()).isEqualTo(expectedResponse.rating());
-        assertThat(actualResponse.homepageUrl()).isEqualTo(expectedResponse.homepageUrl());
-        assertThat(actualResponse.techStacks()).isEqualTo(expectedResponse.techStacks());
-    }
+        assertThat(actual.id()).isEqualTo(staticPart.id());
+        assertThat(actual.name()).isEqualTo(staticPart.name());
+        assertThat(actual.companyType()).isEqualTo(staticPart.companyType());
+        assertThat(actual.address()).isEqualTo(staticPart.address());
+        assertThat(actual.homepageUrl()).isEqualTo(staticPart.homepageUrl());
+        assertThat(actual.description()).isEqualTo(staticPart.description());
+        assertThat(actual.logoUrl()).isEqualTo(staticPart.logoUrl());
+        assertThat(actual.employeeCount()).isEqualTo(staticPart.employeeCount());
+        assertThat(actual.rating()).isEqualTo(staticPart.rating());
+        assertThat(actual.recruitingStatus()).isEqualTo(RecruitingStatus.ONGOING);
+        assertThat(actual.title()).isEqualTo(staticPart.title());
+        assertThat(actual.financials()).isEqualTo(staticPart.financials());
+        assertThat(actual.photos()).isEqualTo(staticPart.photos());
+        assertThat(actual.benefits()).isEqualTo(staticPart.benefits());
+        assertThat(actual.techStacks()).isEqualTo(staticPart.techStacks());
 
-    @Test
-    @DisplayName("기업 마커 정보 조회 시 repository 호출 및 결과 반환")
-    void fetchCompanyLocation_ShouldReturnMarkerInfo() {
-        // given
-        Long companyId = 1L;
-        CompanyMarkerInfo expectedResponse = new CompanyMarkerInfo(
-            companyId,
-            "testUrl",
-            BusinessType.GAME,
-            RecruitingStatus.ONGOING,
-            new LocationInfo(37.123, 127.01)
-        );
-        when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedResponse);
-
-        // when
-        CompanyMarkerInfo actualResponse = companyQueryService.fetchCompanyLocation(companyId);
-
-        // then
-        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
-        verify(companyRepository, times(1)).fetchCompanyMarkerInfo(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(companyId);
-        assertThat(actualResponse).isEqualTo(expectedResponse);
-        assertThat(actualResponse.id()).isEqualTo(expectedResponse.id());
-        assertThat(actualResponse.markerUrl()).isEqualTo(expectedResponse.markerUrl());
-        assertThat(actualResponse.businessType()).isEqualTo(expectedResponse.businessType());
-        assertThat(actualResponse.recruitingStatus()).isEqualTo(
-            expectedResponse.recruitingStatus());
-        assertThat(actualResponse.locationInfo().latitude()).isEqualTo(
-            expectedResponse.locationInfo().latitude());
-        assertThat(actualResponse.locationInfo().longitude()).isEqualTo(
-            expectedResponse.locationInfo().longitude());
+        verify(staticDataQueryService, times(1)).fetchCompanyStaticPart(companyId);
+        verify(recruitmentQueryService, times(1)).fetchCompanyRecruitStatus(companyId);
     }
 
     @Test
@@ -388,10 +511,11 @@ class CompanyQueryServiceImplTest {
         // given
         Long memberId = 1L;
         Member mockMember = createMember("testnick", "test@test.com", memberId);
+        ReflectionTestUtils.setField(mockMember, "id", 1L);
         WishCompanyIdResp mockResp = new WishCompanyIdResp(List.of(10L, 20L, 30L));
 
         when(memberRepository.findById(memberId)).thenReturn(Optional.of(mockMember));
-        when(wishCompanyRepository.fetchWishCompanyIdsByMember(mockMember)).thenReturn(mockResp);
+        when(wishCompanyRepository.fetchWishCompanyIdsByMember(memberId)).thenReturn(mockResp);
 
         // when
         WishCompanyIdResp actualResp = companyQueryService.fetchWishCompanyIds(memberId);
@@ -401,9 +525,10 @@ class CompanyQueryServiceImplTest {
 
         verify(memberRepository, times(1)).findById(memberId);
 
-        ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-        verify(wishCompanyRepository, times(1)).fetchWishCompanyIdsByMember(memberCaptor.capture());
-        assertThat(memberCaptor.getValue()).isEqualTo(mockMember); // 객체 동등성 확인
+        ArgumentCaptor<Long> memberIdCaptor = ArgumentCaptor.forClass(Long.class);
+        verify(wishCompanyRepository, times(1)).fetchWishCompanyIdsByMember(
+            memberIdCaptor.capture());
+        assertThat(memberIdCaptor.getValue()).isEqualTo(memberId); // 객체 동등성 확인
     }
 
     @Test
@@ -465,46 +590,60 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("관심기업 진척도 조회 - 유효한 ID 조합 시 응답 반환")
-    void fetchWishCompanyProgress_shouldReturnResponse_whenDataExists() {
+    @DisplayName("기업 최근 이슈 조회 - 내부 서비스 위임 및 결과 반환")
+    void fetchCompanyRecentIssue_shouldReturnResponseFromService() {
         // given
-        Long wishCompanyId = 1L;
-        Long memberId = 100L;
-        WishCompanyProgressResp expected = new WishCompanyProgressResp(80, 320);
-
-        when(wishCompanyRepository.fetchWishCompanyAndMemberProgress(wishCompanyId, memberId))
-            .thenReturn(Optional.of(expected));
+        Long companyId = 1L;
+        String issueContent = "최근 이슈 내용입니다.";
+        when(recentIssueQueryService.fetchRecentIssue(companyId)).thenReturn(issueContent);
 
         // when
-        WishCompanyProgressResp actual = companyQueryService.fetchWishCompanyProgress(wishCompanyId,
-            memberId);
+        var result = companyQueryService.fetchCompanyRecentIssue(companyId);
 
         // then
-        assertThat(actual).isEqualTo(expected);
-
-        verify(wishCompanyRepository, times(1))
-            .fetchWishCompanyAndMemberProgress(wishCompanyId, memberId);
+        assertThat(result.recentIssue()).isEqualTo(issueContent);
+        verify(recentIssueQueryService, times(1)).fetchRecentIssue(companyId);
     }
 
     @Test
-    @DisplayName("관심기업 진척도 조회 - 존재하지 않는 경우 예외 발생")
-    void fetchWishCompanyProgress_shouldThrow_whenWishCompanyNotFound() {
+    @DisplayName("기업 채용 정보 조회 - 내부 서비스 위임 및 결과 반환")
+    void fetchCompanyRecruitments_shouldReturnResponseFromService() {
         // given
-        Long wishCompanyId = 1L;
-        Long memberId = 100L;
+        Long companyId = 2L;
+        CompanyRecruitInfo expected = new CompanyRecruitInfo(
+            List.of(
+                new Recruitment(3L, "test.url", "title", "2025-04-24", "2025-05-24")
+            )
+        );
+        when(recruitmentQueryService.fetchRecruitmentInfo(companyId)).thenReturn(expected);
 
-        when(wishCompanyRepository.fetchWishCompanyAndMemberProgress(wishCompanyId, memberId))
-            .thenReturn(Optional.empty());
+        // when
+        var result = companyQueryService.fetchCompanyRecruitments(companyId);
 
-        // when & then
-        assertThatThrownBy(() ->
-            companyQueryService.fetchWishCompanyProgress(wishCompanyId, memberId)
-        )
-            .isInstanceOf(CustomException.class)
-            .hasMessageContaining(CustomResponseStatus.WISH_COMPANY_NOT_FOUND.getMessage());
+        // then
+        assertThat(result).isEqualTo(expected);
+        verify(recruitmentQueryService, times(1)).fetchRecruitmentInfo(companyId);
+    }
 
-        verify(wishCompanyRepository, times(1))
-            .fetchWishCompanyAndMemberProgress(wishCompanyId, memberId);
+    @Test
+    @DisplayName("기업 관심수 조회 - 내부 메서드 호출 및 응답 래핑 확인")
+    void fetchCompanyWishCount_shouldReturnWrappedWishCount() {
+        // given
+        Long companyId = 3L;
+        Long wishCount = 77L;
+
+        RBucket<String> wishBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+        when(wishBucket.get()).thenReturn(null);
+        when(wishCompanyRepository.fetchWishCountById(companyId)).thenReturn(wishCount);
+
+        // when
+        var result = companyQueryService.fetchCompanyWishCount(companyId);
+
+        // then
+        assertThat(result.wishCount()).isEqualTo(wishCount);
+        verify(wishCompanyRepository, times(1)).fetchWishCountById(companyId);
     }
 
 

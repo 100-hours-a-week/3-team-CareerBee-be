@@ -6,14 +6,10 @@ import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.choon.careerbee.fixture.WishCompanyFixture.createWishCompany;
 
 import jakarta.transaction.Transactional;
-import java.util.Optional;
 import org.choon.careerbee.config.querydsl.QueryDSLConfig;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
-import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.member.entity.Member;
-import org.choon.careerbee.domain.member.entity.enums.MajorType;
-import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +55,8 @@ class WishCompanyCustomRepositoryImplTest {
         em.clear();
 
         // when
-        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(member);
+        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(
+            member.getId());
 
         // then
         assertThat(result).isNotNull();
@@ -87,7 +84,8 @@ class WishCompanyCustomRepositoryImplTest {
         em.clear();
 
         // when
-        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(member);
+        WishCompanyIdResp result = wishCompanyCustomRepository.fetchWishCompanyIdsByMember(
+            member.getId());
 
         // then
         assertThat(result).isNotNull();
@@ -136,64 +134,4 @@ class WishCompanyCustomRepositoryImplTest {
         assertThat(nextResult.hasNext()).isFalse();
     }
 
-    @Test
-    @DisplayName("관심 기업 + 멤버 조합 존재 시 진척도 정보 반환")
-    void fetchWishCompanyAndMemberProgress_shouldReturnResult_whenExists() {
-        // given
-        Member member = createMember("tester", "test@careerbee.com", 1L);
-        member.updateResumeInfo(
-            PreferredJob.BACKEND,
-            "GL3",
-            3,
-            2,
-            MajorType.MAJOR,
-            "스타트업",
-            12,
-            "백엔드",
-            "동아리 회장"
-        );
-        member.recalcProgress(m -> 320);
-        em.persist(member);
-
-        Company company = createCompany("테스트기업", 37.123, 127.456);
-        em.persist(company);
-
-        em.persist(createWishCompany(company, member));
-
-        em.flush();
-        em.clear();
-
-        // when
-        Optional<WishCompanyProgressResp> result =
-            wishCompanyCustomRepository.fetchWishCompanyAndMemberProgress(company.getId(),
-                member.getId());
-
-        // then
-        assertThat(result).isPresent();
-        WishCompanyProgressResp resp = result.get();
-        assertThat(resp.companyProgressMax()).isEqualTo(100);
-        assertThat(resp.myProgress()).isEqualTo(320);
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 관심 기업 + 멤버 조합일 경우 Optional.empty 반환")
-    void fetchWishCompanyAndMemberProgress_shouldReturnEmpty_whenNotExists() {
-        // given
-        Member member = createMember("tester", "test@careerbee.com", 1L);
-        em.persist(member);
-
-        Company company = createCompany("없는관심기업", 37.123, 127.456);
-        em.persist(company);
-
-        em.flush();
-        em.clear();
-
-        // when
-        Optional<WishCompanyProgressResp> result =
-            wishCompanyCustomRepository.fetchWishCompanyAndMemberProgress(company.getId(),
-                member.getId());
-
-        // then
-        assertThat(result).isEmpty();
-    }
 }

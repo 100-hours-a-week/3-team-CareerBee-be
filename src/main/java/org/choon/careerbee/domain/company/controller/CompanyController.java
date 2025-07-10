@@ -2,19 +2,24 @@ package org.choon.careerbee.domain.company.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
+import org.choon.careerbee.domain.company.dto.response.CompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
-import org.choon.careerbee.domain.company.service.CompanyQueryService;
+import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
+import org.choon.careerbee.domain.company.dto.response.WishCountResp;
+import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -126,6 +131,56 @@ public class CompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "기업 위치 정보 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/ids")
+    public ResponseEntity<CommonResponse<List<CompanyIdResp>>> fetchAllCompanyIds() {
+        List<CompanyIdResp> response = queryService.fetchAllCompanyIds();
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "기업 ID 목록 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/{companyId}/recent-issue")
+    public ResponseEntity<CommonResponse<RecentIssueResp>> fetchCompanyRecentIssue(
+        @PathVariable Long companyId
+    ) {
+        RecentIssueResp response = queryService.fetchCompanyRecentIssue(companyId);
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "최근이슈 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/{companyId}/recruitments")
+    public ResponseEntity<CommonResponse<CompanyRecruitInfo>> fetchCompanyRecruitments(
+        @PathVariable Long companyId
+    ) {
+        CompanyRecruitInfo response = queryService.fetchCompanyRecruitments(companyId);
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "채용공고 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/{companyId}/wish-count")
+    public ResponseEntity<CommonResponse<WishCountResp>> fetchCompanyWishCount(
+        @PathVariable Long companyId
+    ) {
+        WishCountResp response = queryService.fetchCompanyWishCount(companyId);
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "관심수 조회에 성공하였습니다."
         );
     }
 }

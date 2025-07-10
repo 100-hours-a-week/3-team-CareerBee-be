@@ -22,6 +22,8 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+      repositories:
+        enabled: false
 
   cloud:
     aws:
@@ -29,7 +31,8 @@ spring:
         credentials:
           accessKey: ${AWS_ACCESS_KEY_ID}
           secretKey: ${AWS_SECRET_ACCESS_KEY}
-        bucket: ${AWS_S3_BUCKET}
+        image-bucket: ${AWS_S3_IMAGE_BUCKET}
+        resume-bucket: ${AWS_S3_RESUME_BUCKET}
       region:
         static: ${AWS_DEFAULT_REGION}
       stack:

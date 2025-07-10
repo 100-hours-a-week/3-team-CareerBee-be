@@ -82,6 +82,12 @@ class CompetitionControllerTest {
 
     @BeforeEach
     void setUp() {
+        competitionParticipantRepository.deleteAllInBatch();
+        problemChoiceRepository.deleteAllInBatch();
+        competitionProblemRepository.deleteAllInBatch();
+        competitionRepository.deleteAllInBatch();
+        memberRepository.deleteAllInBatch();
+
         testMember = memberRepository.saveAndFlush(
             createMember("nick", "nick@a.com", 15L));
         testCompetition = competitionRepository.saveAndFlush(
@@ -392,6 +398,7 @@ class CompetitionControllerTest {
     void fetchTodayCompetitionId_noCompetition() throws Exception {
         // when & then
         mockMvc.perform(get("/api/v1/competitions/ids")
+                .param("date", "2028-06-02")
                 .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.httpStatusCode").value(

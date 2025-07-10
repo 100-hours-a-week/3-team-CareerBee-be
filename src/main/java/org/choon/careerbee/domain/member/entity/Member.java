@@ -24,7 +24,6 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
 import org.choon.careerbee.domain.member.entity.enums.RoleType;
-import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 
 @Entity
 @Getter
@@ -149,10 +148,6 @@ public class Member extends BaseEntity {
         return member;
     }
 
-    public void recalcProgress(ResumeProgressPolicy policy) {
-        this.progress = policy.calculate(this);
-    }
-
     public void updateProfileInfo(UpdateProfileCommand command) {
         this.imgUrl = command.profileImgUrl();
         this.nickname = command.nickname();
@@ -168,6 +163,14 @@ public class Member extends BaseEntity {
 
     public void plusPoint(int point) {
         this.points += point;
+    }
+
+    public void minusPoint(int usePoint) {
+        if (this.points < usePoint) {
+            throw new CustomException(CustomResponseStatus.NOT_ENOUGH_POINT);
+        }
+
+        this.points -= usePoint;
     }
 
     public boolean isWithDrawn() {

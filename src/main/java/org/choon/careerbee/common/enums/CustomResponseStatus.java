@@ -9,12 +9,17 @@ public enum CustomResponseStatus {
     SUCCESS_WITH_NO_CONTENT(HttpStatus.NO_CONTENT.value(), "요청에 성공하였습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN.value(), "권한이 없습니다."),
 
+    DUPLICATE_REQUEST(HttpStatus.TOO_MANY_REQUESTS.value(), "중복된 요청입니다. 잠시 후 다시 시도해주세요."),
+    LOCK_ACQUISITION_FAILED(HttpStatus.TOO_MANY_REQUESTS.value(),
+        "현재 요청이 많아 처리할 수 없습니다. 잠시 후 다시 시도해주세요."),
+
     INVALID_LOGIN_LOGIC(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비정상적인 로그인 로직이 감지되었습니다."),
     MEMBER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 회원입니다."),
     EMAIL_ALREADY_EXIST(HttpStatus.CONFLICT.value(), "이미 존재하는 이메일입니다."),
     MEMBER_ALREADY_WITHDRAWAL(HttpStatus.CONFLICT.value(), "이미 탈퇴한 회원입니다."),
     WITHDRAWAL_MEMBER(HttpStatus.GONE.value(), "탈퇴한 회원입니다."),
     NOTIFICATION_UPDATE_INVALID(HttpStatus.BAD_REQUEST.value(), "일부 알림은 존재하지 않거나 접근 권한이 없습니다."),
+    NOT_ENOUGH_POINT(HttpStatus.BAD_REQUEST.value(), "포인트가 부족합니다."),
 
     INVALID_LATITUDE_ERROR(HttpStatus.BAD_REQUEST.value(), "위도를 정확하게 입력해주세요 : 34~44"),
     INVALID_LONGITUDE_ERROR(HttpStatus.BAD_REQUEST.value(), "경도를 정확하게 입력해주세요 : 124~134"),
@@ -27,6 +32,9 @@ public enum CustomResponseStatus {
     RESULT_ALREADY_SUBMIT(HttpStatus.CONFLICT.value(), "이미 제출하였습니다."),
     RANKING_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "대회 랭킹 정보가 존재하지 않습니다."),
 
+    TICKET_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "티켓 정보가 존재하지 않습니다."),
+    TICKET_OUT_OF_STOCK(HttpStatus.BAD_REQUEST.value(), "해당 티켓이 품절되었습니다."),
+
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
     EXTENSION_NOT_EXIST(HttpStatus.BAD_REQUEST.value(), "제공하지 않는 확장자입니다."),
 
@@ -38,8 +46,17 @@ public enum CustomResponseStatus {
     REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED.value(), "리프레시 토큰이 만료되었습니다."),
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "유효한 리프레시 토큰이 존재하지 않습니다."),
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST.value(), "유효하지 않은 입력값 입니다."),
+    JSON_PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "JSON 파싱 과정중 오류 발생"),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "내부 서버 오류입니다."),
     AI_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "AI 서버 오류입니다."),
+    SARAMIN_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "사람인 서버 오류입니다."),
+    SARAMIN_API_KEY_EMPTY_ERROR(HttpStatus.BAD_REQUEST.value(), "사람인 API 요청시 액세스키 누락시 발생한 에러입니다."),
+    SARAMIN_API_KEY_INVALID_ERROR(HttpStatus.BAD_REQUEST.value(),
+        "사람인 API 요청시 유효한지 않은 액세스키로 발생 에러입니다."),
+    SARAMIN_INVALID_PARAM_ERROR(HttpStatus.BAD_REQUEST.value(),
+        "사람인 API 요청시 유효한지 않은 파라미터로 발생 에러입니다."),
+    SARAMIN_TOO_MANY_REQUEST_ERROR(HttpStatus.TOO_MANY_REQUESTS.value(),
+        "사람인 API의 일일 요청 횟수 초과하였습니다."),
     ;
 
     private final int httpStatusCode;

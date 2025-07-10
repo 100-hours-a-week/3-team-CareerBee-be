@@ -1,12 +1,9 @@
 package org.choon.careerbee.domain.member.dto.response;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import lombok.Builder;
+import org.choon.careerbee.domain.member.dto.internal.ExtractResumeRespFromAi;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 
-@Builder
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+// [2] camelCase로 응답하는 프론트 전달용 DTO
 public record ExtractResumeResp(
     Integer certificationCount,
     Integer projectCount,
@@ -17,4 +14,15 @@ public record ExtractResumeResp(
     String additionalExperiences
 ) {
 
+    public static ExtractResumeResp from(ExtractResumeRespFromAi aiResp) {
+        return new ExtractResumeResp(
+            aiResp.certificationCount(),
+            aiResp.projectCount(),
+            aiResp.majorType(),
+            aiResp.companyName(),
+            aiResp.workPeriod(),
+            aiResp.position(),
+            aiResp.additionalExperiences()
+        );
+    }
 }

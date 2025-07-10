@@ -10,15 +10,13 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo.Keyword;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
-import org.choon.careerbee.domain.company.dto.response.WishCompanyProgressResp;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
-import org.choon.careerbee.domain.member.entity.Member;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -29,11 +27,11 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public WishCompanyIdResp fetchWishCompanyIdsByMember(Member member) {
+    public WishCompanyIdResp fetchWishCompanyIdsByMember(Long memberId) {
         List<Long> companyIds = queryFactory
             .select(wishCompany.company.id)
             .from(wishCompany)
-            .where(wishCompany.member.id.eq(member.getId()))
+            .where(wishCompany.member.id.eq(memberId))
             .fetch();
 
         return new WishCompanyIdResp(companyIds);
@@ -51,12 +49,14 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
 
         // 3. 회사별 찜 개수 조회
         Map<Long, Long> wishCountMap = fetchWishCounts(companyIds);
+        Map<Long, List<Keyword>> keywordMap = fetchKeywordsInBatch(companyIds);
 
         // 4. 회사 요약 정보 + 키워드 리스트 구성
         List<CompanySummaryInfo> summaryList = wishCompanyInfos.stream()
             .map(tuple -> {
                 Long companyId = tuple.get(company.id);
-                List<CompanySummaryInfo.Keyword> keywords = fetchCompanyKeywords(companyId);
+//                List<CompanySummaryInfo.Keyword> keywords = fetchCompanyKeywords(companyId);
+                List<Keyword> keywords = keywordMap.get(companyId);
 
                 return new CompanySummaryInfo(
                     companyId,
@@ -81,34 +81,35 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
     }
 
     @Override
-    public Optional<WishCompanyProgressResp> fetchWishCompanyAndMemberProgress(
-        Long companyId,
-        Long accessMemberId
-    ) {
-        WishCompanyProgressResp resp = queryFactory
-            .select(Projections.constructor(
-                WishCompanyProgressResp.class,
-                wishCompany.company.score,
-                wishCompany.member.progress.add(wishCompany.member.additionalProgress)
-            ))
-            .from(wishCompany)
-            .join(wishCompany.company)
-            .join(wishCompany.member)
-            .where(
-                wishCompany.company.id.eq(companyId),
-                wishCompany.member.id.eq(accessMemberId))
-            .fetchOne();
-
-        return Optional.ofNullable(resp);
-    }
-
-    @Override
     public List<Long> getMemberIdsByCompanyId(Long companyId) {
         return queryFactory
             .select(wishCompany.member.id).distinct()
             .from(wishCompany)
             .where(wishCompany.company.id.eq(companyId))
             .fetch();
+    }
+
+    @Override
+    public Long fetchWishCountById(Long companyId) {
+        return queryFactory
+            .select(wishCompany.count())
+            .from(wishCompany)
+            .where(wishCompany.company.id.eq(companyId))
+            .fetchOne();
+    }
+
+    public Map<Long, List<Long>> getWishMemberIdsGroupedByCompanyId(List<Long> companyIds) {
+        List<Tuple> result = queryFactory
+            .select(wishCompany.company.id, wishCompany.member.id)
+            .from(wishCompany)
+            .where(wishCompany.company.id.in(companyIds))
+            .fetch();
+
+        return result.stream()
+            .collect(Collectors.groupingBy(
+                tuple -> tuple.get(wishCompany.company.id),
+                Collectors.mapping(tuple -> tuple.get(wishCompany.member.id), Collectors.toList())
+            ));
     }
 
     private List<Tuple> fetchWishCompanyInfos(Long memberId, Long cursor, int size) {
@@ -138,6 +139,32 @@ public class WishCompanyCustomRepositoryImpl implements WishCompanyCustomReposit
                 tuple -> tuple.get(wishCompany.company.id),
                 tuple -> tuple.get(wishCompany.count())
             ));
+    }
+
+    private Map<Long, List<CompanySummaryInfo.Keyword>> fetchKeywordsInBatch(
+        List<Long> companyIds
+    ) {
+        List<Tuple> tuples = queryFactory
+            .select(
+                companyKeyword.company.id,
+                Projections.constructor(
+                    CompanySummaryInfo.Keyword.class,
+                    companyKeyword.content
+                )
+            )
+            .from(companyKeyword)
+            .where(companyKeyword.company.id.in(companyIds))
+            .fetch();
+
+        return tuples.stream().collect(
+            Collectors.groupingBy(
+                tuple -> tuple.get(companyKeyword.company.id),
+                Collectors.mapping(
+                    tuple -> tuple.get(1, CompanySummaryInfo.Keyword.class),
+                    Collectors.toList()
+                )
+            )
+        );
     }
 
     private List<CompanySummaryInfo.Keyword> fetchCompanyKeywords(Long companyId) {

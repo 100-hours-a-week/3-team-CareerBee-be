@@ -5,7 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
+import org.choon.careerbee.domain.image.dto.response.GetPresignedUrlResp;
 import org.choon.careerbee.domain.image.service.ImageService;
+import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitReq;
+import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeRespFromAi;
+import org.choon.careerbee.domain.member.dto.request.AdvancedResumeUpdateReq;
+import org.choon.careerbee.domain.member.dto.request.AdvancedResumeUpdateReqToAi;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileCommand;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
@@ -13,10 +18,13 @@ import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.UploadCompleteReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawCommand;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
+import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
+import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
+import org.choon.careerbee.domain.member.dto.response.ResumeCompleteResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
+import org.choon.careerbee.domain.member.dto.response.ResumeInProgressResp;
 import org.choon.careerbee.domain.member.entity.Member;
-import org.choon.careerbee.domain.member.progress.ResumeProgressPolicy;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +38,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     private final MemberRepository memberRepository;
     private final ImageService imageService;
     private final AiApiClient aiApiClient;
-    private final ResumeProgressPolicy resumeProgressPolicy;
 
     @Override
     public Member forceJoin(OAuthInfoResponse oAuthInfo) {
@@ -59,8 +66,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             updateResumeReq.position(),
             updateResumeReq.additionalExperiences()
         );
-
-        validMember.recalcProgress(resumeProgressPolicy);
     }
 
     @Override
@@ -100,6 +105,42 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         );
 
         // 2. 만들어진 정보로 ai서버에 이력서 정보추출 요청
-        return aiApiClient.requestExtractResume(extractResumeReq);
+        return ExtractResumeResp.from(aiApiClient.requestExtractResume(extractResumeReq));
+    }
+
+    @Override
+    public AdvancedResumeInitResp generateAdvancedResumeInit(Long accessMemberId) {
+        Member validMember = memberQueryService.findById(accessMemberId);
+
+        return aiApiClient.requestAdvancedResumeInit(
+            new AdvancedResumeInitReq(
+                validMember.getId(),
+                ResumeDraftReq.from(validMember)
+            )
+        );
+    }
+
+    @Override
+    public AdvancedResumeResp generateAdvancedResumeUpdate(
+        AdvancedResumeUpdateReq advancedResumeUpdateReq,
+        Long accessMemberId
+    ) {
+        AdvancedResumeRespFromAi result = aiApiClient.requestAdvancedResumeUpdate(
+            AdvancedResumeUpdateReqToAi.of(accessMemberId, advancedResumeUpdateReq.answer())
+        );
+
+        if (result.isComplete()) {
+            GetPresignedUrlResp presignedUrlResp = imageService.generateGetPresignedUrlByObjectKey(
+                new UploadCompleteReq(result.resumeObjectKey())
+            );
+
+            return new ResumeCompleteResp(
+                presignedUrlResp.presignedUrl()
+            );
+        }
+
+        return new ResumeInProgressResp(
+            result.question()
+        );
     }
 }
