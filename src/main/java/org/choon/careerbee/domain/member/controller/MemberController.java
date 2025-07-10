@@ -154,7 +154,7 @@ public class MemberController {
         return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
-            "고급이력서 생성이 완료되고 있습니다."
+            response.message()
         );
     }
 }

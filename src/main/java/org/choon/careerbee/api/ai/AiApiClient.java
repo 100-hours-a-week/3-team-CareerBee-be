@@ -1,7 +1,6 @@
 package org.choon.careerbee.api.ai;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import java.nio.charset.StandardCharsets;
@@ -9,16 +8,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
+import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitReq;
+import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitRespFromAI;
+import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeRespFromAi;
 import org.choon.careerbee.domain.member.dto.internal.ExtractResumeRespFromAi;
 import org.choon.careerbee.domain.member.dto.request.AdvancedResumeUpdateReqToAi;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
-import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
 import org.choon.careerbee.domain.member.dto.response.AiResumeDraftResp;
 import org.choon.careerbee.domain.member.dto.response.AiResumeExtractResp;
-import org.choon.careerbee.domain.member.dto.response.ResumeCompleteResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
-import org.choon.careerbee.domain.member.dto.response.ResumeNextQuestionResp;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -83,12 +82,14 @@ public class AiApiClient {
         return objectMapper.convertValue(body.data(), ExtractResumeRespFromAi.class);
     }
 
-    public AdvancedResumeInitResp requestAdvancedResumeInit(ResumeDraftReq extractResumeReq) {
+    public AdvancedResumeInitResp requestAdvancedResumeInit(
+        AdvancedResumeInitReq extractResumeReq
+    ) {
         log.info("요청 객체 :  {}", extractResumeReq);
-        AiResumeExtractResp body = aiRestClient
+        AdvancedResumeInitRespFromAI body = aiRestClient
             .post()
             .uri(uriBuilder -> uriBuilder
-                .path("/resume/agent/init")
+                .path("/api/v1/resume/agent/init")
                 .build())
             .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .body(extractResumeReq)
@@ -104,20 +105,21 @@ public class AiApiClient {
                     throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
                 } else {
                     logJson("1. 고급 이력서 생성(init) 응답", responseBody);
-                    return objectMapper.readValue(responseBody, AiResumeExtractResp.class);
+                    return objectMapper.readValue(responseBody, AdvancedResumeInitRespFromAI.class);
                 }
             });
 
         logJson("2. 고급 이력서 생성(init) 응답", body);
-        return objectMapper.convertValue(body.data(), AdvancedResumeInitResp.class);
+        return objectMapper.convertValue(body, AdvancedResumeInitResp.class);
     }
 
-    public AdvancedResumeResp requestAdvancedResumeUpdate(AdvancedResumeUpdateReqToAi reqToAi) {
+    public AdvancedResumeRespFromAi requestAdvancedResumeUpdate(
+        AdvancedResumeUpdateReqToAi reqToAi) {
         log.info("요청 객체 :  {}", reqToAi);
 
-        AdvancedResumeResp result = aiRestClient
+        AdvancedResumeRespFromAi result = aiRestClient
             .post()
-            .uri(uriBuilder -> uriBuilder.path("/resume/agent/init").build())
+            .uri(uriBuilder -> uriBuilder.path("/api/v1/resume/agent/update").build())
             .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .body(reqToAi)
             .exchange((req, resp) -> {
@@ -132,16 +134,10 @@ public class AiApiClient {
                     throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
                 }
 
+                log.info("데이터 : {}", responseBody);
                 logJson("1. 고급 이력서 생성(update) 응답", responseBody);
 
-                JsonNode rootNode = objectMapper.readTree(responseBody);
-                boolean isComplete = rootNode.path("isComplete").asBoolean();
-
-                if (isComplete) {
-                    return objectMapper.treeToValue(rootNode, ResumeCompleteResp.class);
-                } else {
-                    return objectMapper.treeToValue(rootNode, ResumeNextQuestionResp.class);
-                }
+                return objectMapper.readValue(responseBody, AdvancedResumeRespFromAi.class);
             });
 
         logJson("2. 고급 이력서 생성(update) 최종 응답 객체", result);

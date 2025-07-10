@@ -7,6 +7,8 @@ import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.image.dto.response.GetPresignedUrlResp;
 import org.choon.careerbee.domain.image.service.ImageService;
+import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitReq;
+import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeRespFromAi;
 import org.choon.careerbee.domain.member.dto.request.AdvancedResumeUpdateReq;
 import org.choon.careerbee.domain.member.dto.request.AdvancedResumeUpdateReqToAi;
 import org.choon.careerbee.domain.member.dto.request.ResumeDraftReq;
@@ -21,6 +23,7 @@ import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeCompleteResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
+import org.choon.careerbee.domain.member.dto.response.ResumeInProgressResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
@@ -109,7 +112,12 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     public AdvancedResumeInitResp generateAdvancedResumeInit(Long accessMemberId) {
         Member validMember = memberQueryService.findById(accessMemberId);
 
-        return aiApiClient.requestAdvancedResumeInit(ResumeDraftReq.from(validMember));
+        return aiApiClient.requestAdvancedResumeInit(
+            new AdvancedResumeInitReq(
+                validMember.getId(),
+                ResumeDraftReq.from(validMember)
+            )
+        );
     }
 
     @Override
@@ -117,22 +125,22 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         AdvancedResumeUpdateReq advancedResumeUpdateReq,
         Long accessMemberId
     ) {
-        AdvancedResumeResp result = aiApiClient.requestAdvancedResumeUpdate(
+        AdvancedResumeRespFromAi result = aiApiClient.requestAdvancedResumeUpdate(
             AdvancedResumeUpdateReqToAi.of(accessMemberId, advancedResumeUpdateReq.answer())
         );
 
-        if (result instanceof ResumeCompleteResp completeResp) {
-            GetPresignedUrlResp getPresignedUrlResp = imageService.generateGetPresignedUrlByObjectKey(
-                new UploadCompleteReq(completeResp.resumeObjectKey())
+        if (result.isComplete()) {
+            GetPresignedUrlResp presignedUrlResp = imageService.generateGetPresignedUrlByObjectKey(
+                new UploadCompleteReq(result.resumeObjectKey())
             );
 
             return new ResumeCompleteResp(
-                completeResp.memberId(),
-                completeResp.isComplete(),
-                getPresignedUrlResp.presignedUrl()
+                presignedUrlResp.presignedUrl()
             );
         }
 
-        return result;
+        return new ResumeInProgressResp(
+            result.question()
+        );
     }
 }

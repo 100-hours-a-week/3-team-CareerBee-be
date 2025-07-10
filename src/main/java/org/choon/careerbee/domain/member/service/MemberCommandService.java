@@ -29,6 +29,7 @@ public interface MemberCommandService {
 
     AdvancedResumeInitResp generateAdvancedResumeInit(Long accessMemberId);
 
-    AdvancedResumeResp generateAdvancedResumeUpdate(AdvancedResumeUpdateReq advancedResumeUpdateReq,
-        Long accessMemberId);
+    AdvancedResumeResp generateAdvancedResumeUpdate(
+        AdvancedResumeUpdateReq advancedResumeUpdateReq, Long accessMemberId
+    );
 }
