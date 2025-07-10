@@ -52,18 +52,6 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Trigger deploy via SSM (docker-compose pull && up)
-        run: |
-          aws ssm send-command \
-            --instance-ids "${{ secrets.PROD_EC2_INSTANCE_ID }}" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploy Backend Docker Compose" \
-            --parameters 'commands=[
-              "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
-              "/home/ubuntu/deploy_backend.sh ${{ env.IMAGE_TAG }}"
-          ]' \
-            --region ${{ env.ECR_REGION }}
-
       - name: Notify Discord on Success
         if: success()
         run: |
