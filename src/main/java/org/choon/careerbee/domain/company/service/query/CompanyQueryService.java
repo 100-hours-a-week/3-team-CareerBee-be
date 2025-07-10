@@ -1,6 +1,7 @@
 package org.choon.careerbee.domain.company.service.query;
 
 import java.util.List;
+import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
 import org.choon.careerbee.domain.company.dto.response.CheckWishCompanyResp;
@@ -10,7 +11,9 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCountResp;
 import org.choon.careerbee.domain.company.entity.Company;
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 
@@ -42,4 +45,10 @@ public interface CompanyQueryService {
     List<CompanyMarkerInfo> fetchAllCompanyLocations();
 
     List<CompanyIdResp> fetchAllCompanyIds();
+
+    RecentIssueResp fetchCompanyRecentIssue(Long companyId);
+
+    CompanyRecruitInfo fetchCompanyRecruitments(Long companyId);
+
+    WishCountResp fetchCompanyWishCount(Long companyId);
 }

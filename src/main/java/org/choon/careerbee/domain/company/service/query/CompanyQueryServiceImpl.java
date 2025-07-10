@@ -21,8 +21,11 @@ import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp.CompanyMarkerInfo;
 import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
+import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
 import org.choon.careerbee.domain.company.dto.response.WishCompanyIdResp;
+import org.choon.careerbee.domain.company.dto.response.WishCountResp;
 import org.choon.careerbee.domain.company.entity.Company;
+import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.company.service.query.internal.CompanyRecentIssueQueryService;
@@ -89,17 +92,12 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     public CompanyDetailResp fetchCompanyDetail(Long companyId) {
         CompanyStaticPart companyStaticPart = staticDataQueryService
             .fetchCompanyStaticPart(companyId);
-        CompanyRecruitInfo companyRecruitInfo = recruitmentQueryService
-            .fetchRecruitmentInfo(companyId);
-        String companyRecentIssue = recentIssueQueryService
-            .fetchRecentIssue(companyStaticPart.id());
-        Long wishCount = fetchWishCount(companyId);
+        RecruitingStatus recruitingStatus = recruitmentQueryService
+            .fetchCompanyRecruitStatus(companyId);
 
         return CompanyDetailResp.of(
             companyStaticPart,
-            companyRecentIssue,
-            wishCount,
-            companyRecruitInfo
+            recruitingStatus
         );
     }
 
@@ -163,6 +161,23 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     @Override
     public List<CompanyIdResp> fetchAllCompanyIds() {
         return companyRepository.fetchAllCompanyIds();
+    }
+
+    @Override
+    public RecentIssueResp fetchCompanyRecentIssue(Long companyId) {
+        return new RecentIssueResp(
+            recentIssueQueryService.fetchRecentIssue(companyId)
+        );
+    }
+
+    @Override
+    public CompanyRecruitInfo fetchCompanyRecruitments(Long companyId) {
+        return recruitmentQueryService.fetchRecruitmentInfo(companyId);
+    }
+
+    @Override
+    public WishCountResp fetchCompanyWishCount(Long companyId) {
+        return new WishCountResp(fetchWishCount(companyId));
     }
 
     private String escapeLike(String keyword) {
