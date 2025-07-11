@@ -20,6 +20,9 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     @Value("${oauth.kakao.local-redirect-uri}")
     private String localRedirectUri;
 
+    @Value("${oauth.kakao.local-redirect-uri}")
+    private String nextLocalRedirectUri;
+
     @Value("${oauth.kakao.auth-uri}")
     private String authUri;
 
@@ -32,6 +35,7 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     public String getLoginUrlByOrigin(String origin) {
         String redirectUri = switch (origin) {
             case "http://localhost:5173" -> localRedirectUri;
+            case "https://localhost:5173" -> nextLocalRedirectUri;
             case "https://www.dev.careerbee.co.kr" -> devRedirectUri;
             default -> prodRedirectUri;
         };
