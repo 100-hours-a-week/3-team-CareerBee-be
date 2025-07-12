@@ -22,7 +22,7 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     @Value("${oauth.kakao.local-redirect-uri}")
     private String localRedirectUri;
 
-    @Value("${oauth.kakao.local-redirect-uri}")
+    @Value("${oauth.kakao.next-local-redirect-uri}")
     private String nextLocalRedirectUri;
 
     @Value("${oauth.kakao.auth-uri}")
@@ -36,12 +36,14 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     @Override
     public String getLoginUrlByOrigin(String origin) {
         log.info("[로그인 페이지] origin : {}", origin);
+
         String redirectUri = switch (origin) {
             case "http://localhost:5173" -> localRedirectUri;
             case "https://localhost:5173" -> nextLocalRedirectUri;
             case "https://www.dev.careerbee.co.kr" -> devRedirectUri;
             default -> prodRedirectUri;
         };
+
         log.info("[로그인 페이지] redirect uri : {}", redirectUri);
 
         return String.format(
@@ -49,4 +51,5 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
             authUri, clientId, redirectUri
         );
     }
+
 }

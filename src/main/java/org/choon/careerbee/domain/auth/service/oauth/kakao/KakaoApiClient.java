@@ -38,7 +38,7 @@ public class KakaoApiClient implements OAuthApiClient {
     @Value("${oauth.kakao.local-redirect-uri}")
     private String localRedirectUri;
 
-    @Value("${oauth.kakao.local-redirect-uri}")
+    @Value("${oauth.kakao.next-local-redirect-uri}")
     private String nextLocalRedirectUri;
 
     private final RestClient restClient = RestClient.create();
