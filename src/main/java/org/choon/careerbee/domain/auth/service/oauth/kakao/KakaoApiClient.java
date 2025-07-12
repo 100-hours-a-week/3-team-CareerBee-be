@@ -99,15 +99,12 @@ public class KakaoApiClient implements OAuthApiClient {
             return prodRedirectUri;
         }
 
-        log.info("[로그인] origin: {}", origin);
-        String redirectUri = switch (origin) {
+        return switch (origin) {
             case "http://localhost:5173" -> localRedirectUri;
             case "https://localhost:5173" -> nextLocalRedirectUri;
             case "https://www.dev.careerbee.co.kr" -> devRedirectUri;
             default -> prodRedirectUri;
         };
-        log.info("[로그인] redirect uri : {}", redirectUri);
-
-        return redirectUri;
+        
     }
 }
