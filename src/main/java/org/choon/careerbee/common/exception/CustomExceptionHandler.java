@@ -80,10 +80,9 @@ public class CustomExceptionHandler {
 
         Sentry.captureException(ex);
 
-        String origin = req.getHeader("Origin");
         switch (ex.getCustomResponseStatus()) {
             case REFRESH_TOKEN_EXPIRED, REFRESH_TOKEN_NOT_FOUND ->
-                cookieService.deleteRefreshTokenCookie(resp, origin);
+                cookieService.deleteRefreshTokenCookie(resp);
         }
 
         return ResponseEntity
