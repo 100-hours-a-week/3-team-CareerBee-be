@@ -2,11 +2,13 @@ package org.choon.careerbee.domain.auth.service.cookie;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.auth.dto.jwt.AuthTokens;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class CookieService {
 
     private static final int REFRESH_MAX_AGE_SEC = 60 * 60 * 24 * 7;
@@ -33,6 +35,8 @@ public class CookieService {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
+        log.info("[Cookie 로직] origin : {}", origin);
+
         if (!"http://localhost:5173".equals(origin) && !"https://localhost:5173".equals(origin)) {
             cookie.setDomain(cookieDomain);
         }
