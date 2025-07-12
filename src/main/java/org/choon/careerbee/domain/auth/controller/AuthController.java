@@ -79,7 +79,7 @@ public class AuthController {
         HttpServletResponse response
     ) {
         AuthTokens loginResponse = authService.login(kakaoParams, origin);
-        cookieService.setRefreshTokenCookie(response, loginResponse);
+        cookieService.setRefreshTokenCookie(response, loginResponse, origin);
 
         return CommonResponseEntity.ok(
             new LoginResp(loginResponse.accessToken()),
@@ -131,11 +131,12 @@ public class AuthController {
     public ResponseEntity<CommonResponse<ReissueResp>> reissue(
         @Parameter(description = "HttpOnly 쿠키에 저장된 리프레시 토큰", in = ParameterIn.COOKIE, required = true)
         @CookieValue("refreshToken") String refreshToken,
+        @RequestHeader(value = "Origin") String origin,
         @Parameter(hidden = true)
         HttpServletResponse response
     ) {
         AuthTokens authTokens = authService.reissue(refreshToken);
-        cookieService.setRefreshTokenCookie(response, authTokens);
+        cookieService.setRefreshTokenCookie(response, authTokens, origin);
 
         return CommonResponseEntity.ok(
             new ReissueResp(authTokens.accessToken()),

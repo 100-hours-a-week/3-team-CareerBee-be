@@ -2,6 +2,7 @@ package org.choon.careerbee.common.exception;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.sentry.Sentry;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -73,15 +74,16 @@ public class CustomExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<CommonResponse<String>> handleCustom(
-        CustomException ex, HttpServletResponse resp
+        CustomException ex, HttpServletResponse resp, HttpServletRequest req
     ) {
         log.error("[ERROR] : {}\n{}", ex.getMessage(), getStackTraceAsString(ex));
 
         Sentry.captureException(ex);
 
+        String origin = req.getHeader("Origin");
         switch (ex.getCustomResponseStatus()) {
             case REFRESH_TOKEN_EXPIRED, REFRESH_TOKEN_NOT_FOUND ->
-                cookieService.deleteRefreshTokenCookie(resp);
+                cookieService.deleteRefreshTokenCookie(resp, origin);
         }
 
         return ResponseEntity
