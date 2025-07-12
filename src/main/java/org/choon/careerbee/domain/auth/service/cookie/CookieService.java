@@ -17,23 +17,25 @@ public class CookieService {
 
     /* ───────────────────────────── 쿠키 세팅 ───────────────────────────── */
 
-    public void setRefreshTokenCookie(HttpServletResponse resp, AuthTokens tokens) {
-        resp.addCookie(buildCookie(tokens.refreshToken(), REFRESH_MAX_AGE_SEC));
+    public void setRefreshTokenCookie(HttpServletResponse resp, AuthTokens tokens, String origin) {
+        resp.addCookie(buildCookie(tokens.refreshToken(), REFRESH_MAX_AGE_SEC, origin));
     }
 
-    public void deleteRefreshTokenCookie(HttpServletResponse resp) {
-        resp.addCookie(buildCookie("", 0));
+    public void deleteRefreshTokenCookie(HttpServletResponse resp, String origin) {
+        resp.addCookie(buildCookie("", 0, origin));
     }
 
     /* ───────────────────────────── 헬퍼 ───────────────────────────── */
 
-    private Cookie buildCookie(String value, int maxAge) {
+    private Cookie buildCookie(String value, int maxAge, String origin) {
         Cookie cookie = new Cookie(COOKIE_NAME, value);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
-        cookie.setDomain(cookieDomain);
+        if (!"http://localhost:5173".equals(origin) && !"https://localhost:5173".equals(origin)) {
+            cookie.setDomain(cookieDomain);
+        }
         cookie.setAttribute("SameSite", "None");
         return cookie;
     }
