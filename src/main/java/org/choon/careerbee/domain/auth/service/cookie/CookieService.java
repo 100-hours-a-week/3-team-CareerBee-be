@@ -34,6 +34,7 @@ public class CookieService {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
+        cookie.setDomain(cookieDomain);
         cookie.setMaxAge(maxAge);
         cookie.setAttribute("SameSite", "None");
         return cookie;
