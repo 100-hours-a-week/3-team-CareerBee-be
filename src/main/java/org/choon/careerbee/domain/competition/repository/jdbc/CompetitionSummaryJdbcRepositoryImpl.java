@@ -42,7 +42,9 @@ public class CompetitionSummaryJdbcRepositoryImpl implements
 
         /* 1) 기존 행 삭제 */
         jdbcTemplate.update(DELETE_SQL, type.name(), start, end);
-        if (list.isEmpty()) return;
+        if (list.isEmpty()) {
+            return;
+        }
 
         /* 2) CHUNK 단위로 배치 인서트 */
         for (int from = 0; from < list.size(); from += BATCH_SIZE) {
@@ -55,18 +57,57 @@ public class CompetitionSummaryJdbcRepositoryImpl implements
                     throws java.sql.SQLException {
 
                     CompetitionSummary cs = sub.get(i);
-                    ps.setLong  (1, cs.getMember().getId());
-                    ps.setShort (2, cs.getSolvedCount());
-                    ps.setLong  (3, cs.getElapsedTime());
-                    ps.setLong  (4, cs.getRanking());
-                    ps.setInt   (5, cs.getMaxContinuousDays());
+                    ps.setLong(1, cs.getMember().getId());
+                    ps.setShort(2, cs.getSolvedCount());
+                    ps.setLong(3, cs.getElapsedTime());
+                    ps.setLong(4, cs.getRanking());
+                    ps.setInt(5, cs.getMaxContinuousDays());
                     ps.setDouble(6, cs.getCorrectRate());
                     ps.setString(7, cs.getType().name());
-                    ps.setDate  (8, java.sql.Date.valueOf(cs.getPeriodStart()));
-                    ps.setDate  (9, java.sql.Date.valueOf(cs.getPeriodEnd()));
+                    ps.setDate(8, java.sql.Date.valueOf(cs.getPeriodStart()));
+                    ps.setDate(9, java.sql.Date.valueOf(cs.getPeriodEnd()));
                 }
+
                 @Override
-                public int getBatchSize() { return sub.size(); }
+                public int getBatchSize() {
+                    return sub.size();
+                }
+            });
+        }
+    }
+
+    @Override
+    @Transactional
+    public void batchInsert(List<CompetitionSummary> list) {
+        if (list.isEmpty()) {
+            return;
+        }
+
+        for (int from = 0; from < list.size(); from += BATCH_SIZE) {
+            int to = Math.min(from + BATCH_SIZE, list.size());
+            List<CompetitionSummary> sub = list.subList(from, to);
+
+            jdbcTemplate.batchUpdate(INSERT_SQL, new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(java.sql.PreparedStatement ps, int i)
+                    throws java.sql.SQLException {
+
+                    CompetitionSummary cs = sub.get(i);
+                    ps.setLong(1, cs.getMember().getId());
+                    ps.setShort(2, cs.getSolvedCount());
+                    ps.setLong(3, cs.getElapsedTime());
+                    ps.setLong(4, cs.getRanking());
+                    ps.setInt(5, cs.getMaxContinuousDays());
+                    ps.setDouble(6, cs.getCorrectRate());
+                    ps.setString(7, cs.getType().name());
+                    ps.setDate(8, java.sql.Date.valueOf(cs.getPeriodStart()));
+                    ps.setDate(9, java.sql.Date.valueOf(cs.getPeriodEnd()));
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return sub.size();
+                }
             });
         }
     }
