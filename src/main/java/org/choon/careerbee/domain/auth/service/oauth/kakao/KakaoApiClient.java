@@ -38,6 +38,9 @@ public class KakaoApiClient implements OAuthApiClient {
     @Value("${oauth.kakao.local-redirect-uri}")
     private String localRedirectUri;
 
+    @Value("${oauth.kakao.next-local-redirect-uri}")
+    private String nextLocalRedirectUri;
+
     private final RestClient restClient = RestClient.create();
 
     @Override
@@ -97,9 +100,11 @@ public class KakaoApiClient implements OAuthApiClient {
         }
 
         return switch (origin) {
-            case "http://localhost:5173", "https://localhost:5173" -> localRedirectUri;
+            case "http://localhost:5173" -> localRedirectUri;
+            case "https://localhost:5173" -> nextLocalRedirectUri;
             case "https://www.dev.careerbee.co.kr" -> devRedirectUri;
             default -> prodRedirectUri;
         };
+        
     }
 }

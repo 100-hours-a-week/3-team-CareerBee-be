@@ -69,7 +69,6 @@ public class StoreController {
     public ResponseEntity<CommonResponse<TicketQuantityResp>> fetchTicketQuantity(
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
-        log.info("here?");
         TicketQuantityResp response = queryService.fetchMemberTicketQuantity(
             principalDetails.getId());
 

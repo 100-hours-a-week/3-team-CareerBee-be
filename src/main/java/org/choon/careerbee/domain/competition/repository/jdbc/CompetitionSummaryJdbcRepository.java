@@ -6,9 +6,9 @@ import org.choon.careerbee.domain.competition.domain.CompetitionSummary;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 
 public interface CompetitionSummaryJdbcRepository {
+
     /**
-     * 지정 기간
-     * summaries 를 멀티-행 INSERT 로 다시 기록한다.
+     * 지정 기간 summaries 를 멀티-행 INSERT 로 다시 기록한다.
      *
      * @param type        DAY / WEEK / MONTH
      * @param periodStart 기간 시작일 (포함)
@@ -20,4 +20,6 @@ public interface CompetitionSummaryJdbcRepository {
         LocalDate periodStart, LocalDate periodEnd,
         List<CompetitionSummary> list
     );
+
+    void batchInsert(List<CompetitionSummary> list);
 }
