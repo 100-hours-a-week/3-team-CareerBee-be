@@ -296,7 +296,7 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("기업 상세 조회 - 의존 서비스 호출 및 CompanyDetailResp 반환")
+    @DisplayName("기업 상세 조회 - 기업 고정데이터 및 채용 상태 반환 성공")
     void fetchCompanyDetail_ShouldReturnDetailResponse() {
         // given
         Long companyId = 1L;
@@ -318,22 +318,9 @@ class CompanyQueryServiceImplTest {
                 "https://example.com/spring.png"))
         );
 
-        CompanyRecruitInfo recruitInfo = new CompanyRecruitInfo(
-            RecruitingStatus.ONGOING,
-            List.of(
-                new Recruitment(1L, "https://jobs.com/1", "백엔드 개발자", "2024-01-01", "2024-12-31"))
-        );
-
-        RBucket<String> wishBucket = mock(RBucket.class);
-        String recentIssue = "최근 이슈 설명";
-        Long wishCount = 123L;
-
         when(staticDataQueryService.fetchCompanyStaticPart(companyId)).thenReturn(staticPart);
-        when(recruitmentQueryService.fetchRecruitmentInfo(companyId)).thenReturn(recruitInfo);
-        when(recentIssueQueryService.fetchRecentIssue(companyId)).thenReturn(recentIssue);
-        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
-            wishBucket);
-        when(wishBucket.get()).thenReturn("123");
+        when(recruitmentQueryService.fetchCompanyRecruitStatus(companyId)).thenReturn(
+            RecruitingStatus.ONGOING);
 
         // when
         CompanyDetailResp actual = companyQueryService.fetchCompanyDetail(companyId);
@@ -347,20 +334,16 @@ class CompanyQueryServiceImplTest {
         assertThat(actual.description()).isEqualTo(staticPart.description());
         assertThat(actual.logoUrl()).isEqualTo(staticPart.logoUrl());
         assertThat(actual.employeeCount()).isEqualTo(staticPart.employeeCount());
-        assertThat(actual.wishCount()).isEqualTo(wishCount);
         assertThat(actual.rating()).isEqualTo(staticPart.rating());
-        assertThat(actual.recruitingStatus()).isEqualTo(recruitInfo.recruitingStatus());
+        assertThat(actual.recruitingStatus()).isEqualTo(RecruitingStatus.ONGOING);
         assertThat(actual.title()).isEqualTo(staticPart.title());
-        assertThat(actual.recruitments()).isEqualTo(recruitInfo.recruitments());
-        assertThat(actual.recentIssue()).isEqualTo(recentIssue);
         assertThat(actual.financials()).isEqualTo(staticPart.financials());
         assertThat(actual.photos()).isEqualTo(staticPart.photos());
         assertThat(actual.benefits()).isEqualTo(staticPart.benefits());
         assertThat(actual.techStacks()).isEqualTo(staticPart.techStacks());
 
         verify(staticDataQueryService, times(1)).fetchCompanyStaticPart(companyId);
-        verify(recruitmentQueryService, times(1)).fetchRecruitmentInfo(companyId);
-        verify(recentIssueQueryService, times(1)).fetchRecentIssue(companyId);
+        verify(recruitmentQueryService, times(1)).fetchCompanyRecruitStatus(companyId);
     }
 
     @Test
@@ -605,5 +588,63 @@ class CompanyQueryServiceImplTest {
         assertThat(cursorCaptor.getValue()).isEqualTo(cursor);
         assertThat(sizeCaptor.getValue()).isEqualTo(size);
     }
+
+    @Test
+    @DisplayName("기업 최근 이슈 조회 - 내부 서비스 위임 및 결과 반환")
+    void fetchCompanyRecentIssue_shouldReturnResponseFromService() {
+        // given
+        Long companyId = 1L;
+        String issueContent = "최근 이슈 내용입니다.";
+        when(recentIssueQueryService.fetchRecentIssue(companyId)).thenReturn(issueContent);
+
+        // when
+        var result = companyQueryService.fetchCompanyRecentIssue(companyId);
+
+        // then
+        assertThat(result.recentIssue()).isEqualTo(issueContent);
+        verify(recentIssueQueryService, times(1)).fetchRecentIssue(companyId);
+    }
+
+    @Test
+    @DisplayName("기업 채용 정보 조회 - 내부 서비스 위임 및 결과 반환")
+    void fetchCompanyRecruitments_shouldReturnResponseFromService() {
+        // given
+        Long companyId = 2L;
+        CompanyRecruitInfo expected = new CompanyRecruitInfo(
+            List.of(
+                new Recruitment(3L, "test.url", "title", "2025-04-24", "2025-05-24")
+            )
+        );
+        when(recruitmentQueryService.fetchRecruitmentInfo(companyId)).thenReturn(expected);
+
+        // when
+        var result = companyQueryService.fetchCompanyRecruitments(companyId);
+
+        // then
+        assertThat(result).isEqualTo(expected);
+        verify(recruitmentQueryService, times(1)).fetchRecruitmentInfo(companyId);
+    }
+
+    @Test
+    @DisplayName("기업 관심수 조회 - 내부 메서드 호출 및 응답 래핑 확인")
+    void fetchCompanyWishCount_shouldReturnWrappedWishCount() {
+        // given
+        Long companyId = 3L;
+        Long wishCount = 77L;
+
+        RBucket<String> wishBucket = mock(RBucket.class);
+        when(redissonClient.<String>getBucket(COMPANY_WISH_KEY_PREFIX + companyId)).thenReturn(
+            wishBucket);
+        when(wishBucket.get()).thenReturn(null);
+        when(wishCompanyRepository.fetchWishCountById(companyId)).thenReturn(wishCount);
+
+        // when
+        var result = companyQueryService.fetchCompanyWishCount(companyId);
+
+        // then
+        assertThat(result.wishCount()).isEqualTo(wishCount);
+        verify(wishCompanyRepository, times(1)).fetchWishCountById(companyId);
+    }
+
 
 }

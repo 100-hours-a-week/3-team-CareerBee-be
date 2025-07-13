@@ -1,7 +1,13 @@
 package org.choon.careerbee.domain.competition.service.command;
 
-import io.sentry.Sentry;
 import static org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq.SubmitInfo;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import io.sentry.Sentry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
@@ -9,12 +15,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -24,11 +25,11 @@ import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.dto.event.PointEvent;
-import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
-import org.choon.careerbee.domain.competition.dto.request.SummaryPeriod;
 import org.choon.careerbee.domain.competition.dto.internal.GradingResult;
 import org.choon.careerbee.domain.competition.dto.internal.ProblemAnswerInfo;
 import org.choon.careerbee.domain.competition.dto.internal.SubmissionContext;
+import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.dto.request.SummaryPeriod;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp.CompetitionGradingInfo;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;

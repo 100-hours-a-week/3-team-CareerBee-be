@@ -37,6 +37,7 @@ public class SecurityConfig {
             config.setAllowedMethods(Collections.singletonList("*"));
             config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:5173",
+                "https://localhost:5173",
                 "http://localhost:5500",
                 "http://127.0.0.1:5173",
                 "http://127.0.0.1:5500",

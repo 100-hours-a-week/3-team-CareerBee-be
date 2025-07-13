@@ -41,7 +41,7 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
     private final RecruitmentRepository recruitmentRepository;
-    private static final long TTL = 3L;
+    private static final long TTL = 1L;
 
     private final CompanyApiClient companyApiClient;
 

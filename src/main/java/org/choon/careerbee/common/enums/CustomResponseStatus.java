@@ -62,6 +62,10 @@ public enum CustomResponseStatus {
         "사람인 API 요청시 유효한지 않은 파라미터로 발생 에러입니다."),
     SARAMIN_TOO_MANY_REQUEST_ERROR(HttpStatus.TOO_MANY_REQUESTS.value(),
         "사람인 API의 일일 요청 횟수 초과하였습니다."),
+
+    FAILED_TO_ACQUIRE_DISTRIBUTED_LOCK(HttpStatus.CONFLICT.value(), "분산 락 획득에 실패했습니다."),
+    FAILED_TO_EXECUTE_DISTRIBUTED_LOCK(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+        "분산 락 실행 중 예외가 발생했습니다."),
     ;
 
     private final int httpStatusCode;

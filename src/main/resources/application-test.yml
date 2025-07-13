@@ -18,6 +18,8 @@ spring:
     redis:
       host: localhost
       port: 6380
+      username:
+      password:
       repositories:
         enabled: false
 
@@ -27,7 +29,8 @@ spring:
         credentials:
           accessKey: sdifuasdiofuapsiodfuaopsidufpaosiduf
           secretKey: qwpeiorupoerifgscvvujhakhfweoafoweoiu
-        bucket: testbucket
+        image-bucket: imagetestbucket
+        resume-bucket: resumetestbucket
       region:
         static: ap-northeast-3
       stack:
@@ -44,6 +47,7 @@ oauth:
     prod-redirect-uri: https://test.co.kr
     dev-redirect-uri: https://test.co.kr
     local-redirect-uri: https://test.co.kr
+    next-local-redirect-uri: https://test.co.kr;
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
 

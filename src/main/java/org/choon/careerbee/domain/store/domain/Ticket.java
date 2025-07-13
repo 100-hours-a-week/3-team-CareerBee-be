@@ -34,25 +34,31 @@ public class Ticket extends BaseEntity {
     private Integer quantity;
 
     @Column(length = 500, nullable = false)
+    private String prizeName;
+
+    @Column(length = 500, nullable = false)
     private String imgUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     private TicketType type;
 
-    private Ticket(Integer price, Integer quantity, String imgUrl, TicketType type) {
+    private Ticket(
+        Integer price, Integer quantity, String prizeName, String imgUrl, TicketType type
+    ) {
         this.price = price;
         this.quantity = quantity;
+        this.prizeName = prizeName;
         this.imgUrl = imgUrl;
         this.type = type;
     }
 
     @Builder
     public static Ticket of(
-        Integer price, Integer quantity, String imgUrl, TicketType type
+        Integer price, Integer quantity, String prizeName, String imgUrl, TicketType type
     ) {
         return new Ticket(
-            price, quantity, imgUrl, type
+            price, quantity, prizeName, imgUrl, type
         );
     }
 

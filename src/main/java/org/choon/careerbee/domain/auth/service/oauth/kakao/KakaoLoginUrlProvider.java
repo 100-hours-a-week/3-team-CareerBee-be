@@ -1,11 +1,13 @@
 package org.choon.careerbee.domain.auth.service.oauth.kakao;
 
+import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthLoginUrlProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
 
     @Value("${oauth.kakao.client-id}")
@@ -20,6 +22,9 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     @Value("${oauth.kakao.local-redirect-uri}")
     private String localRedirectUri;
 
+    @Value("${oauth.kakao.next-local-redirect-uri}")
+    private String nextLocalRedirectUri;
+
     @Value("${oauth.kakao.auth-uri}")
     private String authUri;
 
@@ -32,6 +37,7 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
     public String getLoginUrlByOrigin(String origin) {
         String redirectUri = switch (origin) {
             case "http://localhost:5173" -> localRedirectUri;
+            case "https://localhost:5173" -> nextLocalRedirectUri;
             case "https://www.dev.careerbee.co.kr" -> devRedirectUri;
             default -> prodRedirectUri;
         };
@@ -41,4 +47,5 @@ public class KakaoLoginUrlProvider implements OAuthLoginUrlProvider {
             authUri, clientId, redirectUri
         );
     }
+
 }

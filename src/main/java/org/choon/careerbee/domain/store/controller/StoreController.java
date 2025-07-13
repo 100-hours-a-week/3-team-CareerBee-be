@@ -7,6 +7,7 @@ import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.store.dto.request.TicketPurchaseReq;
+import org.choon.careerbee.domain.store.dto.response.TicketInfoResp;
 import org.choon.careerbee.domain.store.dto.response.TicketQuantityResp;
 import org.choon.careerbee.domain.store.service.command.StoreCommandService;
 import org.choon.careerbee.domain.store.service.query.StoreQueryService;
@@ -42,6 +43,17 @@ public class StoreController {
         );
     }
 
+    @GetMapping("tickets/info")
+    public ResponseEntity<CommonResponse<TicketInfoResp>> fetchTicketInfo() {
+        TicketInfoResp response = queryService.fetchTicketInfo();
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "티켓 정보 조회에 성공하였습니다."
+        );
+    }
+
     @GetMapping("tickets")
     public ResponseEntity<CommonResponse<TicketQuantityResp>> fetchTicketQuantity() {
         TicketQuantityResp response = queryService.fetchTicketQuantity();
@@ -57,7 +69,6 @@ public class StoreController {
     public ResponseEntity<CommonResponse<TicketQuantityResp>> fetchTicketQuantity(
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
-        log.info("here?");
         TicketQuantityResp response = queryService.fetchMemberTicketQuantity(
             principalDetails.getId());
 

@@ -21,6 +21,8 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME}
+      password: ${REDIS_PASSWORD}
       repositories:
         enabled: false
 
@@ -30,7 +32,8 @@ spring:
         credentials:
           accessKey: ${AWS_S3_ACCESSKEY}
           secretKey: ${AWS_S3_SECRETKEY}
-        bucket: ${AWS_S3_BUCKET}
+        image-bucket: ${AWS_S3_IMAGE_BUCKET}
+        resume-bucket: ${AWS_S3_RESUME_BUCKET}
       region:
         static: ${AWS_REGION}
       stack:
@@ -48,6 +51,7 @@ oauth:
     prod-redirect-uri: ${KAKAO_PROD_REDIRECT_URI}
     dev-redirect-uri: ${KAKAO_DEV_REDIRECT_URI}
     local-redirect-uri: ${KAKAO_LOCAL_REDIRECT_URI}
+    next-local-redirect-uri: ${KAKAO_NEXT_LOCAL_REDIRECT_URI}
     auth-uri: https://kauth.kakao.com
     api-uri: https://kapi.kakao.com
 
