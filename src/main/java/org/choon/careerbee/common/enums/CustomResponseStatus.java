@@ -66,7 +66,9 @@ public enum CustomResponseStatus {
     FAILED_TO_ACQUIRE_DISTRIBUTED_LOCK(HttpStatus.CONFLICT.value(), "분산 락 획득에 실패했습니다."),
     FAILED_TO_EXECUTE_DISTRIBUTED_LOCK(HttpStatus.INTERNAL_SERVER_ERROR.value(),
         "분산 락 실행 중 예외가 발생했습니다."),
-    ;
+
+    ALREADY_SOLVED_FREE_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 무료 문제입니다."),
+    ALREADY_SOLVED_PAY_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 유료 문제입니다.");
 
     private final int httpStatusCode;
     private String message;

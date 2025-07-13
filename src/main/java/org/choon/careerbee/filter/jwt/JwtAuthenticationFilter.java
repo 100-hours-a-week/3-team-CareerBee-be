@@ -105,6 +105,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.equals("/api/v1/tickets") && method.equals("POST")
             ||
             path.equals("/api/v1/members/tickets")
+            ||
+            path.equals("/api/v1/interview-problems/answers") && method.equals("POST")
         ) {
             return false;
         }

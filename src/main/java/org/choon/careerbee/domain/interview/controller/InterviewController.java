@@ -6,6 +6,8 @@ import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
+import org.choon.careerbee.domain.interview.dto.request.SubmitAnswerReq;
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
 import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
 import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -99,6 +102,23 @@ public class InterviewController {
             response,
             CustomResponseStatus.SUCCESS,
             "저장된 면접문제 조회에 성공하였습니다."
+        );
+    }
+
+    @PostMapping("interview-problems/answers")
+    public ResponseEntity<CommonResponse<AiFeedbackResp>> submitAnswer(
+        @RequestBody SubmitAnswerReq submitAnswerReq,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        AiFeedbackResp response = commandService.submitAnswer(
+            submitAnswerReq,
+            principalDetails.getId()
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "문제 답변에 대한 피드백입니다."
         );
     }
 }
