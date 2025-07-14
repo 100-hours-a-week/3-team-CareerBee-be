@@ -19,7 +19,6 @@ import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
 import org.redisson.api.RedissonClient;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -52,7 +51,7 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    @Cacheable(cacheNames = "competitionProblem", key = "#competitionId", unless = "#result == null")
+//    @Cacheable(cacheNames = "competitionProblem", key = "#competitionId", unless = "#result == null")
     public CompetitionProblemResp fetchProblems(Long competitionId) {
         if (!competitionRepository.existsById(competitionId)) {
             throw new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST);
@@ -62,22 +61,22 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    @Cacheable(
-        cacheNames = "competitionRank",
-        key = "'competition:rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
+//    @Cacheable(
+//        cacheNames = "competitionRank",
+//        key = "'competition:rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
     public CompetitionRankingResp fetchRankings(LocalDate today) {
         return competitionSummaryRepository.fetchRankings(today);
     }
 
     @Override
-    @Cacheable(cacheNames = "competitionId", key = "#today", unless = "#result == null")
+//    @Cacheable(cacheNames = "competitionId", key = "#today", unless = "#result == null")
     public CompetitionIdResp fetchCompetitionIdBy(LocalDate today) {
         return competitionRepository.fetchCompetitionIdFromToday(today);
     }
 
     @Override
-    @Cacheable(cacheNames = "memberRank",
-        key = "'member:' + #accessMemberId + ':rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
+//    @Cacheable(cacheNames = "memberRank",
+//        key = "'member:' + #accessMemberId + ':rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
     public MemberRankingResp fetchMemberCompetitionRankingById(
         Long accessMemberId, LocalDate today
     ) {
