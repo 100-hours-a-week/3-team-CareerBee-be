@@ -6,9 +6,11 @@ import org.choon.careerbee.common.dto.CommonResponse;
 import org.choon.careerbee.common.dto.CommonResponseEntity;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
+import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
 import org.choon.careerbee.domain.interview.dto.request.SubmitAnswerReq;
 import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
 import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
+import org.choon.careerbee.domain.interview.dto.response.InterviewProblemDetailResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
 import org.choon.careerbee.domain.interview.dto.response.SaveInterviewProblemResp;
 import org.choon.careerbee.domain.interview.service.command.InterviewCommandService;
@@ -41,6 +43,22 @@ public class InterviewController {
             response,
             CustomResponseStatus.SUCCESS,
             "비회원 면접문제 조회에 성공하였습니다."
+        );
+    }
+
+    @GetMapping("/members/interview-problems")
+    public ResponseEntity<CommonResponse<InterviewProblemDetailResp>> fetchMemberInterviewProblem(
+        @RequestParam(name = "type") ProblemType type,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        InterviewProblemDetailResp response = queryService.fetchMemberInterviewProblemByType(
+            type, principalDetails.getId()
+        );
+
+        return CommonResponseEntity.ok(
+            response,
+            CustomResponseStatus.SUCCESS,
+            "회원 면접문제 조회에 성공하였습니다."
         );
     }
 
