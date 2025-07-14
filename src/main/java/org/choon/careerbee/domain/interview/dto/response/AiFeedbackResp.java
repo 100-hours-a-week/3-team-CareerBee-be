@@ -1,7 +1,7 @@
 package org.choon.careerbee.domain.interview.dto.response;
 
 public record AiFeedbackResp(
-//    Long memberId,
+    Long memberId,
     String feedback
 ) {
 

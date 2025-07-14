@@ -68,7 +68,8 @@ public enum CustomResponseStatus {
         "분산 락 실행 중 예외가 발생했습니다."),
 
     ALREADY_SOLVED_FREE_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 무료 문제입니다."),
-    ALREADY_SOLVED_PAY_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 유료 문제입니다.");
+    ALREADY_SOLVED_PAY_PROBLEM(HttpStatus.BAD_REQUEST.value(), "오늘 하루에 풀 수 있는 유료 문제를 모두 푸셨습니다."),
+    ALREADY_SOLVED_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 문제입니다.");
 
     private final int httpStatusCode;
     private String message;
