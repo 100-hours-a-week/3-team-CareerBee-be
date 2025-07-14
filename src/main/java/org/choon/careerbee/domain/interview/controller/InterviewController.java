@@ -40,7 +40,7 @@ public class InterviewController {
         return CommonResponseEntity.ok(
             response,
             CustomResponseStatus.SUCCESS,
-            "면접문제 조회에 성공하였습니다."
+            "비회원 면접문제 조회에 성공하였습니다."
         );
     }
 
@@ -60,7 +60,7 @@ public class InterviewController {
         );
     }
 
-    @PostMapping("members/interview-problems/{problemId}")
+    @PatchMapping("members/interview-problems/{problemId}")
     public ResponseEntity<CommonResponse<Void>> saveInterviewProblem(
         @PathVariable Long problemId,
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -73,7 +73,7 @@ public class InterviewController {
         );
     }
 
-    @PatchMapping("members/interview-problems/{problemId}")
+    @PatchMapping("members/interview-problems/{problemId}/cancel")
     public ResponseEntity<CommonResponse<Void>> cancelSaveInterviewProblem(
         @PathVariable Long problemId,
         @AuthenticationPrincipal PrincipalDetails principalDetails
