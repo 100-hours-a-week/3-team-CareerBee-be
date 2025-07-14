@@ -1,12 +1,8 @@
 package org.choon.careerbee.domain.competition.service.query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -22,10 +18,7 @@ import org.choon.careerbee.domain.competition.repository.CompetitionParticipantR
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
-import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
-import org.redisson.codec.TypedJsonJacksonCodec;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -51,32 +44,14 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
             throw new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST);
         }
 
-        String key = getCompetitionParticipantKey(accessMemberId);
-        RBucket<Boolean> bucket = redissonClient.getBucket(key,
-            new TypedJsonJacksonCodec(Boolean.class, new ObjectMapper()));
-
-        if (bucket.isExists()) {
-            log.info("Cache HIT - key: {}", key);
-            return new CompetitionParticipationResp(bucket.get());
-        }
-
-        // 3. 캐시 없음 (Cache Miss) -> DB 조회
-        log.info("Cache MISS - key: {}", key);
         boolean isParticipated = competitionParticipantRepository.existsByMemberIdAndCompetitionId(
             accessMemberId, competitionId);
-
-        // 4. DB 결과를 캐시에 저장 (동적 TTL 계산)
-        long secondsUntilMidnight = Duration.between(LocalTime.now(clock), LocalTime.MAX)
-            .getSeconds();
-        bucket.set(isParticipated, secondsUntilMidnight, TimeUnit.SECONDS);
-        log.info("Cache SET - key: {}, value: {}, TTL: {} seconds", key, isParticipated,
-            secondsUntilMidnight);
 
         return new CompetitionParticipationResp(isParticipated);
     }
 
     @Override
-    @Cacheable(cacheNames = "competitionProblem", key = "#competitionId", unless = "#result == null")
+//    @Cacheable(cacheNames = "competitionProblem", key = "#competitionId", unless = "#result == null")
     public CompetitionProblemResp fetchProblems(Long competitionId) {
         if (!competitionRepository.existsById(competitionId)) {
             throw new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST);
@@ -86,22 +61,22 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    @Cacheable(
-        cacheNames = "competitionRank",
-        key = "'competition:rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
+//    @Cacheable(
+//        cacheNames = "competitionRank",
+//        key = "'competition:rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
     public CompetitionRankingResp fetchRankings(LocalDate today) {
         return competitionSummaryRepository.fetchRankings(today);
     }
 
     @Override
-    @Cacheable(cacheNames = "competitionId", key = "#today", unless = "#result == null")
+//    @Cacheable(cacheNames = "competitionId", key = "#today", unless = "#result == null")
     public CompetitionIdResp fetchCompetitionIdBy(LocalDate today) {
         return competitionRepository.fetchCompetitionIdFromToday(today);
     }
 
     @Override
-    @Cacheable(cacheNames = "memberRank",
-        key = "'member:' + #accessMemberId + ':rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
+//    @Cacheable(cacheNames = "memberRank",
+//        key = "'member:' + #accessMemberId + ':rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
     public MemberRankingResp fetchMemberCompetitionRankingById(
         Long accessMemberId, LocalDate today
     ) {
