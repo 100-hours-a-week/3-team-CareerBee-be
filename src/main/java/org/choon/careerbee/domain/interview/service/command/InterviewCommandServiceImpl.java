@@ -1,7 +1,10 @@
 package org.choon.careerbee.domain.interview.service.command;
 
+import static org.choon.careerbee.util.redis.RedisUtil.getOrInitCount;
+import static org.choon.careerbee.util.redis.RedisUtil.setBoolean;
+import static org.choon.careerbee.util.redis.RedisUtil.setCount;
+
 import java.time.Clock;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.api.ai.AiApiClient;
@@ -20,7 +23,7 @@ import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.choon.careerbee.util.date.TimeUtil;
-import org.redisson.api.RBucket;
+import org.choon.careerbee.util.redis.RedisKeyFactory;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class InterviewCommandServiceImpl implements InterviewCommandService {
 
     private static final Integer SOLVE_POINT = 1;
-    private static final String FREE_COUNT_KEY = "member:%d:ai:freeCount";
-    private static final String PAY_COUNT_KEY = "member:%d:ai:payCount";
-    private static final String CAN_SOLVE_KEY = "member:%d:ai:canSolve";
 
     private final InterviewQueryService queryService;
     private final MemberQueryService memberQueryService;
@@ -65,61 +65,53 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
     }
 
     @Override
-    public AiFeedbackResp submitAnswer(SubmitAnswerReq submitAnswerReq, Long accessMemberId) {
+    public AiFeedbackResp submitAnswer(SubmitAnswerReq req, Long accessMemberId) {
         Member member = memberQueryService.findById(accessMemberId);
-        InterviewProblem interviewProblem = interviewQueryService
-            .findById(submitAnswerReq.problemId());
+        InterviewProblem problem = interviewQueryService.findById(req.problemId());
         member.plusPoint(SOLVE_POINT);
 
-        if (interviewQueryService.checkInterviewProblemSolved(submitAnswerReq.problemId(),
-            accessMemberId).isSolved()) {
+        if (interviewQueryService.checkInterviewProblemSolved(req.problemId(), accessMemberId)
+            .isSolved()
+        ) {
             throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_PROBLEM);
         }
 
-        String canSolveKey = CAN_SOLVE_KEY.formatted(accessMemberId);
-        long secondsUntilMidnight = TimeUtil.getSecondsUntilMidnight();
+        long ttl = TimeUtil.getSecondsUntilMidnight();
 
-        if (submitAnswerReq.isFreeProblem()) {
-            // 무료 문제를 풀이한 경우
-            RBucket<Integer> freeCountBucket = redissonClient.getBucket(
-                FREE_COUNT_KEY.formatted(accessMemberId));
-            Integer freeCount = freeCountBucket.get();
+        String canSolveKey = RedisKeyFactory.canSolveKey(accessMemberId, req.type());
+        String freeCountKey = RedisKeyFactory.freeCountKey(accessMemberId, req.type());
+        String payCountKey = RedisKeyFactory.payCountKey(accessMemberId, req.type());
 
-            if (freeCount != null && freeCount == 1) {
+        if (req.isFreeProblem()) {
+            // 무료 문제 제출
+            Integer count = getOrInitCount(redissonClient, freeCountKey, ttl);
+            if (count == 1) {
                 throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_FREE_PROBLEM);
             }
-
-            freeCountBucket.set(1, secondsUntilMidnight, TimeUnit.SECONDS);
-            redissonClient.getBucket(canSolveKey)
-                .set(false, secondsUntilMidnight, TimeUnit.SECONDS);
+            setCount(redissonClient, freeCountKey, 1, ttl);
         } else {
-            // 유료 문제를 풀이한 경우
-            RBucket<Integer> payCountBucket = redissonClient.getBucket(
-                PAY_COUNT_KEY.formatted(accessMemberId));
-            Integer payCount = payCountBucket.get();
-            int count = payCount == null ? 0 : payCount;
-
+            // 유료 문제 제출
+            int count = getOrInitCount(redissonClient, payCountKey, ttl);
             if (count >= 2) {
                 throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_PAY_PROBLEM);
             }
-
-            payCountBucket.set(count + 1, secondsUntilMidnight, TimeUnit.SECONDS);
-            redissonClient.getBucket(canSolveKey)
-                .set(false, secondsUntilMidnight, TimeUnit.SECONDS);
+            setCount(redissonClient, payCountKey, count + 1, ttl);
         }
 
-        // ✅ 예외 조건 통과 후에만 AI 요청
-        AiFeedbackResp aiFeedbackResp = aiApiClient.requestFeedback(
-            AiFeedbackReq.of(accessMemberId, submitAnswerReq.question(), submitAnswerReq.answer())
+        setBoolean(redissonClient, canSolveKey, false, ttl);
+
+        AiFeedbackResp feedbackResp = aiApiClient.requestFeedback(
+            AiFeedbackReq.of(accessMemberId, req.question(), req.answer())
         );
 
         solvedProblemRepository.save(
             SolvedInterviewProblem.of(
-                member, interviewProblem,
-                submitAnswerReq.answer(), aiFeedbackResp.feedback(), SaveStatus.UNSAVED
+                member, problem, req.answer(),
+                feedbackResp.feedback(), SaveStatus.UNSAVED
             )
         );
 
-        return aiFeedbackResp;
+        return feedbackResp;
     }
+
 }
