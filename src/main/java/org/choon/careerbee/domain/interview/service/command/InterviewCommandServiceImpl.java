@@ -1,5 +1,9 @@
 package org.choon.careerbee.domain.interview.service.command;
 
+import static org.choon.careerbee.util.redis.RedisKeyFactory.canSolveKey;
+import static org.choon.careerbee.util.redis.RedisKeyFactory.freeCountKey;
+import static org.choon.careerbee.util.redis.RedisKeyFactory.payCountKey;
+import static org.choon.careerbee.util.redis.RedisUtil.getOrDefaultBoolean;
 import static org.choon.careerbee.util.redis.RedisUtil.getOrInitCount;
 import static org.choon.careerbee.util.redis.RedisUtil.setBoolean;
 import static org.choon.careerbee.util.redis.RedisUtil.setCount;
@@ -12,6 +16,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.interview.domain.InterviewProblem;
 import org.choon.careerbee.domain.interview.domain.SolvedInterviewProblem;
+import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
 import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.interview.dto.request.AiFeedbackReq;
 import org.choon.careerbee.domain.interview.dto.request.SubmitAnswerReq;
@@ -23,7 +28,6 @@ import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.choon.careerbee.util.date.TimeUtil;
-import org.choon.careerbee.util.redis.RedisKeyFactory;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InterviewCommandServiceImpl implements InterviewCommandService {
 
     private static final Integer SOLVE_POINT = 1;
+    private static final Integer NEXT_PROBLEM_POINT = 1;
 
     private final InterviewQueryService queryService;
     private final MemberQueryService memberQueryService;
@@ -78,9 +83,9 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
 
         long ttl = TimeUtil.getSecondsUntilMidnight();
 
-        String canSolveKey = RedisKeyFactory.canSolveKey(accessMemberId, req.type());
-        String freeCountKey = RedisKeyFactory.freeCountKey(accessMemberId, req.type());
-        String payCountKey = RedisKeyFactory.payCountKey(accessMemberId, req.type());
+        String canSolveKey = canSolveKey(accessMemberId, req.type());
+        String freeCountKey = freeCountKey(accessMemberId, req.type());
+        String payCountKey = payCountKey(accessMemberId, req.type());
 
         if (req.isFreeProblem()) {
             // 무료 문제 제출
@@ -112,6 +117,29 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
         );
 
         return feedbackResp;
+    }
+
+    @Override
+    public void requestNextProblem(ProblemType type, Long accessMemberId) {
+        Member member = memberQueryService.findById(accessMemberId);
+        member.minusPoint(NEXT_PROBLEM_POINT);
+
+        long ttl = TimeUtil.getSecondsUntilMidnight();
+
+        String payCountKey = payCountKey(accessMemberId, type);
+        int payCount = getOrInitCount(redissonClient, payCountKey, ttl);
+
+        if (payCount >= 2) {
+            throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_PAY_PROBLEM);
+        }
+
+        String canSolveKey = canSolveKey(accessMemberId, type);
+        boolean canSolve = getOrDefaultBoolean(redissonClient, canSolveKey, true, ttl);
+
+        if (canSolve) {
+            throw new CustomException(CustomResponseStatus.ALREADY_HAS_SOLVE_CHANCE);
+        }
+        setBoolean(redissonClient, canSolveKey, true, ttl);
     }
 
 }

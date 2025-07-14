@@ -139,4 +139,19 @@ public class InterviewController {
             "문제 답변에 대한 피드백입니다."
         );
     }
+
+    @PatchMapping("members/interview-problems/next")
+    public ResponseEntity<CommonResponse<Void>> requestNextProblem(
+        @RequestParam(name = "type") ProblemType type,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.requestNextProblem(
+            type, principalDetails.getId()
+        );
+
+        return CommonResponseEntity.ok(
+            CustomResponseStatus.SUCCESS_WITH_NO_CONTENT,
+            "다음 문제 풀이 요청이 성공하였습니다."
+        );
+    }
 }

@@ -69,7 +69,8 @@ public enum CustomResponseStatus {
 
     ALREADY_SOLVED_FREE_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 무료 문제입니다."),
     ALREADY_SOLVED_PAY_PROBLEM(HttpStatus.BAD_REQUEST.value(), "오늘 하루에 풀 수 있는 유료 문제를 모두 푸셨습니다."),
-    ALREADY_SOLVED_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 문제입니다.");
+    ALREADY_SOLVED_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 문제입니다."),
+    ALREADY_HAS_SOLVE_CHANCE(HttpStatus.BAD_REQUEST.value(), "아직 무료 풀이 기회가 남아있습니다.");
 
     private final int httpStatusCode;
     private String message;
