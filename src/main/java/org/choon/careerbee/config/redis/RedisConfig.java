@@ -1,8 +1,9 @@
 package org.choon.careerbee.config.redis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.SingleServerConfig;
 import org.redisson.spring.data.connection.RedissonConnectionFactory;
@@ -28,15 +29,18 @@ public class RedisConfig {
 
     private static final String REDISSON_HOST_PREFIX = "redis://";
     private final Environment environment;
+    private final ObjectMapper objectMapper;
 
-    public RedisConfig(Environment environment) {
+    public RedisConfig(Environment environment, ObjectMapper objectMapper) {
         this.environment = environment;
+        this.objectMapper = objectMapper;
     }
 
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
-        config.setCodec(new StringCodec());
+//        config.setCodec(new StringCodec());
+        config.setCodec(new TypedJsonJacksonCodec(Object.class, objectMapper));
         SingleServerConfig singleServerConfig = config.useSingleServer()
             .setAddress(REDISSON_HOST_PREFIX + redisHost + ":" + redisPort);
 

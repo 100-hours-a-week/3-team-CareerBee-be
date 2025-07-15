@@ -87,19 +87,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/swagger-ui",
             "/v3/api-docs",
             "/actuator",
-            "/tickets"
+            "/tickets",
+            "/interview-problems"
         };
 
         String path = request.getRequestURI();
         String method = request.getMethod();
-        if (path.equals("/api/v1/members/competitions/rankings") || path.equals(
-            "/api/v1/members/competitions/rankings/live")) {
+        if (path.equals("/api/v1/members/competitions/rankings")
+            ||
+            path.equals("/api/v1/members/competitions/rankings/live")
+            ||
+            path.startsWith("/api/v1/members/interview-problems/")
+        ) {
             return false;
         }
 
         if (path.equals("/api/v1/tickets") && method.equals("POST")
             ||
             path.equals("/api/v1/members/tickets")
+            ||
+            path.equals("/api/v1/interview-problems/answers") && method.equals("POST")
+            ||
+            path.equals("/api/v1/members/interview-problems") && method.equals("GET")
         ) {
             return false;
         }

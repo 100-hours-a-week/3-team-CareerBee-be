@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
+import org.choon.careerbee.domain.interview.dto.request.AiFeedbackReq;
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackRespWrapper;
 import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitReq;
 import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitRespFromAI;
 import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeRespFromAi;
@@ -114,7 +117,8 @@ public class AiApiClient {
     }
 
     public AdvancedResumeRespFromAi requestAdvancedResumeUpdate(
-        AdvancedResumeUpdateReqToAi reqToAi) {
+        AdvancedResumeUpdateReqToAi reqToAi
+    ) {
         log.info("요청 객체 :  {}", reqToAi);
 
         AdvancedResumeRespFromAi result = aiRestClient
@@ -142,6 +146,33 @@ public class AiApiClient {
 
         logJson("2. 고급 이력서 생성(update) 최종 응답 객체", result);
         return result;
+    }
+
+    public AiFeedbackResp requestFeedback(AiFeedbackReq feedbackReq) {
+        AiFeedbackRespWrapper body = aiRestClient
+            .post()
+            .uri(uriBuilder -> uriBuilder
+                .path("/feedback/create")
+                .build())
+            .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .body(feedbackReq)
+            .exchange((req, resp) -> {
+                String responseBody = new String(resp.getBody().readAllBytes(),
+                    StandardCharsets.UTF_8);
+
+                if (resp.getStatusCode().is4xxClientError()) {
+                    log.error("[4xx] ai 서버 에러!! : {}", responseBody);
+                    throw new CustomException(CustomResponseStatus.EXTENSION_NOT_EXIST);
+                } else if (resp.getStatusCode().is5xxServerError()) {
+                    log.error("[5xx] ai 서버 에러!! : {}", responseBody);
+                    throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
+                } else {
+                    logJson("생성된 피드백", responseBody);
+                    return objectMapper.readValue(responseBody, AiFeedbackRespWrapper.class);
+                }
+            });
+
+        return body.data();
     }
 
     private void logJson(String label, Object body) {

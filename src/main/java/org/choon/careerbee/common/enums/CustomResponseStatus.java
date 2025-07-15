@@ -38,6 +38,11 @@ public enum CustomResponseStatus {
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
     EXTENSION_NOT_EXIST(HttpStatus.BAD_REQUEST.value(), "제공하지 않는 확장자입니다."),
 
+    INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 면접문제 입니다."),
+    SOLVED_INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "풀지않은 문제입니다."),
+    INTERVIEW_PROBLEM_ALREADY_SAVED(HttpStatus.CONFLICT.value(), "이미 저장한 문제입니다."),
+    INTERVIEW_PROBLEM_ALREADY_UNSAVED(HttpStatus.CONFLICT.value(), "저장안된 문제입니다."),
+
     BAD_JWT(HttpStatus.BAD_REQUEST.value(), "잘못된 토큰입니다."),
     EXPIRED_JWT(HttpStatus.UNAUTHORIZED.value(), "만료된 토큰입니다."),
     NULL_JWT(HttpStatus.BAD_REQUEST.value(), "토큰이 공백입니다."),
@@ -61,7 +66,11 @@ public enum CustomResponseStatus {
     FAILED_TO_ACQUIRE_DISTRIBUTED_LOCK(HttpStatus.CONFLICT.value(), "분산 락 획득에 실패했습니다."),
     FAILED_TO_EXECUTE_DISTRIBUTED_LOCK(HttpStatus.INTERNAL_SERVER_ERROR.value(),
         "분산 락 실행 중 예외가 발생했습니다."),
-    ;
+
+    ALREADY_SOLVED_FREE_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 무료 문제입니다."),
+    ALREADY_SOLVED_PAY_PROBLEM(HttpStatus.BAD_REQUEST.value(), "오늘 하루에 풀 수 있는 유료 문제를 모두 푸셨습니다."),
+    ALREADY_SOLVED_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 문제입니다."),
+    ALREADY_HAS_SOLVE_CHANCE(HttpStatus.BAD_REQUEST.value(), "아직 무료 풀이 기회가 남아있습니다.");
 
     private final int httpStatusCode;
     private String message;
