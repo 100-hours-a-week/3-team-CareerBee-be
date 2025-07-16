@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
@@ -63,59 +64,22 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public void pushResumeExtracted(Long memberId, ExtractResumeResp resp) {
-        SseEmitter sseEmitter = emitters.get(memberId);
-        if (sseEmitter != null) {
-            try {
-                log.info("이력서 추출에 대한 SSE 요청 시작");
-                sseEmitter.send(SseEmitter.event()
-                    .name("resume-extracted")
-                    .data(resp));
-                log.info("이력서 추출에 대한 SSE 요청 완료");
-            } catch (IOException e) {
-                log.error("[SSE] 이력서 추출 SSE 전송 실패", e);
-                sseEmitter.completeWithError(e);
-            }
-        } else {
-            log.warn("[SSE] 해당 memberId에 대한 emitter 없음: {}", memberId);
-        }
+        sendSseEvent(memberId, "resume-extracted", resp, "이력서 추출");
     }
 
     @Override
     public void pushAdvancedResumeInit(Long memberId, AdvancedResumeInitResp resp) {
-        SseEmitter sseEmitter = emitters.get(memberId);
-        if (sseEmitter != null) {
-            try {
-                log.info("고급 이력서 init에 대한 SSE 요청 시작");
-                sseEmitter.send(SseEmitter.event()
-                    .name("advanced-resume-init")
-                    .data(resp));
-                log.info("고급 이력서 init에 대한 SSE 요청 완료");
-            } catch (IOException e) {
-                log.error("고급 이력서 init에 대한 SSE 전송 실패", e);
-                sseEmitter.completeWithError(e);
-            }
-        } else {
-            log.warn("[SSE] 해당 memberId에 대한 emitter 없음: {}", memberId);
-        }
+        sendSseEvent(memberId, "advanced-resume-init", resp, "고급 이력서 init");
     }
 
     @Override
     public void pushAdvancedResumeUpdate(Long memberId, AdvancedResumeResp resp) {
-        SseEmitter sseEmitter = emitters.get(memberId);
-        if (sseEmitter != null) {
-            try {
-                log.info("고급 이력서 update에 대한 SSE 요청 시작");
-                sseEmitter.send(SseEmitter.event()
-                    .name("advanced-resume-update")
-                    .data(resp));
-                log.info("고급 이력서 update에 대한 SSE 요청 완료");
-            } catch (IOException e) {
-                log.error("고급 이력서 update에 대한 SSE 전송 실패", e);
-                sseEmitter.completeWithError(e);
-            }
-        } else {
-            log.warn("[SSE] 해당 memberId에 대한 emitter 없음: {}", memberId);
-        }
+        sendSseEvent(memberId, "advanced-resume-update", resp, "고급 이력서 update");
+    }
+
+    @Override
+    public void pushAdvancedResumeUpdate(Long memberId, AiFeedbackResp resp) {
+        sendSseEvent(memberId, "problem-feedback", resp, "면접 피드백");
     }
 
     @Override
@@ -139,12 +103,29 @@ public class SseServiceImpl implements SseService {
         emitters.forEach((memberId, emitter) -> {
             try {
                 emitter.send(SseEmitter.event().name(PING).data("keep-alive"));
-                log.info("[SSE Ping Success] {}에게 전송 성공", memberId);
             } catch (IOException e) {
                 emitters.remove(memberId);
                 log.warn("[SSE Fail] {}에게 Ping 전송 실패, emitter 제거", memberId);
             }
         });
+    }
+
+    private <T> void sendSseEvent(Long memberId, String eventName, T data, String logPrefix) {
+        SseEmitter emitter = emitters.get(memberId);
+        if (emitter == null) {
+            log.warn("[SSE] {} - emitter 없음 (memberId={})", logPrefix, memberId);
+            return;
+        }
+
+        try {
+            log.info("[SSE] {} - 전송 시작", logPrefix);
+            emitter.send(SseEmitter.event().name(eventName).data(data));
+            log.info("[SSE] {} - 전송 완료", logPrefix);
+        } catch (IOException e) {
+            log.error("[SSE] {} - 전송 실패", logPrefix, e);
+            emitter.completeWithError(e);
+            emitters.remove(memberId);
+        }
     }
 
 

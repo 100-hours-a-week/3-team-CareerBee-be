@@ -12,5 +12,7 @@ public interface InterviewCommandService {
 
     AiFeedbackResp submitAnswer(SubmitAnswerReq submitAnswerReq, Long accessMemberId);
 
+    void submitAnswerAsync(SubmitAnswerReq submitAnswerReq, Long accessMemberId);
+
     void requestNextProblem(ProblemType type, Long accessMemberId);
 }

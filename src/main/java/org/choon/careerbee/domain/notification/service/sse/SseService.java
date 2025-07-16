@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.notification.service.sse;
 
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
 import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
@@ -16,6 +17,8 @@ public interface SseService<T> {
     void pushAdvancedResumeInit(Long memberId, AdvancedResumeInitResp resp);
 
     void pushAdvancedResumeUpdate(Long memberId, AdvancedResumeResp resp);
+
+    void pushAdvancedResumeUpdate(Long memberId, AiFeedbackResp resp);
 
     void sendAll();
 

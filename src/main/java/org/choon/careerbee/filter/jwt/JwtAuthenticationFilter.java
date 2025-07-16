@@ -108,6 +108,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             ||
             path.equals("/api/v1/interview-problems/answers") && method.equals("POST")
             ||
+            path.equals("/api/v1/interview-problems/answers/async") && method.equals("POST")
+            ||
             path.equals("/api/v1/members/interview-problems") && method.equals("GET")
         ) {
             return false;

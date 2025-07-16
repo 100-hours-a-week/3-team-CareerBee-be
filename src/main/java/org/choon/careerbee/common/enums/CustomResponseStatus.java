@@ -38,6 +38,8 @@ public enum CustomResponseStatus {
 
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
     EXTENSION_NOT_EXIST(HttpStatus.BAD_REQUEST.value(), "제공하지 않는 확장자입니다."),
+    MISSING_REQUIRED_FIELDS(HttpStatus.BAD_REQUEST.value(), "필수 입력 항목이 누락되었습니다."),
+    AI_INVALID_INPUT_FIELDS(HttpStatus.BAD_REQUEST.value(), "AI 서버에 유효하지 않은 데이터를 제공했습니다."),
 
     INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 면접문제 입니다."),
     SOLVED_INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "풀지않은 문제입니다."),
@@ -71,7 +73,14 @@ public enum CustomResponseStatus {
     ALREADY_SOLVED_FREE_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 무료 문제입니다."),
     ALREADY_SOLVED_PAY_PROBLEM(HttpStatus.BAD_REQUEST.value(), "오늘 하루에 풀 수 있는 유료 문제를 모두 푸셨습니다."),
     ALREADY_SOLVED_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 문제입니다."),
-    ALREADY_HAS_SOLVE_CHANCE(HttpStatus.BAD_REQUEST.value(), "아직 무료 풀이 기회가 남아있습니다.");
+    ALREADY_HAS_SOLVE_CHANCE(HttpStatus.BAD_REQUEST.value(), "아직 무료 풀이 기회가 남아있습니다."),
+
+    ASYNC_RESUME_EXTRACT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비동기 이력서 추출 실패"),
+    ASYNC_ADVANCED_RESUME_INIT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비동기 고급 이력서 init 실패"),
+    ASYNC_ADVANCED_RESUME_UPDATE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+        "비동기 고급 이력서 update 실패"),
+    ;
+
 
     private final int httpStatusCode;
     private String message;

@@ -5,8 +5,6 @@ import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.api.ai.AiApiClient;
-import org.choon.careerbee.common.async.FutureStorage;
-import org.choon.careerbee.common.async.FutureType;
 import org.choon.careerbee.common.pubsub.RedisPublisher;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeInitEvent;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeUpdateEvent;
@@ -47,7 +45,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     private final MemberRepository memberRepository;
     private final ImageService imageService;
     private final AiApiClient aiApiClient;
-    private final FutureStorage futureStorage;
     private final RedisPublisher redisPublisher;
 
     @Override
@@ -165,7 +162,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
 
         // 2. CompletableFuture 생성 및 저장
         CompletableFuture<ExtractResumeResp> future = new CompletableFuture<>();
-        futureStorage.put(FutureType.EXTRACT_RESUME, accessMemberId, future);
 
         // 3. 비동기 AI 요청
         aiApiClient.requestExtractResumeAsync(extractResumeReq)
@@ -182,7 +178,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             .exceptionally(ex -> {
                 // 5. 예외 발생 시 future 예외 처리
                 future.completeExceptionally(ex);
-                log.error("비동기 이력서 추출 실패", ex);
                 return null;
             });
     }
@@ -192,7 +187,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         Member validMember = memberQueryService.findById(accessMemberId);
 
         CompletableFuture<AdvancedResumeInitResp> future = new CompletableFuture<>();
-        futureStorage.put(FutureType.INIT_ADVANCED_RESUME, accessMemberId, future);
 
         aiApiClient.requestAdvancedResumeInitAsync(
             new AdvancedResumeInitReq(
@@ -211,7 +205,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             );
         }).exceptionally(ex -> {
             future.completeExceptionally(ex);
-            log.error("비동기 이력서 추출 실패", ex);
             return null;
         });
     }
@@ -222,7 +215,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
         Long accessMemberId
     ) {
         CompletableFuture<AdvancedResumeRespFromAi> future = new CompletableFuture<>();
-        futureStorage.put(FutureType.UPDATE_ADVANCED_RESUME, accessMemberId, future);
 
         aiApiClient.requestAdvancedResumeUpdateAsync(
             AdvancedResumeUpdateReqToAi.of(accessMemberId, advancedResumeUpdateReq.answer())
@@ -254,7 +246,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             );
         }).exceptionally(ex -> {
             future.completeExceptionally(ex);
-            log.error("비동기 이력서 추출 실패", ex);
             return null;
         });
     }

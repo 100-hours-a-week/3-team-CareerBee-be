@@ -15,9 +15,6 @@ import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
 import org.choon.careerbee.domain.member.dto.request.UpdateResumeReq;
 import org.choon.careerbee.domain.member.dto.request.UploadCompleteReq;
 import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
-import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
-import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
-import org.choon.careerbee.domain.member.dto.response.ExtractResumeResp;
 import org.choon.careerbee.domain.member.dto.response.MyInfoResp;
 import org.choon.careerbee.domain.member.dto.response.ResumeDraftResp;
 import org.choon.careerbee.domain.member.service.MemberCommandService;
@@ -113,21 +110,21 @@ public class MemberController {
         );
     }
 
+//    @PostMapping("/resume/complete-upload")
+//    public ResponseEntity<CommonResponse<ExtractResumeResp>> extractResumeInfo(
+//        @RequestBody UploadCompleteReq uploadCompleteReq
+//    ) {
+//        ExtractResumeResp response = commandService.extractResumeInfoFromAi(
+//            uploadCompleteReq);
+//
+//        return CommonResponseEntity.ok(
+//            response,
+//            CustomResponseStatus.SUCCESS,
+//            "이력서 정보 추출에 성공하였습니다."
+//        );
+//    }
+
     @PostMapping("/resume/complete-upload")
-    public ResponseEntity<CommonResponse<ExtractResumeResp>> extractResumeInfo(
-        @RequestBody UploadCompleteReq uploadCompleteReq
-    ) {
-        ExtractResumeResp response = commandService.extractResumeInfoFromAi(
-            uploadCompleteReq);
-
-        return CommonResponseEntity.ok(
-            response,
-            CustomResponseStatus.SUCCESS,
-            "이력서 정보 추출에 성공하였습니다."
-        );
-    }
-
-    @PostMapping("/resume/complete-upload/async")
     public ResponseEntity<CommonResponse<Void>> extractResumeInfoAsync(
         @RequestBody UploadCompleteReq uploadCompleteReq,
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -140,23 +137,22 @@ public class MemberController {
         );
     }
 
+//    @PostMapping("/advanced-resume/init")
+//    public ResponseEntity<CommonResponse<AdvancedResumeInitResp>> generateAdvancedResumeInit(
+//        @AuthenticationPrincipal PrincipalDetails principalDetails
+//    ) {
+//        AdvancedResumeInitResp response = commandService.generateAdvancedResumeInit(
+//            principalDetails.getId()
+//        );
+//
+//        return CommonResponseEntity.ok(
+//            response,
+//            CustomResponseStatus.SUCCESS,
+//            "고급이력서 생성이 시작되었습니다."
+//        );
+//    }
 
     @PostMapping("/advanced-resume/init")
-    public ResponseEntity<CommonResponse<AdvancedResumeInitResp>> generateAdvancedResumeInit(
-        @AuthenticationPrincipal PrincipalDetails principalDetails
-    ) {
-        AdvancedResumeInitResp response = commandService.generateAdvancedResumeInit(
-            principalDetails.getId()
-        );
-
-        return CommonResponseEntity.ok(
-            response,
-            CustomResponseStatus.SUCCESS,
-            "고급이력서 생성이 시작되었습니다."
-        );
-    }
-
-    @PostMapping("/advanced-resume/init/async")
     public ResponseEntity<CommonResponse<Void>> generateAdvancedResumeInitAsync(
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
@@ -168,23 +164,23 @@ public class MemberController {
         );
     }
 
+//    @PostMapping("/advanced-resume/update")
+//    public ResponseEntity<CommonResponse<AdvancedResumeResp>> generateAdvancedResumeUpdate(
+//        @RequestBody AdvancedResumeUpdateReq advancedResumeUpdateReq,
+//        @AuthenticationPrincipal PrincipalDetails principalDetails
+//    ) {
+//        AdvancedResumeResp response = commandService.generateAdvancedResumeUpdate(
+//            advancedResumeUpdateReq, principalDetails.getId()
+//        );
+//
+//        return CommonResponseEntity.ok(
+//            response,
+//            CustomResponseStatus.SUCCESS,
+//            response.message()
+//        );
+//    }
+
     @PostMapping("/advanced-resume/update")
-    public ResponseEntity<CommonResponse<AdvancedResumeResp>> generateAdvancedResumeUpdate(
-        @RequestBody AdvancedResumeUpdateReq advancedResumeUpdateReq,
-        @AuthenticationPrincipal PrincipalDetails principalDetails
-    ) {
-        AdvancedResumeResp response = commandService.generateAdvancedResumeUpdate(
-            advancedResumeUpdateReq, principalDetails.getId()
-        );
-
-        return CommonResponseEntity.ok(
-            response,
-            CustomResponseStatus.SUCCESS,
-            response.message()
-        );
-    }
-
-    @PostMapping("/advanced-resume/update/async")
     public ResponseEntity<CommonResponse<Void>> generateAdvancedResumeUpdateAsync(
         @RequestBody AdvancedResumeUpdateReq advancedResumeUpdateReq,
         @AuthenticationPrincipal PrincipalDetails principalDetails

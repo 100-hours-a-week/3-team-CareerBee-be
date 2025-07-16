@@ -149,7 +149,7 @@ public class AiApiClient {
 
                 if (resp.getStatusCode().is4xxClientError()) {
                     log.error("[4xx] ai 서버 에러!! : {}", responseBody);
-                    throw new CustomException(CustomResponseStatus.EXTENSION_NOT_EXIST);
+                    throw new CustomException(CustomResponseStatus.MISSING_REQUIRED_FIELDS);
                 } else if (resp.getStatusCode().is5xxServerError()) {
                     log.error("[5xx] ai 서버 에러!! : {}", responseBody);
                     throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
@@ -182,7 +182,7 @@ public class AiApiClient {
 
                         if (resp.getStatusCode().is4xxClientError()) {
                             log.error("[4xx] ai 서버 에러!! : {}", responseBody);
-                            throw new CustomException(CustomResponseStatus.EXTENSION_NOT_EXIST);
+                            throw new CustomException(CustomResponseStatus.MISSING_REQUIRED_FIELDS);
                         } else if (resp.getStatusCode().is5xxServerError()) {
                             log.error("[5xx] ai 서버 에러!! : {}", responseBody);
                             throw new CustomException(
@@ -220,7 +220,7 @@ public class AiApiClient {
 
                 if (resp.getStatusCode().is4xxClientError()) {
                     log.error("[4xx] ai 서버 에러!! : {}", responseBody);
-                    throw new CustomException(CustomResponseStatus.EXTENSION_NOT_EXIST);
+                    throw new CustomException(CustomResponseStatus.MISSING_REQUIRED_FIELDS);
                 } else if (resp.getStatusCode().is5xxServerError()) {
                     log.error("[5xx] ai 서버 에러!! : {}", responseBody);
                     throw new CustomException(CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
@@ -253,9 +253,8 @@ public class AiApiClient {
 
                         if (resp.getStatusCode().is4xxClientError()) {
                             log.error("[4xx] ai 서버 에러!! : {}", responseBody);
-                            throw new CustomException(CustomResponseStatus.EXTENSION_NOT_EXIST);
+                            throw new CustomException(CustomResponseStatus.AI_INVALID_INPUT_FIELDS);
                         } else if (resp.getStatusCode().is5xxServerError()) {
-                            log.error("[5xx] ai 서버 에러!! : {}", responseBody);
                             throw new CustomException(
                                 CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
                         }
@@ -301,6 +300,42 @@ public class AiApiClient {
             });
 
         return body.data();
+    }
+
+    public CompletableFuture<AiFeedbackResp> requestFeedbackAsync(AiFeedbackReq feedbackReq) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                AiFeedbackRespWrapper body = aiRestClient
+                    .post()
+                    .uri(uriBuilder -> uriBuilder
+                        .path("/feedback/create")
+                        .build())
+                    .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                    .body(feedbackReq)
+                    .exchange((req, resp) -> {
+                        String responseBody = new String(resp.getBody().readAllBytes(),
+                            StandardCharsets.UTF_8);
+
+                        if (resp.getStatusCode().is4xxClientError()) {
+                            log.error("[4xx] ai 서버 에러!! : {}", responseBody);
+                            throw new CustomException(CustomResponseStatus.AI_INVALID_INPUT_FIELDS);
+                        } else if (resp.getStatusCode().is5xxServerError()) {
+                            log.error("[5xx] ai 서버 에러!! : {}", responseBody);
+                            throw new CustomException(
+                                CustomResponseStatus.AI_INTERNAL_SERVER_ERROR);
+                        } else {
+                            logJson("생성된 피드백", responseBody);
+                            return objectMapper.readValue(responseBody,
+                                AiFeedbackRespWrapper.class);
+                        }
+                    });
+
+                return body.data();
+            } catch (Exception e) {
+                // 예외는 비동기적으로 처리되므로 런타임 예외로 감싸서 throw
+                throw new RuntimeException("AI 서버 요청 실패", e);
+            }
+        });
     }
 
     private void logJson(String label, Object body) {

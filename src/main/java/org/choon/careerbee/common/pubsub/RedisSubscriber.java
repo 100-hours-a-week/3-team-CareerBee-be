@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeInitEvent;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeUpdateEvent;
+import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
 import org.choon.careerbee.common.pubsub.dto.ResumeExtractedEvent;
 import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.springframework.data.redis.connection.Message;
@@ -49,6 +50,14 @@ public class RedisSubscriber implements MessageListener {
                     log.info("고급 이력서 Update 요청 성공 및 SSE 송신 시작");
                     AdvancedResumeUpdateEvent event = objectMapper.readValue(
                         json, AdvancedResumeUpdateEvent.class
+                    );
+                    sseService.pushAdvancedResumeUpdate(event.memberId(), event.result());
+                }
+
+                case "interview.problem.feedback.complete" -> {
+                    log.info("면접문제 피드백 요청 성공 및 SSE 송신 시작");
+                    FeedbackEvent event = objectMapper.readValue(
+                        json, FeedbackEvent.class
                     );
                     sseService.pushAdvancedResumeUpdate(event.memberId(), event.result());
                 }
