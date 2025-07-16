@@ -127,6 +127,20 @@ public class MemberController {
         );
     }
 
+    @PostMapping("/resume/complete-upload/async")
+    public ResponseEntity<CommonResponse<Void>> extractResumeInfoAsync(
+        @RequestBody UploadCompleteReq uploadCompleteReq,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.extractResumeInfoFromAiAsync(uploadCompleteReq, principalDetails.getId());
+
+        return CommonResponseEntity.accepted(
+            CustomResponseStatus.ACCEPTED,
+            "이력서 정보 추출에 요청이 수락되었습니다."
+        );
+    }
+
+
     @PostMapping("/advanced-resume/init")
     public ResponseEntity<CommonResponse<AdvancedResumeInitResp>> generateAdvancedResumeInit(
         @AuthenticationPrincipal PrincipalDetails principalDetails
@@ -139,6 +153,18 @@ public class MemberController {
             response,
             CustomResponseStatus.SUCCESS,
             "고급이력서 생성이 시작되었습니다."
+        );
+    }
+
+    @PostMapping("/advanced-resume/init/async")
+    public ResponseEntity<CommonResponse<Void>> generateAdvancedResumeInitAsync(
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.generateAdvancedResumeInitAsync(principalDetails.getId());
+
+        return CommonResponseEntity.accepted(
+            CustomResponseStatus.ACCEPTED,
+            "고급이력서 생성 요청이 수락되었습니다."
         );
     }
 
@@ -155,6 +181,21 @@ public class MemberController {
             response,
             CustomResponseStatus.SUCCESS,
             response.message()
+        );
+    }
+
+    @PostMapping("/advanced-resume/update/async")
+    public ResponseEntity<CommonResponse<Void>> generateAdvancedResumeUpdateAsync(
+        @RequestBody AdvancedResumeUpdateReq advancedResumeUpdateReq,
+        @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        commandService.generateAdvancedResumeUpdateAsync(
+            advancedResumeUpdateReq, principalDetails.getId()
+        );
+
+        return CommonResponseEntity.accepted(
+            CustomResponseStatus.ACCEPTED,
+            "고급이력서 생성 요청이 수락되었습니다."
         );
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum CustomResponseStatus {
     SUCCESS(HttpStatus.OK.value(), "요청에 성공하였습니다."),
+    ACCEPTED(HttpStatus.ACCEPTED.value(), "요청을 수락하였습니다."),
     SUCCESS_WITH_NO_CONTENT(HttpStatus.NO_CONTENT.value(), "요청에 성공하였습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN.value(), "권한이 없습니다."),
 
