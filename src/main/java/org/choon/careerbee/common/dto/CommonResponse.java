@@ -44,6 +44,17 @@ public class CommonResponse<T> {
         );
     }
 
+    public static <T> CommonResponse<T> createAccepted(
+        CustomResponseStatus customResponseStatus,
+        String message
+    ) {
+        return new CommonResponse<>(
+            customResponseStatus.getHttpStatusCode(),
+            message,
+            null
+        );
+    }
+
     /***
      * @param bindingResult : @Valid 의 유효성 검사를 실패한 값(필드)들
      * @return : HttpStatus 와 Code, Message, 오류 데이터를 반환한다.

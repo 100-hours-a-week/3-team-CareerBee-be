@@ -9,11 +9,14 @@ import static org.choon.careerbee.util.redis.RedisUtil.setBoolean;
 import static org.choon.careerbee.util.redis.RedisUtil.setCount;
 
 import java.time.Clock;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
+import org.choon.careerbee.common.pubsub.RedisPublisher;
+import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
 import org.choon.careerbee.domain.interview.domain.InterviewProblem;
 import org.choon.careerbee.domain.interview.domain.SolvedInterviewProblem;
 import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
@@ -50,6 +53,7 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
     private final RedissonClient redissonClient;
     private final Clock clock;
     private final SseService sseService;
+    private final RedisPublisher redisPublisher;
 
     @Override
     public void saveInterviewProblem(Long problemIdToSave, Long accessMemberId) {
@@ -140,6 +144,77 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
             throw new CustomException(CustomResponseStatus.ALREADY_HAS_SOLVE_CHANCE);
         }
         setBoolean(redissonClient, canSolveKey, true, ttl);
+    }
+
+    @Override
+    public void submitAnswerAsync(SubmitAnswerReq req, Long accessMemberId) {
+        Member member = memberQueryService.findById(accessMemberId);
+        InterviewProblem problem = interviewQueryService.findById(req.problemId());
+
+        CompletableFuture<AiFeedbackResp> future = new CompletableFuture<>();
+
+        // 중복 풀이 방지
+        if (interviewQueryService.checkInterviewProblemSolved(req.problemId(), accessMemberId)
+            .isSolved()
+        ) {
+            future.completeExceptionally(
+                new CustomException(CustomResponseStatus.ALREADY_SOLVED_PROBLEM));
+            return;
+        }
+
+        long ttl = TimeUtil.getSecondsUntilMidnight();
+
+        String canSolveKey = canSolveKey(accessMemberId, req.type());
+        String freeCountKey = freeCountKey(accessMemberId, req.type());
+        String payCountKey = payCountKey(accessMemberId, req.type());
+
+        try {
+            if (req.isFreeProblem()) {
+                Integer count = getOrInitCount(redissonClient, freeCountKey, ttl);
+                if (count == 1) {
+                    throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_FREE_PROBLEM);
+                }
+                setCount(redissonClient, freeCountKey, 1, ttl);
+            } else {
+                int count = getOrInitCount(redissonClient, payCountKey, ttl);
+                if (count >= 2) {
+                    throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_PAY_PROBLEM);
+                }
+                setCount(redissonClient, payCountKey, count + 1, ttl);
+            }
+
+            setBoolean(redissonClient, canSolveKey, false, ttl);
+        } catch (Exception ex) {
+            future.completeExceptionally(ex);
+            return;
+        }
+
+        aiApiClient.requestFeedbackAsync(
+                AiFeedbackReq.of(accessMemberId, req.question(), req.answer()))
+            .thenAccept(result -> {
+                log.info("피드백 생성 요청 성공");
+
+                // DB 저장
+                solvedProblemRepository.save(
+                    SolvedInterviewProblem.of(
+                        member, problem, req.answer(),
+                        result.feedback(), SaveStatus.UNSAVED
+                    )
+                );
+
+                // future 완료
+                future.complete(result);
+
+                // SSE 전달 위한 Redis Pub/Sub
+                redisPublisher.publishInterviewProblemFeedbackEvent(
+                    new FeedbackEvent(accessMemberId, result)
+                );
+            })
+            .exceptionally(ex -> {
+                future.completeExceptionally(ex);
+                log.error("비동기 피드백 생성 실패", ex);
+                return null;
+            });
     }
 
 }

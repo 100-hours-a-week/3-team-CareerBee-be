@@ -5,7 +5,6 @@ import static org.choon.careerbee.fixture.interview.InterviewProblemFixture.crea
 import static org.choon.careerbee.fixture.interview.SolvedInterviewProblemFixture.createSolvedProblem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,7 +87,7 @@ class InterviewControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.httpStatusCode").value(
                 CustomResponseStatus.SUCCESS.getHttpStatusCode()))
-            .andExpect(jsonPath("$.message").value("면접문제 조회에 성공하였습니다."))
+            .andExpect(jsonPath("$.message").value("비회원 면접문제 조회에 성공하였습니다."))
             .andExpect(jsonPath("$.data.interviewProblems").isArray())
             .andExpect(jsonPath("$.data.interviewProblems.length()").value(4))
             .andExpect(jsonPath("$.data.interviewProblems[?(@.type == 'BACKEND')].question")
@@ -156,7 +155,7 @@ class InterviewControllerTest {
             createSolvedProblem(member, problem, "answer", "feedback", SaveStatus.UNSAVED));
 
         // when & then
-        mockMvc.perform(post("/api/v1/members/interview-problems/{problemId}", problem.getId())
+        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNoContent())
@@ -180,7 +179,7 @@ class InterviewControllerTest {
 
         // when & then
         mockMvc.perform(
-                post("/api/v1/members/interview-problems/{problemId}", unsolvedProblem.getId())
+                patch("/api/v1/members/interview-problems/{problemId}", unsolvedProblem.getId())
                     .header("Authorization", token)
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
@@ -207,7 +206,7 @@ class InterviewControllerTest {
         String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
 
         // when & then
-        mockMvc.perform(post("/api/v1/members/interview-problems/{problemId}", problem.getId())
+        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isConflict())
@@ -230,9 +229,10 @@ class InterviewControllerTest {
         String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
 
         // when & then
-        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
-                .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(
+                patch("/api/v1/members/interview-problems/{problemId}/cancel", problem.getId())
+                    .header("Authorization", token)
+                    .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNoContent())
             .andExpect(jsonPath("$.httpStatusCode").value(204))
             .andExpect(jsonPath("$.message").value("면접문제 저장 취소에 성공하였습니다."));
@@ -249,9 +249,10 @@ class InterviewControllerTest {
         String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
 
         // when & then
-        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
-                .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(
+                patch("/api/v1/members/interview-problems/{problemId}/cancel", problem.getId())
+                    .header("Authorization", token)
+                    .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.httpStatusCode").value(
                 CustomResponseStatus.SOLVED_INTERVIEW_PROBLEM_NOT_EXIST.getHttpStatusCode()))
@@ -272,9 +273,10 @@ class InterviewControllerTest {
         String token = "Bearer " + jwtUtil.createToken(member.getId(), TokenType.ACCESS_TOKEN);
 
         // when & then
-        mockMvc.perform(patch("/api/v1/members/interview-problems/{problemId}", problem.getId())
-                .header("Authorization", token)
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(
+                patch("/api/v1/members/interview-problems/{problemId}/cancel", problem.getId())
+                    .header("Authorization", token)
+                    .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.httpStatusCode").value(
                 CustomResponseStatus.INTERVIEW_PROBLEM_ALREADY_UNSAVED.getHttpStatusCode()))

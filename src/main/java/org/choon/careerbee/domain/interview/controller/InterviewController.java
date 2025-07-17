@@ -8,7 +8,6 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.auth.security.PrincipalDetails;
 import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
 import org.choon.careerbee.domain.interview.dto.request.SubmitAnswerReq;
-import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
 import org.choon.careerbee.domain.interview.dto.response.CheckProblemSolveResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemDetailResp;
 import org.choon.careerbee.domain.interview.dto.response.InterviewProblemResp;
@@ -123,20 +122,36 @@ public class InterviewController {
         );
     }
 
+//    @PostMapping("interview-problems/answers")
+//    public ResponseEntity<CommonResponse<AiFeedbackResp>> submitAnswer(
+//        @RequestBody SubmitAnswerReq submitAnswerReq,
+//        @AuthenticationPrincipal PrincipalDetails principalDetails
+//    ) {
+//        AiFeedbackResp response = commandService.submitAnswer(
+//            submitAnswerReq,
+//            principalDetails.getId()
+//        );
+//
+//        return CommonResponseEntity.ok(
+//            response,
+//            CustomResponseStatus.SUCCESS,
+//            "문제 답변에 대한 피드백입니다."
+//        );
+//    }
+
     @PostMapping("interview-problems/answers")
-    public ResponseEntity<CommonResponse<AiFeedbackResp>> submitAnswer(
+    public ResponseEntity<CommonResponse<Void>> submitAnswerAsync(
         @RequestBody SubmitAnswerReq submitAnswerReq,
         @AuthenticationPrincipal PrincipalDetails principalDetails
     ) {
-        AiFeedbackResp response = commandService.submitAnswer(
+        commandService.submitAnswerAsync(
             submitAnswerReq,
             principalDetails.getId()
         );
 
-        return CommonResponseEntity.ok(
-            response,
-            CustomResponseStatus.SUCCESS,
-            "문제 답변에 대한 피드백입니다."
+        return CommonResponseEntity.accepted(
+            CustomResponseStatus.ACCEPTED,
+            "문제 답변 피드백 요청이 수락되었습니다."
         );
     }
 
