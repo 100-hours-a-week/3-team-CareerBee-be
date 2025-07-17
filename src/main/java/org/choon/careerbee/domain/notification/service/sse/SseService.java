@@ -18,7 +18,7 @@ public interface SseService<T> {
 
     void pushAdvancedResumeUpdate(Long memberId, AdvancedResumeResp resp);
 
-    void pushAdvancedResumeUpdate(Long memberId, AiFeedbackResp resp);
+    void pushProblemFeedback(Long problemId, AiFeedbackResp resp);
 
     void sendAll();
 

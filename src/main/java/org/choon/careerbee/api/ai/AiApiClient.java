@@ -10,7 +10,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.interview.dto.request.AiFeedbackReq;
-import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackRespFromAi;
 import org.choon.careerbee.domain.interview.dto.response.AiFeedbackRespWrapper;
 import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitReq;
 import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitRespFromAI;
@@ -124,6 +124,7 @@ public class AiApiClient {
                 ExtractResumeRespFromAi extractResumeRespFromAi = objectMapper.convertValue(
                     body.data(), ExtractResumeRespFromAi.class);
 
+                logJson("3. 최종 추출 dto", extractResumeRespFromAi);
                 return ExtractResumeResp.from(extractResumeRespFromAi);
             } catch (Exception e) {
                 // 예외는 비동기적으로 처리되므로 런타임 예외로 감싸서 throw
@@ -195,7 +196,7 @@ public class AiApiClient {
                     });
 
                 logJson("2. 고급 이력서 생성(init) 응답", body);
-                return objectMapper.convertValue(body, AdvancedResumeInitResp.class);
+                return new AdvancedResumeInitResp(body.question());
             } catch (Exception e) {
                 // 예외는 비동기적으로 처리되므로 런타임 예외로 감싸서 throw
                 throw new RuntimeException("AI 서버 요청 실패", e);
@@ -275,7 +276,7 @@ public class AiApiClient {
         });
     }
 
-    public AiFeedbackResp requestFeedback(AiFeedbackReq feedbackReq) {
+    public AiFeedbackRespFromAi requestFeedback(AiFeedbackReq feedbackReq) {
         AiFeedbackRespWrapper body = aiRestClient
             .post()
             .uri(uriBuilder -> uriBuilder
@@ -302,7 +303,8 @@ public class AiApiClient {
         return body.data();
     }
 
-    public CompletableFuture<AiFeedbackResp> requestFeedbackAsync(AiFeedbackReq feedbackReq) {
+    public CompletableFuture<AiFeedbackRespFromAi> requestFeedbackAsync(AiFeedbackReq feedbackReq) {
+        log.info("ai 서버로 요청 보냄");
         return CompletableFuture.supplyAsync(() -> {
             try {
                 AiFeedbackRespWrapper body = aiRestClient

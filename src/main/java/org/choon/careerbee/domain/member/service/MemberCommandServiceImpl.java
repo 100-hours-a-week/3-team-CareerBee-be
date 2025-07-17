@@ -205,6 +205,7 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             );
         }).exceptionally(ex -> {
             future.completeExceptionally(ex);
+            log.error("예외 발생 : {}", ex);
             return null;
         });
     }
@@ -246,6 +247,7 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             );
         }).exceptionally(ex -> {
             future.completeExceptionally(ex);
+            log.error("예외 발생 : {}", ex);
             return null;
         });
     }

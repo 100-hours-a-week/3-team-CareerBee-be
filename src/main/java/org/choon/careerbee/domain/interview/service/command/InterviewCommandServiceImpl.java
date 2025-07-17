@@ -24,6 +24,7 @@ import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.interview.dto.request.AiFeedbackReq;
 import org.choon.careerbee.domain.interview.dto.request.SubmitAnswerReq;
 import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackRespFromAi;
 import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
 import org.choon.careerbee.domain.interview.repository.SolvedInterviewProblemRepository;
 import org.choon.careerbee.domain.interview.service.query.InterviewQueryService;
@@ -74,7 +75,7 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
     }
 
     @Override
-    public AiFeedbackResp submitAnswer(SubmitAnswerReq req, Long accessMemberId) {
+    public AiFeedbackRespFromAi submitAnswer(SubmitAnswerReq req, Long accessMemberId) {
         Member member = memberQueryService.findById(accessMemberId);
         InterviewProblem problem = interviewQueryService.findById(req.problemId());
         member.plusPoint(SOLVE_POINT);
@@ -109,7 +110,7 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
 
         setBoolean(redissonClient, canSolveKey, false, ttl);
 
-        AiFeedbackResp feedbackResp = aiApiClient.requestFeedback(
+        AiFeedbackRespFromAi feedbackResp = aiApiClient.requestFeedback(
             AiFeedbackReq.of(accessMemberId, req.question(), req.answer())
         );
 
@@ -148,6 +149,7 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
 
     @Override
     public void submitAnswerAsync(SubmitAnswerReq req, Long accessMemberId) {
+        log.info("피드백 service 로직 실행 시작");
         Member member = memberQueryService.findById(accessMemberId);
         InterviewProblem problem = interviewQueryService.findById(req.problemId());
 
@@ -189,6 +191,7 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
             return;
         }
 
+        log.info("피드백 요청하는 로직 시작");
         aiApiClient.requestFeedbackAsync(
                 AiFeedbackReq.of(accessMemberId, req.question(), req.answer()))
             .thenAccept(result -> {
@@ -202,12 +205,13 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
                     )
                 );
 
+                AiFeedbackResp aiFeedbackResp = AiFeedbackResp.of(req.problemId(), result);
                 // future 완료
-                future.complete(result);
+                future.complete(aiFeedbackResp);
 
                 // SSE 전달 위한 Redis Pub/Sub
                 redisPublisher.publishInterviewProblemFeedbackEvent(
-                    new FeedbackEvent(accessMemberId, result)
+                    new FeedbackEvent(accessMemberId, aiFeedbackResp)
                 );
             })
             .exceptionally(ex -> {

@@ -59,7 +59,7 @@ public class RedisSubscriber implements MessageListener {
                     FeedbackEvent event = objectMapper.readValue(
                         json, FeedbackEvent.class
                     );
-                    sseService.pushAdvancedResumeUpdate(event.memberId(), event.result());
+                    sseService.pushProblemFeedback(event.memberId(), event.result());
                 }
 
                 default -> log.warn("[RedisSubscriber] 알 수 없는 채널 수신: {}", channel);
