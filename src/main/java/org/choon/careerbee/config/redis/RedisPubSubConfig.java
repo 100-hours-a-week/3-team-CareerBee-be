@@ -28,7 +28,8 @@ public class RedisPubSubConfig {
         List<String> topics = List.of(
             "resume.extract.complete",
             "advanced.resume.init.complete",
-            "advanced.resume.update.complete"
+            "advanced.resume.update.complete",
+            "interview.problem.feedback.complete"
         );
 
         for (String topic : topics) {
