@@ -79,6 +79,7 @@ public enum CustomResponseStatus {
     ASYNC_ADVANCED_RESUME_INIT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비동기 고급 이력서 init 실패"),
     ASYNC_ADVANCED_RESUME_UPDATE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(),
         "비동기 고급 이력서 update 실패"),
+    CHANNEL_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "일치하는 Redis Channel이 없습니다."),
     ;
 
 

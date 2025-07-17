@@ -3,6 +3,7 @@ package org.choon.careerbee.config.redis;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.pubsub.RedisSubscriber;
+import org.choon.careerbee.common.pubsub.enums.Channel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -26,10 +27,11 @@ public class RedisPubSubConfig {
         container.setConnectionFactory(connectionFactory);
 
         List<String> topics = List.of(
-            "resume.extract.complete",
-            "advanced.resume.init.complete",
-            "advanced.resume.update.complete",
-            "interview.problem.feedback.complete"
+            Channel.RESUME_EXTRACTED.getValue(),
+            Channel.ADVANCED_RESUME_INIT.getValue(),
+            Channel.ADVANCED_RESUME_UPDATE.getValue(),
+            Channel.PROBLEM_FEEDBACK.getValue(),
+            Channel.AI_ERROR_CHANNEL.getValue()
         );
 
         for (String topic : topics) {
