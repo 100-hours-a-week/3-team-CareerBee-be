@@ -124,6 +124,7 @@ public class AiApiClient {
                 ExtractResumeRespFromAi extractResumeRespFromAi = objectMapper.convertValue(
                     body.data(), ExtractResumeRespFromAi.class);
 
+                logJson("3. 최종 추출 dto", extractResumeRespFromAi);
                 return ExtractResumeResp.from(extractResumeRespFromAi);
             } catch (Exception e) {
                 // 예외는 비동기적으로 처리되므로 런타임 예외로 감싸서 throw
@@ -195,7 +196,7 @@ public class AiApiClient {
                     });
 
                 logJson("2. 고급 이력서 생성(init) 응답", body);
-                return objectMapper.convertValue(body, AdvancedResumeInitResp.class);
+                return new AdvancedResumeInitResp(body.question());
             } catch (Exception e) {
                 // 예외는 비동기적으로 처리되므로 런타임 예외로 감싸서 throw
                 throw new RuntimeException("AI 서버 요청 실패", e);
