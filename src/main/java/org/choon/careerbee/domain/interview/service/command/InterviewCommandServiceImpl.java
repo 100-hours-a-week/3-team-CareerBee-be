@@ -8,7 +8,6 @@ import static org.choon.careerbee.util.redis.RedisUtil.getOrInitCount;
 import static org.choon.careerbee.util.redis.RedisUtil.setBoolean;
 import static org.choon.careerbee.util.redis.RedisUtil.setCount;
 
-import java.time.Clock;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +15,9 @@ import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.common.pubsub.RedisPublisher;
+import org.choon.careerbee.common.pubsub.dto.AiErrorEvent;
 import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
+import org.choon.careerbee.common.pubsub.enums.EventName;
 import org.choon.careerbee.domain.interview.domain.InterviewProblem;
 import org.choon.careerbee.domain.interview.domain.SolvedInterviewProblem;
 import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
@@ -24,13 +25,10 @@ import org.choon.careerbee.domain.interview.domain.enums.SaveStatus;
 import org.choon.careerbee.domain.interview.dto.request.AiFeedbackReq;
 import org.choon.careerbee.domain.interview.dto.request.SubmitAnswerReq;
 import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
-import org.choon.careerbee.domain.interview.dto.response.AiFeedbackRespFromAi;
-import org.choon.careerbee.domain.interview.repository.InterviewProblemRepository;
 import org.choon.careerbee.domain.interview.repository.SolvedInterviewProblemRepository;
 import org.choon.careerbee.domain.interview.service.query.InterviewQueryService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
-import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.choon.careerbee.util.date.TimeUtil;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
@@ -48,12 +46,9 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
     private final InterviewQueryService queryService;
     private final MemberQueryService memberQueryService;
     private final InterviewQueryService interviewQueryService;
-    private final InterviewProblemRepository problemRepository;
     private final SolvedInterviewProblemRepository solvedProblemRepository;
     private final AiApiClient aiApiClient;
     private final RedissonClient redissonClient;
-    private final Clock clock;
-    private final SseService sseService;
     private final RedisPublisher redisPublisher;
 
     @Override
@@ -72,56 +67,6 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
         );
 
         solvedProblem.cancelSave();
-    }
-
-    @Override
-    public AiFeedbackRespFromAi submitAnswer(SubmitAnswerReq req, Long accessMemberId) {
-        Member member = memberQueryService.findById(accessMemberId);
-        InterviewProblem problem = interviewQueryService.findById(req.problemId());
-        member.plusPoint(SOLVE_POINT);
-
-        if (interviewQueryService.checkInterviewProblemSolved(req.problemId(), accessMemberId)
-            .isSolved()
-        ) {
-            throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_PROBLEM);
-        }
-
-        long ttl = TimeUtil.getSecondsUntilMidnight();
-
-        String canSolveKey = canSolveKey(accessMemberId, req.type());
-        String freeCountKey = freeCountKey(accessMemberId, req.type());
-        String payCountKey = payCountKey(accessMemberId, req.type());
-
-        if (req.isFreeProblem()) {
-            // 무료 문제 제출
-            Integer count = getOrInitCount(redissonClient, freeCountKey, ttl);
-            if (count == 1) {
-                throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_FREE_PROBLEM);
-            }
-            setCount(redissonClient, freeCountKey, 1, ttl);
-        } else {
-            // 유료 문제 제출
-            int count = getOrInitCount(redissonClient, payCountKey, ttl);
-            if (count >= 2) {
-                throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_PAY_PROBLEM);
-            }
-            setCount(redissonClient, payCountKey, count + 1, ttl);
-        }
-
-        setBoolean(redissonClient, canSolveKey, false, ttl);
-
-        AiFeedbackRespFromAi feedbackResp = aiApiClient.requestFeedback(
-            AiFeedbackReq.of(accessMemberId, req.question(), req.answer())
-        );
-
-        solvedProblemRepository.save(
-            SolvedInterviewProblem.of(
-                member, problem, req.answer(),
-                feedbackResp.feedback(), SaveStatus.UNSAVED
-            )
-        );
-
-        return feedbackResp;
     }
 
     @Override
@@ -152,6 +97,7 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
         log.info("피드백 service 로직 실행 시작");
         Member member = memberQueryService.findById(accessMemberId);
         InterviewProblem problem = interviewQueryService.findById(req.problemId());
+        member.plusPoint(SOLVE_POINT);
 
         CompletableFuture<AiFeedbackResp> future = new CompletableFuture<>();
 
@@ -159,8 +105,11 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
         if (interviewQueryService.checkInterviewProblemSolved(req.problemId(), accessMemberId)
             .isSolved()
         ) {
-            future.completeExceptionally(
-                new CustomException(CustomResponseStatus.ALREADY_SOLVED_PROBLEM));
+            handleAsyncError(
+                future, accessMemberId, EventName.PROBLEM_FEEDBACK,
+                new CustomException(CustomResponseStatus.ALREADY_SOLVED_PROBLEM),
+                "중복 풀이 체크"
+            );
             return;
         }
 
@@ -174,12 +123,14 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
             if (req.isFreeProblem()) {
                 Integer count = getOrInitCount(redissonClient, freeCountKey, ttl);
                 if (count == 1) {
+                    log.error("1. 에러 발생");
                     throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_FREE_PROBLEM);
                 }
                 setCount(redissonClient, freeCountKey, 1, ttl);
             } else {
                 int count = getOrInitCount(redissonClient, payCountKey, ttl);
                 if (count >= 2) {
+                    log.error("2. 에러 발생");
                     throw new CustomException(CustomResponseStatus.ALREADY_SOLVED_PAY_PROBLEM);
                 }
                 setCount(redissonClient, payCountKey, count + 1, ttl);
@@ -187,11 +138,14 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
 
             setBoolean(redissonClient, canSolveKey, false, ttl);
         } catch (Exception ex) {
-            future.completeExceptionally(ex);
+            handleAsyncError(
+                future, accessMemberId, EventName.PROBLEM_FEEDBACK,
+                ex,
+                "문제 피드백"
+            );
             return;
         }
 
-        log.info("피드백 요청하는 로직 시작");
         aiApiClient.requestFeedbackAsync(
                 AiFeedbackReq.of(accessMemberId, req.question(), req.answer()))
             .thenAccept(result -> {
@@ -215,10 +169,27 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
                 );
             })
             .exceptionally(ex -> {
-                future.completeExceptionally(ex);
-                log.error("비동기 피드백 생성 실패", ex);
+                handleAsyncError(
+                    future, accessMemberId, EventName.PROBLEM_FEEDBACK,
+                    ex,
+                    "문제 피드백"
+                );
                 return null;
             });
+    }
+
+    private <T> void handleAsyncError(
+        CompletableFuture<T> future,
+        Long memberId,
+        EventName eventName,
+        Throwable ex,
+        String stepDescription
+    ) {
+        log.warn("[{}] 비동기 처리 중 에러 발생: {}", stepDescription, ex.getMessage(), ex);
+        future.completeExceptionally(ex);
+        redisPublisher.publishAiErrorEvent(
+            AiErrorEvent.of(memberId, eventName, ex.getMessage())
+        );
     }
 
 }

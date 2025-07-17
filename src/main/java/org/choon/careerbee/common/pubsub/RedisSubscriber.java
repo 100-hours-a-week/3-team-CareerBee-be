@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeInitEvent;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeUpdateEvent;
+import org.choon.careerbee.common.pubsub.dto.AiErrorEvent;
 import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
 import org.choon.careerbee.common.pubsub.dto.ResumeExtractedEvent;
+import org.choon.careerbee.common.pubsub.enums.Channel;
 import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -29,8 +31,8 @@ public class RedisSubscriber implements MessageListener {
         try {
             log.info("[RedisSubscriber] 채널 수신: {}", channel);
 
-            switch (channel) {
-                case "resume.extract.complete" -> {
+            switch (Channel.from(channel)) {
+                case Channel.RESUME_EXTRACTED -> {
                     log.info("이력서 정보 추출 요청 성공 및 SSE 송신 시작");
                     ResumeExtractedEvent event = objectMapper.readValue(
                         json, ResumeExtractedEvent.class
@@ -38,7 +40,7 @@ public class RedisSubscriber implements MessageListener {
                     sseService.pushResumeExtracted(event.memberId(), event.result());
                 }
 
-                case "advanced.resume.init.complete" -> {
+                case Channel.ADVANCED_RESUME_INIT -> {
                     log.info("고급 이력서 init 요청 성공 및 SSE 송신 시작");
                     AdvancedResumeInitEvent event = objectMapper.readValue(
                         json, AdvancedResumeInitEvent.class
@@ -46,7 +48,7 @@ public class RedisSubscriber implements MessageListener {
                     sseService.pushAdvancedResumeInit(event.memberId(), event.result());
                 }
 
-                case "advanced.resume.update.complete" -> {
+                case Channel.ADVANCED_RESUME_UPDATE -> {
                     log.info("고급 이력서 Update 요청 성공 및 SSE 송신 시작");
                     AdvancedResumeUpdateEvent event = objectMapper.readValue(
                         json, AdvancedResumeUpdateEvent.class
@@ -54,12 +56,23 @@ public class RedisSubscriber implements MessageListener {
                     sseService.pushAdvancedResumeUpdate(event.memberId(), event.result());
                 }
 
-                case "interview.problem.feedback.complete" -> {
+                case Channel.PROBLEM_FEEDBACK -> {
                     log.info("면접문제 피드백 요청 성공 및 SSE 송신 시작");
                     FeedbackEvent event = objectMapper.readValue(
                         json, FeedbackEvent.class
                     );
                     sseService.pushProblemFeedback(event.memberId(), event.result());
+                }
+
+                case Channel.AI_ERROR_CHANNEL -> {
+                    log.info("비동기 처리중 예외 발생");
+                    AiErrorEvent event = objectMapper.readValue(json, AiErrorEvent.class);
+
+                    sseService.pushError(
+                        event.memberId(),
+                        event.eventName(),
+                        event.message()
+                    );
                 }
 
                 default -> log.warn("[RedisSubscriber] 알 수 없는 채널 수신: {}", channel);

@@ -8,7 +8,9 @@ import org.choon.careerbee.api.ai.AiApiClient;
 import org.choon.careerbee.common.pubsub.RedisPublisher;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeInitEvent;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeUpdateEvent;
+import org.choon.careerbee.common.pubsub.dto.AiErrorEvent;
 import org.choon.careerbee.common.pubsub.dto.ResumeExtractedEvent;
+import org.choon.careerbee.common.pubsub.enums.EventName;
 import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.image.dto.response.GetPresignedUrlResp;
@@ -177,7 +179,11 @@ public class MemberCommandServiceImpl implements MemberCommandService {
             })
             .exceptionally(ex -> {
                 // 5. 예외 발생 시 future 예외 처리
-                future.completeExceptionally(ex);
+                handleAsyncError(
+                    future, accessMemberId, EventName.RESUME_EXTRACTED,
+                    ex,
+                    "이력서 정보 추출"
+                );
                 return null;
             });
     }
@@ -185,7 +191,6 @@ public class MemberCommandServiceImpl implements MemberCommandService {
     @Override
     public void generateAdvancedResumeInitAsync(Long accessMemberId) {
         Member validMember = memberQueryService.findById(accessMemberId);
-
         CompletableFuture<AdvancedResumeInitResp> future = new CompletableFuture<>();
 
         aiApiClient.requestAdvancedResumeInitAsync(
@@ -204,8 +209,11 @@ public class MemberCommandServiceImpl implements MemberCommandService {
                 new AdvancedResumeInitEvent(accessMemberId, result)
             );
         }).exceptionally(ex -> {
-            future.completeExceptionally(ex);
-            log.error("예외 발생 : {}", ex);
+            handleAsyncError(
+                future, accessMemberId, EventName.ADVANCED_RESUME_INIT,
+                ex,
+                "고급 이력서 init"
+            );
             return null;
         });
     }
@@ -246,9 +254,26 @@ public class MemberCommandServiceImpl implements MemberCommandService {
                 new AdvancedResumeUpdateEvent(accessMemberId, response)
             );
         }).exceptionally(ex -> {
-            future.completeExceptionally(ex);
-            log.error("예외 발생 : {}", ex);
+            handleAsyncError(
+                future, accessMemberId, EventName.ADVANCED_RESUME_UPDATE,
+                ex,
+                "고급 이력서 update"
+            );
             return null;
         });
+    }
+
+    private <T> void handleAsyncError(
+        CompletableFuture<T> future,
+        Long memberId,
+        EventName eventName,
+        Throwable ex,
+        String stepDescription
+    ) {
+        log.warn("[{}] 비동기 처리 중 에러 발생: {}", stepDescription, ex.getMessage(), ex);
+        future.completeExceptionally(ex);
+        redisPublisher.publishAiErrorEvent(
+            AiErrorEvent.of(memberId, eventName, ex.getMessage())
+        );
     }
 }

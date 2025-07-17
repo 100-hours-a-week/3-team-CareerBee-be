@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeInitEvent;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeUpdateEvent;
+import org.choon.careerbee.common.pubsub.dto.AiErrorEvent;
 import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
 import org.choon.careerbee.common.pubsub.dto.ResumeExtractedEvent;
+import org.choon.careerbee.common.pubsub.enums.Channel;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +23,12 @@ public class RedisPublisher {
     private static final String INIT_ADVANCED_RESUME_CHANNEL = "advanced.resume.init.complete";
     private static final String UPDATE_ADVANCED_RESUME_CHANNEL = "advanced.resume.update.complete";
     private static final String PROBLEM_FEEDBACK_CHANNEL = "interview.problem.feedback.complete";
+    private static final String AI_ERROR_CHANNEL = "ai-error-channel";
 
     public void publishResumeExtractedEvent(ResumeExtractedEvent event) {
         try {
             String json = objectMapper.writeValueAsString(event);
-            stringRedisTemplate.convertAndSend(RESUME_EXTRACT_CHANNEL, json);
+            stringRedisTemplate.convertAndSend(Channel.RESUME_EXTRACTED.getValue(), json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Redis 메시지 직렬화 실패", e);
         }
@@ -34,7 +37,7 @@ public class RedisPublisher {
     public void publishAdvancedResumeInitEvent(AdvancedResumeInitEvent event) {
         try {
             String json = objectMapper.writeValueAsString(event);
-            stringRedisTemplate.convertAndSend(INIT_ADVANCED_RESUME_CHANNEL, json);
+            stringRedisTemplate.convertAndSend(Channel.ADVANCED_RESUME_INIT.getValue(), json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Redis 메시지 직렬화 실패", e);
         }
@@ -43,7 +46,7 @@ public class RedisPublisher {
     public void publishAdvancedResumeUpdateEvent(AdvancedResumeUpdateEvent event) {
         try {
             String json = objectMapper.writeValueAsString(event);
-            stringRedisTemplate.convertAndSend(UPDATE_ADVANCED_RESUME_CHANNEL, json);
+            stringRedisTemplate.convertAndSend(Channel.ADVANCED_RESUME_UPDATE.getValue(), json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Redis 메시지 직렬화 실패", e);
         }
@@ -52,7 +55,16 @@ public class RedisPublisher {
     public void publishInterviewProblemFeedbackEvent(FeedbackEvent event) {
         try {
             String json = objectMapper.writeValueAsString(event);
-            stringRedisTemplate.convertAndSend(PROBLEM_FEEDBACK_CHANNEL, json);
+            stringRedisTemplate.convertAndSend(Channel.PROBLEM_FEEDBACK.getValue(), json);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Redis 메시지 직렬화 실패", e);
+        }
+    }
+
+    public void publishAiErrorEvent(AiErrorEvent event) {
+        try {
+            String json = objectMapper.writeValueAsString(event);
+            stringRedisTemplate.convertAndSend(Channel.AI_ERROR_CHANNEL.getValue(), json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Redis 메시지 직렬화 실패", e);
         }

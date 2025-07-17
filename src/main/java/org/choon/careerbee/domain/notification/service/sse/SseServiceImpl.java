@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.common.pubsub.enums.EventName;
 import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
@@ -64,22 +65,22 @@ public class SseServiceImpl implements SseService {
 
     @Override
     public void pushResumeExtracted(Long memberId, ExtractResumeResp resp) {
-        sendSseEvent(memberId, "resume-extracted", resp, "이력서 추출");
+        sendSseEvent(memberId, EventName.RESUME_EXTRACTED, resp, "이력서 추출");
     }
 
     @Override
     public void pushAdvancedResumeInit(Long memberId, AdvancedResumeInitResp resp) {
-        sendSseEvent(memberId, "advanced-resume-init", resp, "고급 이력서 init");
+        sendSseEvent(memberId, EventName.ADVANCED_RESUME_INIT, resp, "고급 이력서 init");
     }
 
     @Override
     public void pushAdvancedResumeUpdate(Long memberId, AdvancedResumeResp resp) {
-        sendSseEvent(memberId, "advanced-resume-update", resp, "고급 이력서 update");
+        sendSseEvent(memberId, EventName.ADVANCED_RESUME_UPDATE, resp, "고급 이력서 update");
     }
 
     @Override
     public void pushProblemFeedback(Long memberId, AiFeedbackResp resp) {
-        sendSseEvent(memberId, "problem-feedback", resp, "면접 피드백");
+        sendSseEvent(memberId, EventName.PROBLEM_FEEDBACK, resp, "면접 피드백");
     }
 
     @Override
@@ -110,7 +111,7 @@ public class SseServiceImpl implements SseService {
         });
     }
 
-    private <T> void sendSseEvent(Long memberId, String eventName, T data, String logPrefix) {
+    private <T> void sendSseEvent(Long memberId, EventName eventName, T data, String logPrefix) {
         SseEmitter emitter = emitters.get(memberId);
         if (emitter == null) {
             log.warn("[SSE] {} - emitter 없음 (memberId={})", logPrefix, memberId);
@@ -119,7 +120,7 @@ public class SseServiceImpl implements SseService {
 
         try {
             log.info("[SSE] {} - 전송 시작", logPrefix);
-            emitter.send(SseEmitter.event().name(eventName).data(data));
+            emitter.send(SseEmitter.event().name(eventName.getValue()).data(data));
             log.info("[SSE] {} - 전송 완료", logPrefix);
         } catch (IOException e) {
             log.error("[SSE] {} - 전송 실패", logPrefix, e);
@@ -128,5 +129,24 @@ public class SseServiceImpl implements SseService {
         }
     }
 
+    @Override
+    public void pushError(Long memberId, EventName eventName, String errorMessage) {
+        SseEmitter emitter = emitters.get(memberId);
+        if (emitter == null) {
+            log.warn("[SSE Error] {} - emitter 없음 (memberId={})", eventName, memberId);
+            return;
+        }
+
+        try {
+            log.info("[SSE Error] {} - 전송 시작", eventName);
+            emitter.send(
+                SseEmitter.event().name(eventName.getValue() + "-error").data(errorMessage));
+            log.info("[SSE Error] {} - 전송 완료", eventName);
+        } catch (IOException e) {
+            log.error("[SSE Error] {} - 전송 실패", eventName, e);
+            emitter.completeWithError(e);
+            emitters.remove(memberId);
+        }
+    }
 
 }

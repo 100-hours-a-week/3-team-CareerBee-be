@@ -1,5 +1,6 @@
 package org.choon.careerbee.domain.notification.service.sse;
 
+import org.choon.careerbee.common.pubsub.enums.EventName;
 import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeInitResp;
 import org.choon.careerbee.domain.member.dto.response.AdvancedResumeResp;
@@ -23,4 +24,6 @@ public interface SseService<T> {
     void sendAll();
 
     void sendPingToAll();
+
+    void pushError(Long memberId, EventName eventName, String errorMessage);
 }
