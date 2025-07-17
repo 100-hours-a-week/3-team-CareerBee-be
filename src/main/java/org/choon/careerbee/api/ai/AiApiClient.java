@@ -10,7 +10,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.image.dto.request.ExtractResumeReq;
 import org.choon.careerbee.domain.interview.dto.request.AiFeedbackReq;
-import org.choon.careerbee.domain.interview.dto.response.AiFeedbackResp;
+import org.choon.careerbee.domain.interview.dto.response.AiFeedbackRespFromAi;
 import org.choon.careerbee.domain.interview.dto.response.AiFeedbackRespWrapper;
 import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitReq;
 import org.choon.careerbee.domain.member.dto.internal.AdvancedResumeInitRespFromAI;
@@ -275,7 +275,7 @@ public class AiApiClient {
         });
     }
 
-    public AiFeedbackResp requestFeedback(AiFeedbackReq feedbackReq) {
+    public AiFeedbackRespFromAi requestFeedback(AiFeedbackReq feedbackReq) {
         AiFeedbackRespWrapper body = aiRestClient
             .post()
             .uri(uriBuilder -> uriBuilder
@@ -302,7 +302,8 @@ public class AiApiClient {
         return body.data();
     }
 
-    public CompletableFuture<AiFeedbackResp> requestFeedbackAsync(AiFeedbackReq feedbackReq) {
+    public CompletableFuture<AiFeedbackRespFromAi> requestFeedbackAsync(AiFeedbackReq feedbackReq) {
+        log.info("ai 서버로 요청 보냄");
         return CompletableFuture.supplyAsync(() -> {
             try {
                 AiFeedbackRespWrapper body = aiRestClient

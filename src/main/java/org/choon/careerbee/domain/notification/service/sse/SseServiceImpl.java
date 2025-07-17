@@ -78,7 +78,7 @@ public class SseServiceImpl implements SseService {
     }
 
     @Override
-    public void pushAdvancedResumeUpdate(Long memberId, AiFeedbackResp resp) {
+    public void pushProblemFeedback(Long memberId, AiFeedbackResp resp) {
         sendSseEvent(memberId, "problem-feedback", resp, "면접 피드백");
     }
 
