@@ -10,6 +10,7 @@ import org.choon.careerbee.common.pubsub.dto.AiErrorEvent;
 import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
 import org.choon.careerbee.common.pubsub.dto.ResumeExtractedEvent;
 import org.choon.careerbee.common.pubsub.enums.Channel;
+import org.choon.careerbee.domain.competition.dto.event.PointEvent;
 import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -62,6 +63,14 @@ public class RedisSubscriber implements MessageListener {
                         json, FeedbackEvent.class
                     );
                     sseService.pushProblemFeedback(event.memberId(), event.result());
+                }
+
+                case Channel.COMPETITION_POINT -> {
+                    log.info("대회참여 포인트 SSE 송신 시작");
+                    PointEvent event = objectMapper.readValue(
+                        json, PointEvent.class
+                    );
+                    sseService.sendTo(event.member().getId());
                 }
 
                 case Channel.AI_ERROR_CHANNEL -> {

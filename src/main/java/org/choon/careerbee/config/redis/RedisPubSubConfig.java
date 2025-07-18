@@ -31,6 +31,7 @@ public class RedisPubSubConfig {
             Channel.ADVANCED_RESUME_INIT.getValue(),
             Channel.ADVANCED_RESUME_UPDATE.getValue(),
             Channel.PROBLEM_FEEDBACK.getValue(),
+            Channel.COMPETITION_POINT.getValue(),
             Channel.AI_ERROR_CHANNEL.getValue()
         );
 

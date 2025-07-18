@@ -11,6 +11,7 @@ public enum Channel {
     ADVANCED_RESUME_INIT("advanced.resume.init.complete"),
     ADVANCED_RESUME_UPDATE("advanced.resume.update.complete"),
     PROBLEM_FEEDBACK("interview.problem.feedback.complete"),
+    COMPETITION_POINT("competition.participant.point"),
     AI_ERROR_CHANNEL("ai-error-channel");
 
     private String value;
