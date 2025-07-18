@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.dto.internal;
+package org.choon.careerbee.common.pubsub.dto;
 
 
 import java.util.Map;

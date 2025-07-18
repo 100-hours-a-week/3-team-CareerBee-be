@@ -13,6 +13,7 @@ public enum Channel {
     PROBLEM_FEEDBACK("interview.problem.feedback.complete"),
     COMPETITION_POINT("competition.participant.point"),
     OPEN_RECRUITING("open-recruiting"),
+    DAILY_WINNER("daily-winner"),
     AI_ERROR_CHANNEL("ai-error-channel");
 
     private String value;

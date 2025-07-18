@@ -5,7 +5,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.pubsub.RedisPublisher;
-import org.choon.careerbee.domain.company.dto.internal.OpenRecruitingEventPayload;
+import org.choon.careerbee.common.pubsub.dto.OpenRecruitingEventPayload;
 import org.choon.careerbee.domain.notification.dto.event.OpenRecruitingEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

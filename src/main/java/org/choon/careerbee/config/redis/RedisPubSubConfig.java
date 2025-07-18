@@ -33,6 +33,7 @@ public class RedisPubSubConfig {
             Channel.PROBLEM_FEEDBACK.getValue(),
             Channel.COMPETITION_POINT.getValue(),
             Channel.OPEN_RECRUITING.getValue(),
+            Channel.DAILY_WINNER.getValue(),
             Channel.AI_ERROR_CHANNEL.getValue()
         );
 
