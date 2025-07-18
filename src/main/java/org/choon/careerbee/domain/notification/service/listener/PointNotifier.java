@@ -2,10 +2,10 @@ package org.choon.careerbee.domain.notification.service.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.choon.careerbee.common.pubsub.RedisPublisher;
 import org.choon.careerbee.domain.competition.dto.event.PointEvent;
 import org.choon.careerbee.domain.notification.entity.Notification;
 import org.choon.careerbee.domain.notification.repository.NotificationRepository;
-import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -16,7 +16,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class PointNotifier {
 
     private final NotificationRepository notificationRepository;
-    private final SseService sseService;
+    private final RedisPublisher redisPublisher;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void on(PointEvent pointEvent) {
@@ -31,6 +31,6 @@ public class PointNotifier {
             )
         );
 
-        sseService.sendTo(pointEvent.member().getId());
+        redisPublisher.publishPointEvent(pointEvent);
     }
 }

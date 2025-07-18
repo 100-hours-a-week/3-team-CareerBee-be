@@ -7,9 +7,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeInitEvent;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeUpdateEvent;
 import org.choon.careerbee.common.pubsub.dto.AiErrorEvent;
+import org.choon.careerbee.common.pubsub.dto.DailyWinnerEventPayload;
 import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
+import org.choon.careerbee.common.pubsub.dto.OpenRecruitingEventPayload;
 import org.choon.careerbee.common.pubsub.dto.ResumeExtractedEvent;
 import org.choon.careerbee.common.pubsub.enums.Channel;
+import org.choon.careerbee.domain.competition.dto.event.PointEvent;
+import org.choon.careerbee.domain.notification.service.processor.DailyWinnerNotificationProcessor;
+import org.choon.careerbee.domain.notification.service.processor.OpenRecruitingNotificationProcessor;
 import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -22,6 +27,8 @@ public class RedisSubscriber implements MessageListener {
 
     private final ObjectMapper objectMapper;
     private final SseService sseService;
+    private final DailyWinnerNotificationProcessor dailyWinnerNotificationProcessor;
+    private final OpenRecruitingNotificationProcessor openRecruitingNotificationProcessor;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -62,6 +69,28 @@ public class RedisSubscriber implements MessageListener {
                         json, FeedbackEvent.class
                     );
                     sseService.pushProblemFeedback(event.memberId(), event.result());
+                }
+
+                case Channel.COMPETITION_POINT -> {
+                    log.info("대회참여 포인트 SSE 송신 시작");
+                    PointEvent event = objectMapper.readValue(
+                        json, PointEvent.class
+                    );
+                    sseService.sendTo(event.member().getId());
+                }
+
+                case Channel.OPEN_RECRUITING -> {
+                    log.info("공채 오픈 알림 이벤트 수신");
+                    OpenRecruitingEventPayload event = objectMapper.readValue(json,
+                        OpenRecruitingEventPayload.class);
+                    openRecruitingNotificationProcessor.process(event);
+                }
+
+                case Channel.DAILY_WINNER -> {
+                    log.info("일일 1등 알림 이벤트 수신");
+                    DailyWinnerEventPayload event = objectMapper.readValue(json,
+                        DailyWinnerEventPayload.class);
+                    dailyWinnerNotificationProcessor.process(event);
                 }
 
                 case Channel.AI_ERROR_CHANNEL -> {
