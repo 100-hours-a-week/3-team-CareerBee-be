@@ -2,6 +2,8 @@ package org.choon.careerbee.common.pubsub;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.pubsub.dto.AdvancedResumeInitEvent;
@@ -10,7 +12,12 @@ import org.choon.careerbee.common.pubsub.dto.AiErrorEvent;
 import org.choon.careerbee.common.pubsub.dto.FeedbackEvent;
 import org.choon.careerbee.common.pubsub.dto.ResumeExtractedEvent;
 import org.choon.careerbee.common.pubsub.enums.Channel;
+import org.choon.careerbee.domain.company.dto.internal.OpenRecruitingEventPayload;
 import org.choon.careerbee.domain.competition.dto.event.PointEvent;
+import org.choon.careerbee.domain.member.entity.Member;
+import org.choon.careerbee.domain.notification.entity.Notification;
+import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
+import org.choon.careerbee.domain.notification.repository.NotificationRepository;
 import org.choon.careerbee.domain.notification.service.sse.SseService;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -23,6 +30,7 @@ public class RedisSubscriber implements MessageListener {
 
     private final ObjectMapper objectMapper;
     private final SseService sseService;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -71,6 +79,33 @@ public class RedisSubscriber implements MessageListener {
                         json, PointEvent.class
                     );
                     sseService.sendTo(event.member().getId());
+                }
+
+                case Channel.OPEN_RECRUITING -> {
+                    log.info("공채 오픈 알림 SSE 송신 시작");
+                    OpenRecruitingEventPayload event = objectMapper.readValue(
+                        json, OpenRecruitingEventPayload.class
+                    );
+
+                    List<Notification> notifications = new ArrayList<>();
+
+                    event.notifyMap().forEach((companyName, memberIds) ->
+                        memberIds.forEach(memberId ->
+                            notifications.add(Notification.of(
+                                Member.ofId(memberId),
+                                companyName,
+                                NotificationType.RECRUITMENT,
+                                false))
+                        )
+                    );
+
+                    notificationRepository.batchInsert(notifications); // 비동기 저장
+                    event.notifyMap().values().stream()
+                        .flatMap(java.util.Set::stream)
+                        .distinct()
+                        .forEach(sseService::sendTo);
+
+                    log.info("공채 오픈 알림 {}건 DB 저장 및 SSE 발송 완료", notifications.size());
                 }
 
                 case Channel.AI_ERROR_CHANNEL -> {
