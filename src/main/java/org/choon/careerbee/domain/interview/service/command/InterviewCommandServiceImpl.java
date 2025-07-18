@@ -169,6 +169,7 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
                 );
             })
             .exceptionally(ex -> {
+                compensateRedisState(req, accessMemberId);
                 handleAsyncError(
                     future, accessMemberId, EventName.PROBLEM_FEEDBACK,
                     ex,
@@ -176,6 +177,22 @@ public class InterviewCommandServiceImpl implements InterviewCommandService {
                 );
                 return null;
             });
+    }
+
+    private void compensateRedisState(SubmitAnswerReq req, Long memberId) {
+        long ttl = TimeUtil.getSecondsUntilMidnight();
+        String freeCountKey = freeCountKey(memberId, req.type());
+        String payCountKey = payCountKey(memberId, req.type());
+        String canSolveKey = canSolveKey(memberId, req.type());
+
+        if (req.isFreeProblem()) {
+            setCount(redissonClient, freeCountKey, 0, ttl);
+        } else {
+            int count = getOrInitCount(redissonClient, payCountKey, ttl);
+            setCount(redissonClient, payCountKey, Math.max(0, count - 1), ttl);
+        }
+
+        setBoolean(redissonClient, canSolveKey, true, ttl);
     }
 
     private <T> void handleAsyncError(
