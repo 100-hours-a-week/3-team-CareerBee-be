@@ -116,6 +116,9 @@ dependencies {
 
     // Cache
     implementation 'org.springframework.boot:spring-boot-starter-cache:3.5.3'
+
+    // Spring Batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch:3.5.3'
 }
 
 sentry {
