@@ -122,23 +122,6 @@ public class InterviewController {
         );
     }
 
-//    @PostMapping("interview-problems/answers")
-//    public ResponseEntity<CommonResponse<AiFeedbackResp>> submitAnswer(
-//        @RequestBody SubmitAnswerReq submitAnswerReq,
-//        @AuthenticationPrincipal PrincipalDetails principalDetails
-//    ) {
-//        AiFeedbackResp response = commandService.submitAnswer(
-//            submitAnswerReq,
-//            principalDetails.getId()
-//        );
-//
-//        return CommonResponseEntity.ok(
-//            response,
-//            CustomResponseStatus.SUCCESS,
-//            "문제 답변에 대한 피드백입니다."
-//        );
-//    }
-
     @PostMapping("interview-problems/answers")
     public ResponseEntity<CommonResponse<Void>> submitAnswerAsync(
         @RequestBody SubmitAnswerReq submitAnswerReq,
