@@ -199,6 +199,19 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
     }
 
     @Override
+    public List<Long> findIdByCompanyNameIn(List<String> companyNames) {
+        if (companyNames == null || companyNames.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return queryFactory
+            .select(company.id)
+            .from(company)
+            .where(company.name.in(companyNames))
+            .fetch();
+    }
+
+    @Override
     public List<CompanyMarkerInfo> fetchAllCompanyMarkerInfo() {
         return queryFactory.select(
                 Projections.constructor(

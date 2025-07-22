@@ -11,6 +11,7 @@ import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.domain.company.dto.internal.CompanyRecruitInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryAddressInfo;
 import org.choon.careerbee.domain.company.dto.request.CompanyQueryCond;
+import org.choon.careerbee.domain.company.dto.request.RecentIssueUpdateReq;
 import org.choon.careerbee.domain.company.dto.response.CompanyDetailResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyIdResp;
 import org.choon.careerbee.domain.company.dto.response.CompanyRangeSearchResp;
@@ -19,11 +20,14 @@ import org.choon.careerbee.domain.company.dto.response.CompanySearchResp;
 import org.choon.careerbee.domain.company.dto.response.CompanySummaryInfo;
 import org.choon.careerbee.domain.company.dto.response.RecentIssueResp;
 import org.choon.careerbee.domain.company.dto.response.WishCountResp;
+import org.choon.careerbee.domain.company.service.command.CompanyCommandService;
 import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CompanyController {
 
     private final CompanyQueryService queryService;
+    private final CompanyCommandService commandService;
 
     @Operation(
         summary = "기업 거리 기반 조회",
@@ -181,6 +186,18 @@ public class CompanyController {
             response,
             CustomResponseStatus.SUCCESS,
             "관심수 조회에 성공하였습니다."
+        );
+    }
+
+    @PatchMapping("/recent-issue")
+    public ResponseEntity<CommonResponse<Void>> fetchCompanyWishCount(
+        @RequestBody List<RecentIssueUpdateReq> updateRequests
+    ) {
+        commandService.updateRecentIssue(updateRequests);
+
+        return CommonResponseEntity.ok(
+            CustomResponseStatus.ACCEPT,
+            "최근이슈 업데이트 요청이 수락되었습니다."
         );
     }
 }

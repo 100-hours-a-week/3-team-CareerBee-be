@@ -69,6 +69,10 @@ ai:
   api:
     base-url: ${AI_BASE_URL}
 
+next:
+  api:
+    base-url: ${NEXT_BASE_URL}
+
 management:
   endpoints:
     web:
