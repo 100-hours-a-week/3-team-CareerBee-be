@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 public enum CustomResponseStatus {
     ACCEPT(HttpStatus.ACCEPTED.value(), "요청이 수락되었습니다."),
     SUCCESS(HttpStatus.OK.value(), "요청에 성공하였습니다."),
+    ACCEPTED(HttpStatus.ACCEPTED.value(), "요청을 수락하였습니다."),
     SUCCESS_WITH_NO_CONTENT(HttpStatus.NO_CONTENT.value(), "요청에 성공하였습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN.value(), "권한이 없습니다."),
 
@@ -38,6 +39,13 @@ public enum CustomResponseStatus {
 
     OAUTH_PROVIDER_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 OAuth Provider 입니다."),
     EXTENSION_NOT_EXIST(HttpStatus.BAD_REQUEST.value(), "제공하지 않는 확장자입니다."),
+    MISSING_REQUIRED_FIELDS(HttpStatus.BAD_REQUEST.value(), "필수 입력 항목이 누락되었습니다."),
+    AI_INVALID_INPUT_FIELDS(HttpStatus.BAD_REQUEST.value(), "AI 서버에 유효하지 않은 데이터를 제공했습니다."),
+
+    INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "존재하지 않는 면접문제 입니다."),
+    SOLVED_INTERVIEW_PROBLEM_NOT_EXIST(HttpStatus.NOT_FOUND.value(), "풀지않은 문제입니다."),
+    INTERVIEW_PROBLEM_ALREADY_SAVED(HttpStatus.CONFLICT.value(), "이미 저장한 문제입니다."),
+    INTERVIEW_PROBLEM_ALREADY_UNSAVED(HttpStatus.CONFLICT.value(), "저장안된 문제입니다."),
 
     BAD_JWT(HttpStatus.BAD_REQUEST.value(), "잘못된 토큰입니다."),
     EXPIRED_JWT(HttpStatus.UNAUTHORIZED.value(), "만료된 토큰입니다."),
@@ -58,7 +66,23 @@ public enum CustomResponseStatus {
         "사람인 API 요청시 유효한지 않은 파라미터로 발생 에러입니다."),
     SARAMIN_TOO_MANY_REQUEST_ERROR(HttpStatus.TOO_MANY_REQUESTS.value(),
         "사람인 API의 일일 요청 횟수 초과하였습니다."),
+
+    FAILED_TO_ACQUIRE_DISTRIBUTED_LOCK(HttpStatus.CONFLICT.value(), "분산 락 획득에 실패했습니다."),
+    FAILED_TO_EXECUTE_DISTRIBUTED_LOCK(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+        "분산 락 실행 중 예외가 발생했습니다."),
+
+    ALREADY_SOLVED_FREE_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 무료 문제입니다."),
+    ALREADY_SOLVED_PAY_PROBLEM(HttpStatus.BAD_REQUEST.value(), "오늘 하루에 풀 수 있는 유료 문제를 모두 푸셨습니다."),
+    ALREADY_SOLVED_PROBLEM(HttpStatus.BAD_REQUEST.value(), "이미 풀이한 문제입니다."),
+    ALREADY_HAS_SOLVE_CHANCE(HttpStatus.BAD_REQUEST.value(), "아직 무료 풀이 기회가 남아있습니다."),
+
+    ASYNC_RESUME_EXTRACT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비동기 이력서 추출 실패"),
+    ASYNC_ADVANCED_RESUME_INIT_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(), "비동기 고급 이력서 init 실패"),
+    ASYNC_ADVANCED_RESUME_UPDATE_FAIL(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+        "비동기 고급 이력서 update 실패"),
+    CHANNEL_NOT_FOUND(HttpStatus.NOT_FOUND.value(), "일치하는 Redis Channel이 없습니다."),
     ;
+
 
     private final int httpStatusCode;
     private String message;

@@ -1,9 +1,9 @@
 package org.choon.careerbee.domain.competition.service.command;
 
-import io.sentry.Sentry;
 import static org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq.SubmitInfo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.sentry.Sentry;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -24,11 +24,11 @@ import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.dto.event.PointEvent;
-import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
-import org.choon.careerbee.domain.competition.dto.request.SummaryPeriod;
 import org.choon.careerbee.domain.competition.dto.internal.GradingResult;
 import org.choon.careerbee.domain.competition.dto.internal.ProblemAnswerInfo;
 import org.choon.careerbee.domain.competition.dto.internal.SubmissionContext;
+import org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq;
+import org.choon.careerbee.domain.competition.dto.request.SummaryPeriod;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionGradingResp.CompetitionGradingInfo;
 import org.choon.careerbee.domain.competition.repository.CompetitionParticipantRepository;

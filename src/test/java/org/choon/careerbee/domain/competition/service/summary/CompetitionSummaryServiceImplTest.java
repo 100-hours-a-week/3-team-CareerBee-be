@@ -1,9 +1,9 @@
 package org.choon.careerbee.domain.competition.service.summary;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.willAnswer;
@@ -17,6 +17,7 @@ import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
 import org.choon.careerbee.domain.competition.dto.response.DailyResultSummaryResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
+import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest
 @EnableRetry
@@ -47,11 +49,14 @@ class CompetitionSummaryRetryTest {
     @Test
     void dailySummary_예외두번후성공_재시도3회확인() {
         // given
+        Member member = createMember("testNick", "test@test.com", 1234243L);
+        ReflectionTestUtils.setField(member, "id", 1L);
+
         LocalDate today = LocalDate.now();
         when(resultRepository.fetchResultSummaryOfDaily(today))
             .thenReturn(List.of(new DailyResultSummaryResp(1L, (short) 5, 123)));
 
-        when(memberQueryService.getNicknameByMemberId(1L)).thenReturn("Tester");
+        when(memberQueryService.findById(1L)).thenReturn(member);
 
         // summaryRepository.rewritePeriod()가 처음 두 번은 예외,
         // 세 번째는 정상 종료하도록 설정
@@ -77,10 +82,11 @@ class CompetitionSummaryRetryTest {
     @Test
     void dailySummary_3회모두실패_Recover메서드호출() {
         // given
+        Member member = createMember("testNick", "test@test.com", 1234243L);
         LocalDate today = LocalDate.now();
-        given(resultRepository.fetchResultSummaryOfDaily(today))
-            .willReturn(List.of(new DailyResultSummaryResp(1L, (short) 5, 123)));
-        given(memberQueryService.getNicknameByMemberId(1L)).willReturn("Tester");
+        when(resultRepository.fetchResultSummaryOfDaily(today))
+            .thenReturn(List.of(new DailyResultSummaryResp(1L, (short) 5, 123)));
+        when(memberQueryService.findById(1L)).thenReturn(member);
 
         // 3회 모두 예외 발생
         willThrow(new TransientDataAccessException("always fail") {

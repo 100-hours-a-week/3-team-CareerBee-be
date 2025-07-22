@@ -38,6 +38,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class CompetitionSummaryServiceImpl implements CompetitionSummaryService {
 
+    private static final Integer WINNER_POINT = 10;
+
     private final CompetitionSummaryRepository summaryRepository;
     private final CompetitionResultRepository resultRepository;
     private final MemberQueryService memberQueryService;
@@ -63,23 +65,18 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
                 long rank = i + 1L;
 
                 if (rank == 1) {
-                    String firstMemberNickname = memberQueryService.getNicknameByMemberId(
-                        summary.memberId());
-                    winnerNickRef.set(firstMemberNickname);
+                    Member winner = memberQueryService.findById(summary.memberId());
+                    winner.plusPoint(WINNER_POINT);
+                    winnerNickRef.set(winner.getNickname());
                 }
 
                 return CompetitionSummary.of(
-                    Member.ofId(summary.memberId()),
-                    summary.solvedSum(),
-                    Long.valueOf(summary.timeSum()),
-                    rank,
-                    0,
-                    0.0,
-                    SummaryType.DAY,
-                    now, now);
+                    Member.ofId(summary.memberId()), summary.solvedSum(),
+                    Long.valueOf(summary.timeSum()), rank, 0, 0.0,
+                    SummaryType.DAY, now, now);
             }).toList();
 
-        summaryRepository.rewritePeriod(SummaryType.DAY, now, now, summaries);
+        summaryRepository.batchInsert(summaries);
 
         // 일일 대회 1등 유저 알림 발송
         eventPublisher.publishEvent(
@@ -165,15 +162,10 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
 
             if (competitionSummary == null) {
                 competitionSummaryToInsert.add(CompetitionSummary.of(
-                    Member.ofId(tempSummaryInfo.memberId()),
-                    tempSummaryInfo.solvedSum(),
-                    tempSummaryInfo.timeSum(),
-                    0L,
-                    tempSummaryInfo.maxStreak(),
-                    tempSummaryInfo.correctRate(),
-                    summaryType,
-                    summaryPeriod.startAt(),
-                    summaryPeriod.endAt()
+                    Member.ofId(tempSummaryInfo.memberId()), tempSummaryInfo.solvedSum(),
+                    tempSummaryInfo.timeSum(), 0L,
+                    tempSummaryInfo.maxStreak(), tempSummaryInfo.correctRate(),
+                    summaryType, summaryPeriod.startAt(), summaryPeriod.endAt()
                 ));
                 continue;
             }
@@ -198,8 +190,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
         }
 
         summaryRepository.flush();
-        summaryRepository.rewritePeriod(summaryType, summaryPeriod.startAt(), summaryPeriod.endAt(),
-            competitionSummaryToInsert);
+        summaryRepository.batchInsert(competitionSummaryToInsert);
     }
 
     @Recover

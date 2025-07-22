@@ -48,4 +48,29 @@ class ACTokenGenerator {
         }
         System.out.println("✅ JWT CSV 생성 완료: " + out.toAbsolutePath());
     }
+
+    @Test
+    @DisplayName("AI 서버와 통신 부하 테스트용 JWT CSV 파일 생성")
+    void generateAiLoadTestTokensCsv() throws Exception {
+
+        String fileName = "ai_tokens_" + LocalDateTime.now()
+            .toString().replace(":", "-") + ".csv";
+        Path out = Path.of("build", "tmp", fileName);
+        Files.createDirectories(out.getParent());
+
+        try (BufferedWriter bw = Files.newBufferedWriter(out)) {
+            for (long memberId = 21; memberId < 31; memberId++) {
+                String token = jwtUtil.createToken(memberId, TokenType.ACCESS_TOKEN);
+
+                // (2) 토큰 null 체크 -- 문제 진단에 도움
+                if (token == null) {
+                    throw new IllegalStateException("token null for id " + memberId);
+                }
+
+                bw.write("Bearer " + token);
+                bw.newLine();
+            }
+        }
+        System.out.println("✅ JWT CSV 생성 완료: " + out.toAbsolutePath());
+    }
 }

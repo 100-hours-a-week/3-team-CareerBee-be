@@ -37,6 +37,7 @@ public class SecurityConfig {
             config.setAllowedMethods(Collections.singletonList("*"));
             config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:5173",
+                "https://localhost:5173",
                 "http://localhost:5500",
                 "http://127.0.0.1:5173",
                 "http://127.0.0.1:5500",
@@ -68,14 +69,16 @@ public class SecurityConfig {
                     "/competitions/rankings",
                     "/competitions/ids",
                     "/actuator/**",
-                    "/tickets"
+                    "/tickets",
+                    "/api/v1/interview-problems"
                 )
                 .permitAll()  // 인증 없이 접근 가능한 URI 추가
                 .requestMatchers(
                     "/members/**",
                     "/api/v1/members/competitions/rankings",
                     "/api/v1/members/competitions/rankings/live",
-                    "/api/v1/members/tickets"
+                    "/api/v1/members/tickets",
+                    "/api/v1/members/interview-problems"
                 ).hasRole("MEMBER")
                 .anyRequest().permitAll()  // 그 외 요청은 인가처리를 할 필요가 없음
             )

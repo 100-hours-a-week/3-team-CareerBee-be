@@ -45,8 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
-    private static final long TTL = 3L;
     private final RecruitmentRepository recruitmentRepository;
+    private static final long TTL = 1L;
     private final CompanyRepository companyRepository;
 
     private final CompanyApiClient companyApiClient;
