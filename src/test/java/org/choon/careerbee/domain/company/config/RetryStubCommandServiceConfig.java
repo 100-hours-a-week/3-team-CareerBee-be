@@ -2,6 +2,8 @@ package org.choon.careerbee.domain.company.config;
 
 
 import org.choon.careerbee.domain.company.api.CompanyApiClient;
+import org.choon.careerbee.domain.company.api.NextApiClient;
+import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.company.service.RecruitmentSyncService;
@@ -21,7 +23,9 @@ public class RetryStubCommandServiceConfig {
     @Primary
     public CompanyCommandService companyCommandService(
         RecruitmentRepository recruitmentRepository,
+        CompanyRepository companyRepository,
         CompanyApiClient companyApiClient,
+        NextApiClient nextApiClient,
         WishCompanyRepository wishCompanyRepository,
         MemberQueryService memberQueryService,
         CompanyQueryService companyQueryService,
@@ -30,7 +34,9 @@ public class RetryStubCommandServiceConfig {
     ) {
         return new RetryStubCompanyCommandService(
             recruitmentRepository,
+            companyRepository,
             companyApiClient,
+            nextApiClient,
             wishCompanyRepository,
             memberQueryService,
             companyQueryService,

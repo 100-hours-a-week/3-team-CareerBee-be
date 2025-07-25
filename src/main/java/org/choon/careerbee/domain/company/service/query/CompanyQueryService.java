@@ -38,6 +38,8 @@ public interface CompanyQueryService {
 
     List<Company> findBySaraminNameIn(List<String> companyNames);
 
+    List<Long> findIdByCompanyNameIn(List<String> companyNames);
+
     List<Company> findByIds(List<Long> ids);
 
     WishCompaniesResp fetchWishCompanies(Long accessMemberId, Long cursor, int size);

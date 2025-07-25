@@ -76,7 +76,7 @@ public class CompetitionSummaryServiceImpl implements CompetitionSummaryService 
                     SummaryType.DAY, now, now);
             }).toList();
 
-        summaryRepository.rewritePeriod(SummaryType.DAY, now, now, summaries);
+        summaryRepository.batchInsert(summaries);
 
         // 일일 대회 1등 유저 알림 발송
         eventPublisher.publishEvent(

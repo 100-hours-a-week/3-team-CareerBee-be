@@ -1,7 +1,9 @@
 package org.choon.careerbee.domain.company.service;
 
 import org.choon.careerbee.domain.company.api.CompanyApiClient;
+import org.choon.careerbee.domain.company.api.NextApiClient;
 import org.choon.careerbee.domain.company.exception.RetryableSaraminException;
+import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.recruitment.RecruitmentRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
 import org.choon.careerbee.domain.company.service.command.CompanyCommandServiceImpl;
@@ -15,7 +17,9 @@ public class RetryStubCompanyCommandService extends CompanyCommandServiceImpl {
 
     public RetryStubCompanyCommandService(
         RecruitmentRepository recruitmentRepository,
+        CompanyRepository companyRepository,
         CompanyApiClient companyApiClient,
+        NextApiClient nextApiClient,
         WishCompanyRepository wishCompanyRepository,
         MemberQueryService memberQueryService,
         CompanyQueryService companyQueryService,
@@ -24,7 +28,9 @@ public class RetryStubCompanyCommandService extends CompanyCommandServiceImpl {
     ) {
         super(
             recruitmentRepository,
+            companyRepository,
             companyApiClient,
+            nextApiClient,
             wishCompanyRepository,
             memberQueryService,
             companyQueryService,

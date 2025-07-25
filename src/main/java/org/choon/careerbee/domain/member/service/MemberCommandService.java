@@ -32,4 +32,15 @@ public interface MemberCommandService {
     AdvancedResumeResp generateAdvancedResumeUpdate(
         AdvancedResumeUpdateReq advancedResumeUpdateReq, Long accessMemberId
     );
+
+    void extractResumeInfoFromAiAsync(
+        UploadCompleteReq uploadCompleteReq, Long accessMemberId
+    );
+
+    void generateAdvancedResumeInitAsync(Long accessMemberId);
+
+    void generateAdvancedResumeUpdateAsync(
+        AdvancedResumeUpdateReq advancedResumeUpdateReq,
+        Long accessMemberId
+    );
 }

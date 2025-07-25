@@ -24,6 +24,15 @@ public class CommonResponseEntity {
             .body(CommonResponse.createSuccessWithNoContent(status, message));
     }
 
+    public static ResponseEntity<CommonResponse<Void>> accepted(
+        CustomResponseStatus status,
+        String message
+    ) {
+        return ResponseEntity
+            .status(status.getHttpStatusCode())
+            .body(CommonResponse.createSuccessWithNoContent(status, message));
+    }
+
     public static ResponseEntity<CommonResponse<String>> error(
         CustomResponseStatus status
     ) {
