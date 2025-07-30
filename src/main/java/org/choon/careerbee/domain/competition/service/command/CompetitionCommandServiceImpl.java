@@ -56,7 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CompetitionCommandServiceImpl implements CompetitionCommandService {
 
-    private static final Integer PARTICIPATION_POINT = 5;
+    private static final Integer PARTICIPATION_POINT = 15;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final CompetitionRepository competitionRepository;
