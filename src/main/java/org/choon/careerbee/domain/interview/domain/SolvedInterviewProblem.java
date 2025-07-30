@@ -50,7 +50,7 @@ public class SolvedInterviewProblem extends BaseEntity {
     @Column(length = 500, nullable = false)
     private String answer;
 
-    @Column(length = 500, nullable = false)
+    @Column(length = 1000, nullable = false)
     private String feedback;
 
     @Enumerated(EnumType.STRING)
