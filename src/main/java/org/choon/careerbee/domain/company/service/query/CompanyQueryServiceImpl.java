@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.company.service.query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,9 @@ import org.choon.careerbee.domain.company.service.query.internal.CompanyStaticDa
 import org.choon.careerbee.domain.member.dto.response.WishCompaniesResp;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.repository.MemberRepository;
+import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -124,7 +127,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     }
 
     @Override
-//    @Cacheable(cacheNames = "companyMarkerInfo", key = "#companyId")
+    @Cacheable(cacheNames = "companyMarkerInfo", key = "#companyId")
     public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
         return companyRepository.fetchCompanyMarkerInfo(companyId);
     }
@@ -192,37 +195,34 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
             .collect(Collectors.joining());
     }
 
-    private CompanySummaryInfoWithoutWish fetchSimpleInfo(Long companyId)
-        throws JsonProcessingException {
-//        RBucket<String> simpleInfoBucket = redissonClient.getBucket(
-//            COMPANY_SIMPLE_KEY_PREFIX + companyId
-//        );
-//
-//        String simpleJson = simpleInfoBucket.get();
-//
-//        if (simpleJson != null) {
-//            return objectMapper.readValue(simpleJson, CompanySummaryInfoWithoutWish.class);
-//        }
+    private CompanySummaryInfoWithoutWish fetchSimpleInfo(Long companyId) throws JsonProcessingException {
+        RBucket<String> simpleInfoBucket = redissonClient.getBucket(
+            COMPANY_SIMPLE_KEY_PREFIX + companyId
+        );
 
-        CompanySummaryInfoWithoutWish simpleInfo =
-            companyRepository.fetchCompanySummaryInfoWithoutWishCount(companyId);
-//        simpleInfoBucket.set(objectMapper.writeValueAsString(simpleInfo));
+        String simpleJson = simpleInfoBucket.get();
+
+        if (simpleJson != null) {
+            return objectMapper.readValue(simpleJson, CompanySummaryInfoWithoutWish.class);
+        }
+
+        CompanySummaryInfoWithoutWish simpleInfo = companyRepository.fetchCompanySummaryInfoWithoutWishCount(companyId);
+        simpleInfoBucket.set(objectMapper.writeValueAsString(simpleInfo));
         return simpleInfo;
     }
 
     private Long fetchWishCount(Long companyId) {
-//        RBucket<String> wishCountBucket = redissonClient.getBucket(
-//            COMPANY_WISH_KEY_PREFIX + companyId
-//        );
-//
-//        String wishCountJson = wishCountBucket.get();
+        RBucket<String> wishCountBucket = redissonClient.getBucket(
+            COMPANY_WISH_KEY_PREFIX + companyId
+        );
 
-//        if (wishCountJson != null) {
-//            return Long.valueOf(wishCountJson);
-//        }
+        String wishCountJson = wishCountBucket.get();
+        if (wishCountJson != null) {
+            return Long.valueOf(wishCountJson);
+        }
 
         Long wishCount = wishCompanyRepository.fetchWishCountById(companyId);
-//        wishCountBucket.set(String.valueOf(wishCount), Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
+        wishCountBucket.set(String.valueOf(wishCount), Duration.ofSeconds(COMPANY_WISH_KEY_TTL));
         return wishCount;
     }
 }
