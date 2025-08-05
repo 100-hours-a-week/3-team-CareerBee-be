@@ -48,6 +48,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     private static final String COMPANY_SIMPLE_KEY_PREFIX = "company:simple:";
     private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
+    private static final String COMPANY_MARKER_INFO_KEY_PREFIX = "company:markerInfo:";
     private static final Long COMPANY_WISH_KEY_TTL = 10L;
 
     private final CompanyRepository companyRepository;
@@ -90,10 +91,8 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
 
     @Override
     public CompanyDetailResp fetchCompanyDetail(Long companyId) {
-        CompanyStaticPart companyStaticPart = staticDataQueryService
-            .fetchCompanyStaticPart(companyId);
-        RecruitingStatus recruitingStatus = recruitmentQueryService
-            .fetchCompanyRecruitStatus(companyId);
+        CompanyStaticPart companyStaticPart = staticDataQueryService.fetchCompanyStaticPart(companyId);
+        RecruitingStatus recruitingStatus = recruitmentQueryService.fetchCompanyRecruitStatus(companyId);
 
         return CompanyDetailResp.of(
             companyStaticPart,
@@ -127,9 +126,12 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
     }
 
     @Override
-    @Cacheable(cacheNames = "companyMarkerInfo", key = "#companyId")
     public CompanyMarkerInfo fetchCompanyLocation(Long companyId) {
-        return companyRepository.fetchCompanyMarkerInfo(companyId);
+        try {
+            return fetchMarkerInfo(companyId);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+        }
     }
 
     @Override
@@ -193,6 +195,22 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
                 return (ch == '!' || ch == '_' || ch == '%') ? "!" + ch : String.valueOf(ch);
             })
             .collect(Collectors.joining());
+    }
+
+    private CompanyMarkerInfo fetchMarkerInfo(Long companyId) throws JsonProcessingException {
+        RBucket<String> markerInfoBucket = redissonClient.getBucket(
+            COMPANY_MARKER_INFO_KEY_PREFIX + companyId
+        );
+
+        String simpleJson = markerInfoBucket.get();
+
+        if (simpleJson != null) {
+            return objectMapper.readValue(simpleJson, CompanyMarkerInfo.class);
+        }
+
+        CompanyMarkerInfo companyMarkerInfo = companyRepository.fetchCompanyMarkerInfo(companyId);
+        markerInfoBucket.set(objectMapper.writeValueAsString(markerInfoBucket));
+        return companyMarkerInfo;
     }
 
     private CompanySummaryInfoWithoutWish fetchSimpleInfo(Long companyId) throws JsonProcessingException {
