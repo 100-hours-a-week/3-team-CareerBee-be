@@ -53,19 +53,19 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
         try {
             String simpleJson = compPartBucket.get();
             if (simpleJson != null) {
-                return objectMapper.readValue(simpleJson, CompetitionParticipationResp.class);
+                return new CompetitionParticipationResp(
+                    objectMapper.readValue(simpleJson, Boolean.class)
+                );
             }
 
-            var participationResp = new CompetitionParticipationResp(
-                competitionParticipantRepository.existsByMemberIdAndCompetitionId(
-                    accessMemberId, competitionId)
-            );
+            var isParticipant = competitionParticipantRepository
+                .existsByMemberIdAndCompetitionId(accessMemberId, competitionId);
 
             compPartBucket.set(
-                objectMapper.writeValueAsString(participationResp),
+                objectMapper.writeValueAsString(isParticipant),
                 Duration.ofSeconds(TimeUtil.getSecondsUntilMidnight())
             );
-            return participationResp;
+            return new CompetitionParticipationResp(isParticipant);
         } catch (JsonProcessingException e) {
             throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
         }
