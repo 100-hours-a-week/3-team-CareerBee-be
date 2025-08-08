@@ -68,6 +68,7 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
     private final CompetitionProblemRepository competitionProblemRepository;
     private final RedissonClient redissonClient;
     private final Clock clock;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void joinCompetition(Long competitionId, Long accessMemberId) {
@@ -87,7 +88,7 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
         String key = getCompetitionParticipantKey(accessMemberId);
         RBucket<Boolean> bucket = redissonClient.getBucket(
             key,
-            new TypedJsonJacksonCodec(Boolean.class, new ObjectMapper())
+            new TypedJsonJacksonCodec(Boolean.class, objectMapper)
         );
 
         long secondsUntilMidnight = Duration.between(LocalTime.now(clock), LocalTime.MAX)
