@@ -2,6 +2,7 @@ package org.choon.careerbee.domain.competition.service.query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.choon.careerbee.domain.competition.repository.CompetitionParticipantR
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
+import org.choon.careerbee.util.date.TimeUtil;
 import org.choon.careerbee.util.redis.RedisKeyFactory;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
@@ -59,7 +61,10 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
                     accessMemberId, competitionId)
             );
 
-            compPartBucket.set(objectMapper.writeValueAsString(participationResp));
+            compPartBucket.set(
+                objectMapper.writeValueAsString(participationResp),
+                Duration.ofSeconds(TimeUtil.getSecondsUntilMidnight())
+            );
             return participationResp;
         } catch (JsonProcessingException e) {
             throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
@@ -81,33 +86,82 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-    @Cacheable(
-        cacheNames = "competitionRank",
-        key = "@redisKeyFactory.todayKey(#today)"
-    )
     public CompetitionRankingResp fetchRankings(LocalDate today) {
-        return competitionSummaryRepository.fetchRankings(today);
+        RBucket<String> compRankingBucket = redissonClient.getBucket(
+            RedisKeyFactory.competitionRankKey(today));
+
+        String simpleJson = compRankingBucket.get();
+        try {
+            if (simpleJson != null) {
+                return objectMapper.readValue(simpleJson, CompetitionRankingResp.class);
+            }
+
+            var competitionRankingResp = competitionSummaryRepository.fetchRankings(today);
+            if (competitionRankingResp != null) {
+                compRankingBucket.set(
+                    objectMapper.writeValueAsString(competitionRankingResp),
+                    Duration.ofSeconds(TimeUtil.getSecondsUntilMidnight())
+                );
+            }
+
+            return competitionRankingResp;
+        } catch (JsonProcessingException e) {
+            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+        }
     }
 
     @Override
-    @Cacheable(
-        cacheNames = "competitionId",
-        key = "@redisKeyFactory.todayKey(#today)",
-        unless = "#result == null"
-    )
     public CompetitionIdResp fetchCompetitionIdBy(LocalDate today) {
-        return competitionRepository.fetchCompetitionIdFromToday(today);
+        RBucket<String> bucket = redissonClient.getBucket(RedisKeyFactory.competitionIdKey(today));
+
+        String simpleJson = bucket.get();
+        try {
+            if (simpleJson != null) {
+                return objectMapper.readValue(simpleJson, CompetitionIdResp.class);
+            }
+
+            var competitionIdResp = competitionRepository.fetchCompetitionIdFromToday(today);
+            if (competitionIdResp != null) {
+                bucket.set(
+                    objectMapper.writeValueAsString(competitionIdResp),
+                    Duration.ofSeconds(TimeUtil.getSecondsUntilMidnight())
+                );
+            }
+
+            return competitionIdResp;
+        } catch (JsonProcessingException e) {
+            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+        }
     }
 
     @Override
-    @Cacheable(
-        cacheNames = "memberRank",
-        key = "#accessMemberId + ':' + @redisKeyFactory.todayKey(#today)"
-    )
     public MemberRankingResp fetchMemberCompetitionRankingById(
         Long accessMemberId, LocalDate today
     ) {
-        return competitionSummaryRepository.fetchMemberRankingById(accessMemberId, today);
+        RBucket<String> memberRankBucket = redissonClient.getBucket(
+            RedisKeyFactory.memberRankingKey(accessMemberId, today)
+        );
+
+        String simpleJson = memberRankBucket.get();
+        try {
+            if (simpleJson != null) {
+                return objectMapper.readValue(simpleJson, MemberRankingResp.class);
+            }
+
+            MemberRankingResp resp = competitionSummaryRepository.fetchMemberRankingById(
+                accessMemberId, today);
+
+            if (resp != null) {
+                memberRankBucket.set(
+                    objectMapper.writeValueAsString(resp),
+                    Duration.ofSeconds(TimeUtil.getSecondsUntilMidnight())
+                );
+            }
+
+            return resp;
+        } catch (JsonProcessingException e) {
+            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+        }
     }
 
     @Override

@@ -37,4 +37,25 @@ public class RedisKeyFactory {
             compId, memberId
         );
     }
+
+    public static String competitionRankKey(LocalDate today) {
+        return String.format(
+            "competition:rank:%s",
+            todayKey(today)
+        );
+    }
+
+    public static String competitionIdKey(LocalDate today) {
+        return String.format(
+            "competition:id:%s",
+            todayKey(today)
+        );
+    }
+
+    public static String memberRankingKey(Long memberId, LocalDate today) {
+        return String.format(
+            "competition:ranking:member:%d:%s",
+            memberId, todayKey(today)
+        );
+    }
 }
