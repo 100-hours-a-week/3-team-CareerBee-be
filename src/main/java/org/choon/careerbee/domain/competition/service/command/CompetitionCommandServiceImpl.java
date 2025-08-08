@@ -2,17 +2,10 @@ package org.choon.careerbee.domain.competition.service.command;
 
 import static org.choon.careerbee.domain.competition.dto.request.CompetitionResultSubmitReq.SubmitInfo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.sentry.Sentry;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +16,7 @@ import org.choon.careerbee.domain.competition.domain.Competition;
 import org.choon.careerbee.domain.competition.domain.CompetitionParticipant;
 import org.choon.careerbee.domain.competition.domain.CompetitionResult;
 import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
+import org.choon.careerbee.domain.competition.dto.event.CompetitionJoinedEvent;
 import org.choon.careerbee.domain.competition.dto.event.PointEvent;
 import org.choon.careerbee.domain.competition.dto.internal.GradingResult;
 import org.choon.careerbee.domain.competition.dto.internal.ProblemAnswerInfo;
@@ -39,10 +33,8 @@ import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepos
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
 import org.choon.careerbee.domain.notification.entity.enums.NotificationType;
-import org.redisson.api.RBucket;
-import org.redisson.api.RedissonClient;
-import org.redisson.codec.TypedJsonJacksonCodec;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -57,7 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CompetitionCommandServiceImpl implements CompetitionCommandService {
 
     private static final Integer PARTICIPATION_POINT = 15;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final CompetitionRepository competitionRepository;
     private final CompetitionParticipantRepository competitionParticipantRepository;
@@ -66,8 +57,6 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
     private final MemberQueryService memberQueryService;
     private final ApplicationEventPublisher eventPublisher;
     private final CompetitionProblemRepository competitionProblemRepository;
-    private final RedissonClient redissonClient;
-    private final Clock clock;
 
     @Override
     public void joinCompetition(Long competitionId, Long accessMemberId) {
@@ -75,27 +64,15 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
             .orElseThrow(() -> new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST));
         Member validMember = memberQueryService.findById(accessMemberId);
 
-        if (competitionParticipantRepository.existsByMemberIdAndCompetitionId(accessMemberId,
-            competitionId)) {
+        try {
+            competitionParticipantRepository.save(
+                CompetitionParticipant.of(validMember, validCompetition)
+            );
+        } catch (DataIntegrityViolationException e) {
             throw new CustomException(CustomResponseStatus.COMPETITION_ALREADY_JOIN);
         }
 
-        competitionParticipantRepository.save(
-            CompetitionParticipant.of(validMember, validCompetition)
-        );
-
-        String key = getCompetitionParticipantKey(accessMemberId);
-        RBucket<Boolean> bucket = redissonClient.getBucket(
-            key,
-            new TypedJsonJacksonCodec(Boolean.class, new ObjectMapper())
-        );
-
-        long secondsUntilMidnight = Duration.between(LocalTime.now(clock), LocalTime.MAX)
-            .getSeconds();
-
-        bucket.set(true, secondsUntilMidnight, TimeUnit.SECONDS);
-        log.info("Cache WRITE-THROUGH - key: {}, value: true, TTL: {} seconds", key,
-            secondsUntilMidnight);
+        eventPublisher.publishEvent(new CompetitionJoinedEvent(competitionId, accessMemberId));
     }
 
     @Override
@@ -199,10 +176,5 @@ public class CompetitionCommandServiceImpl implements CompetitionCommandService 
         log.error("[주간, 월간 포인트 지급 실패] 주기={}, 타입={} 포인트 지급 3회 재시도 실패", summaryPeriod, summaryType,
             ex);
         Sentry.captureException(ex);
-    }
-
-    private String getCompetitionParticipantKey(Long memberId) {
-        String todayStr = LocalDate.now(clock).format(DATE_FORMATTER);
-        return "member:" + memberId + ":participant:" + todayStr;
     }
 }

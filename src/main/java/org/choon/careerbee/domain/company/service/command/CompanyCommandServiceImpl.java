@@ -27,6 +27,7 @@ import org.choon.careerbee.domain.company.service.RecruitmentSyncService;
 import org.choon.careerbee.domain.company.service.query.CompanyQueryService;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.retry.annotation.Backoff;
@@ -44,7 +45,6 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
 
     private static final String COMPANY_WISH_KEY_PREFIX = "company:wish:";
     private final RecruitmentRepository recruitmentRepository;
-    private static final long TTL = 1L;
     private final CompanyRepository companyRepository;
 
     private final CompanyApiClient companyApiClient;
@@ -61,23 +61,17 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Member validMember = memberQueryService.findById(accessMemberId);
         Company validCompany = companyQueryService.findById(companyId);
 
-//        String registKey = "wish:register:" + validMember.getId() + ":" + companyId;
-//        boolean success = redissonClient.getBucket(registKey)
-//            .setIfAbsent("1", Duration.ofSeconds(TTL));
-//
-//        if (!success) {
-//            throw new CustomException(CustomResponseStatus.DUPLICATE_REQUEST);
-//        }
-
         if (wishCompanyRepository.existsByMemberAndCompany(validMember, validCompany)) {
             throw new CustomException(CustomResponseStatus.WISH_ALREADY_EXIST);
         }
 
         wishCompanyRepository.save(WishCompany.of(validMember, validCompany));
 
-//        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
-//        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
-//        atomicLong.incrementAndGet();
+        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
+        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
+        if (atomicLong.isExists()) {
+            atomicLong.incrementAndGet();
+        }
     }
 
     @Override
@@ -85,25 +79,21 @@ public class CompanyCommandServiceImpl implements CompanyCommandService {
         Member validMember = memberQueryService.findById(accessMemberId);
         Company validCompany = companyQueryService.findById(companyId);
 
-//        String key = "wish:delete:" + validMember.getId() + ":" + companyId;
-//        boolean success = redissonClient.getBucket(key)
-//            .setIfAbsent("1", Duration.ofSeconds(TTL));
-//
-//        if (!success) {
-//            throw new CustomException(CustomResponseStatus.DUPLICATE_REQUEST);
-//        }
-
         WishCompany wishCompany = wishCompanyRepository
             .findByMemberAndCompany(validMember, validCompany)
             .orElseThrow(() -> new CustomException(CustomResponseStatus.WISH_COMPANY_NOT_FOUND));
 
         wishCompanyRepository.delete(wishCompany);
-//
-//        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
-//        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
-//        if (atomicLong.isExists() && atomicLong.get() > 0) {
-//            atomicLong.decrementAndGet();
-//        }
+
+        String wishCountKey = COMPANY_WISH_KEY_PREFIX + companyId;
+        RAtomicLong atomicLong = redissonClient.getAtomicLong(wishCountKey);
+
+        if (atomicLong.isExists()) {
+            long curWishCount = atomicLong.decrementAndGet();
+            if (curWishCount < 0) {
+                atomicLong.set(0);
+            }
+        }
     }
 
     @Retryable(

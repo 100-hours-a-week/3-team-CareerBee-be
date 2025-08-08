@@ -1,7 +1,11 @@
 package org.choon.careerbee.util.redis;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import org.choon.careerbee.domain.interview.domain.enums.ProblemType;
+import org.springframework.stereotype.Component;
 
+@Component
 public class RedisKeyFactory {
 
     public static String canSolveKey(Long memberId, ProblemType type) {
@@ -20,12 +24,38 @@ public class RedisKeyFactory {
         return "member:%d:%s:%s".formatted(memberId, type.getPrefix(), suffix);
     }
 
-    // 필요 시 추가 예시:
-    public static String rankCacheKey(ProblemType type, String date) {
-        return "rank:%s:%s".formatted(type.getPrefix(), date);
+    public static String todayKey(LocalDate today) {
+        return String.format(
+            "%s",
+            today.format(DateTimeFormatter.BASIC_ISO_DATE)
+        );
     }
 
-    public static String dailySolvedKey(Long memberId, ProblemType type) {
-        return "solved:%d:%s:daily".formatted(memberId, type.getPrefix());
+    public static String compParticipationKey(Long compId, Long memberId) {
+        return String.format(
+            "comp:part:%d:member:%d",
+            compId, memberId
+        );
+    }
+
+    public static String competitionRankKey(LocalDate today) {
+        return String.format(
+            "competition:rank:%s",
+            todayKey(today)
+        );
+    }
+
+    public static String competitionIdKey(LocalDate today) {
+        return String.format(
+            "competition:id:%s",
+            todayKey(today)
+        );
+    }
+
+    public static String memberRankingKey(Long memberId, LocalDate today) {
+        return String.format(
+            "competition:ranking:member:%d:%s",
+            memberId, todayKey(today)
+        );
     }
 }
