@@ -45,12 +45,6 @@ public class MemberQueryServiceImpl implements MemberQueryService {
     }
 
     @Override
-    public String getNicknameByMemberId(Long memberId) {
-        return memberRepository.getNicknameByMemberId(memberId)
-            .orElseThrow(() -> new CustomException(CustomResponseStatus.MEMBER_NOT_EXIST));
-    }
-
-    @Override
     public List<Long> findAllMemberIds() {
         return memberRepository.findAllMemberIds();
     }

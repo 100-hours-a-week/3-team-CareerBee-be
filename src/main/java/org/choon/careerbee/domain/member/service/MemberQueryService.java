@@ -15,7 +15,5 @@ public interface MemberQueryService {
 
     Optional<Member> findMemberByProviderId(Long providerId);
 
-    String getNicknameByMemberId(Long memberId);
-
     List<Long> findAllMemberIds();
 }
