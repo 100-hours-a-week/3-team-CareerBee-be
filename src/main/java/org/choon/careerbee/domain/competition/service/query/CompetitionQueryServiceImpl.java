@@ -1,8 +1,8 @@
 package org.choon.careerbee.domain.competition.service.query;
 
-import java.time.Clock;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
@@ -18,7 +18,10 @@ import org.choon.careerbee.domain.competition.repository.CompetitionParticipantR
 import org.choon.careerbee.domain.competition.repository.CompetitionRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
+import org.choon.careerbee.util.redis.RedisKeyFactory;
+import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -26,15 +29,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class CompetitionQueryServiceImpl implements CompetitionQueryService {
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-
     private final CompetitionRepository competitionRepository;
     private final CompetitionParticipantRepository competitionParticipantRepository;
     private final CompetitionSummaryRepository competitionSummaryRepository;
     private final CompetitionResultRepository competitionResultRepository;
-
     private final RedissonClient redissonClient;
-    private final Clock clock;
+    private final ObjectMapper objectMapper;
 
     @Override
     public CompetitionParticipationResp checkCompetitionParticipationById(
@@ -44,14 +44,34 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
             throw new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST);
         }
 
-        boolean isParticipated = competitionParticipantRepository.existsByMemberIdAndCompetitionId(
-            accessMemberId, competitionId);
+        RBucket<String> compPartBucket = redissonClient.getBucket(
+            RedisKeyFactory.compParticipationKey(competitionId, accessMemberId)
+        );
 
-        return new CompetitionParticipationResp(isParticipated);
+        try {
+            String simpleJson = compPartBucket.get();
+            if (simpleJson != null) {
+                return objectMapper.readValue(simpleJson, CompetitionParticipationResp.class);
+            }
+
+            var participationResp = new CompetitionParticipationResp(
+                competitionParticipantRepository.existsByMemberIdAndCompetitionId(
+                    accessMemberId, competitionId)
+            );
+
+            compPartBucket.set(objectMapper.writeValueAsString(participationResp));
+            return participationResp;
+        } catch (JsonProcessingException e) {
+            throw new CustomException(CustomResponseStatus.JSON_PARSING_ERROR);
+        }
     }
 
     @Override
-//    @Cacheable(cacheNames = "competitionProblem", key = "#competitionId", unless = "#result == null")
+    @Cacheable(
+        cacheNames = "competitionProblem",
+        key = "#competitionId",
+        unless = "#result == null"
+    )
     public CompetitionProblemResp fetchProblems(Long competitionId) {
         if (!competitionRepository.existsById(competitionId)) {
             throw new CustomException(CustomResponseStatus.COMPETITION_NOT_EXIST);
@@ -61,22 +81,29 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     }
 
     @Override
-//    @Cacheable(
-//        cacheNames = "competitionRank",
-//        key = "'competition:rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
+    @Cacheable(
+        cacheNames = "competitionRank",
+        key = "@redisKeyFactory.todayKey(#today)"
+    )
     public CompetitionRankingResp fetchRankings(LocalDate today) {
         return competitionSummaryRepository.fetchRankings(today);
     }
 
     @Override
-//    @Cacheable(cacheNames = "competitionId", key = "#today", unless = "#result == null")
+    @Cacheable(
+        cacheNames = "competitionId",
+        key = "@redisKeyFactory.todayKey(#today)",
+        unless = "#result == null"
+    )
     public CompetitionIdResp fetchCompetitionIdBy(LocalDate today) {
         return competitionRepository.fetchCompetitionIdFromToday(today);
     }
 
     @Override
-//    @Cacheable(cacheNames = "memberRank",
-//        key = "'member:' + #accessMemberId + ':rank:' + #today.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyyMMdd'))")
+    @Cacheable(
+        cacheNames = "memberRank",
+        key = "#accessMemberId + ':' + @redisKeyFactory.todayKey(#today)"
+    )
     public MemberRankingResp fetchMemberCompetitionRankingById(
         Long accessMemberId, LocalDate today
     ) {
@@ -95,10 +122,5 @@ public class CompetitionQueryServiceImpl implements CompetitionQueryService {
     @Override
     public LiveRankingResp fetchLiveRanking(LocalDate today) {
         return competitionResultRepository.fetchLiveRankingByDate(today);
-    }
-
-    private String getCompetitionParticipantKey(Long memberId) {
-        String todayStr = LocalDate.now(clock).format(DATE_FORMATTER);
-        return "member:" + memberId + ":participant:" + todayStr;
     }
 }

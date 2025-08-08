@@ -1,5 +1,6 @@
 package org.choon.careerbee.common.exception;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import io.sentry.Sentry;
 import jakarta.servlet.http.HttpServletRequest;
@@ -61,7 +62,7 @@ public class CustomExceptionHandler {
             .body(CommonResponse.createError(CustomResponseStatus.INVALID_INPUT_VALUE));
     }
 
-    @ExceptionHandler(JsonMappingException.class)
+    @ExceptionHandler({JsonMappingException.class, JsonProcessingException.class})
     public ResponseEntity<CommonResponse<String>> handleJsonParsing(
         Exception ex, HttpServletResponse resp
     ) {
