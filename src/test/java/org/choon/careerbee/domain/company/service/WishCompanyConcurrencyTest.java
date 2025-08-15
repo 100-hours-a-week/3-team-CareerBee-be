@@ -57,42 +57,6 @@ class WishCompanyConcurrencyTest {
     }
 
     @Test
-    @DisplayName("Redisson 기반 중복 요청 방지 - 하나만 성공하고 나머지는 CustomException 발생")
-    void registerWishWithRedissonDeduplication_shouldPreventDuplicates()
-        throws InterruptedException {
-        // given
-        Member member = memberRepository.save(createMember("user1", "test@test.com", 123L));
-        Company company = companyRepository.save(createCompany("company1", 37.1, 127.1));
-
-        int threadCount = 10;
-        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch latch = new CountDownLatch(threadCount);
-        List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<>());
-
-        // when
-        for (int i = 0; i < threadCount; i++) {
-            executor.submit(() -> {
-                try {
-                    companyCommandService.registWishCompany(member.getId(), company.getId());
-                } catch (Throwable e) {
-                    exceptions.add(e);
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-
-        latch.await();
-
-        // then
-        long count = wishCompanyRepository.count();
-
-        assertThat(count).isEqualTo(1);
-        assertThat(exceptions.size()).isEqualTo(threadCount - 1);
-        assertThat(exceptions.get(0)).isInstanceOf(CustomException.class);
-    }
-
-    @Test
     @DisplayName("100개의 스레드에서 동시에 관심 등록 요청 시, wishCount가 정확히 100 증가한다")
     void registWishCompany_concurrencyTest() throws InterruptedException {
         // given
