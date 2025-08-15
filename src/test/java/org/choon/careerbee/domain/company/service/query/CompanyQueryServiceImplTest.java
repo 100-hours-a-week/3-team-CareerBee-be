@@ -1,4 +1,4 @@
-package org.choon.careerbee.domain.company.service;
+package org.choon.careerbee.domain.company.service.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -142,8 +142,8 @@ class CompanyQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("[기업 위치 정보 조회] Repository에 조회를 위임하고 결과를 반환한다")
-    void fetchCompanyLocation_delegatesToRepository() {
+    @DisplayName("[기업 위치 정보 조회] 캐시 미스 시 Repository 위임 + 캐시 저장 후 반환")
+    void fetchCompanyLocation_cacheMiss_delegatesToRepositoryAndCaches() throws Exception {
         // given
         Long companyId = 1L;
         CompanyMarkerInfo expectedInfo = new CompanyMarkerInfo(
@@ -151,18 +151,51 @@ class CompanyQueryServiceImplTest {
             new LocationInfo(37.123, 127.12)
         );
 
-        // Repository가 특정 정보를 반환하도록 설정
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null);
         when(companyRepository.fetchCompanyMarkerInfo(companyId)).thenReturn(expectedInfo);
+        when(objectMapper.writeValueAsString(any())).thenReturn("{\"ok\":true}");
 
         // when
         CompanyMarkerInfo result = companyQueryService.fetchCompanyLocation(companyId);
 
         // then
-        // 1. 반환된 결과가 기대와 같은지 확인
         assertThat(result).isEqualTo(expectedInfo);
-
-        // 2. Repository의 메서드가 정확히 1번 호출되었는지 확인
         verify(companyRepository, times(1)).fetchCompanyMarkerInfo(companyId);
+        verify(bucket, times(1)).set(anyString());
+    }
+
+    @Test
+    @DisplayName("[기업 위치 정보 조회] 캐시 히트 시 Repository 호출 없이 캐시에서 반환")
+    void fetchCompanyLocation_cacheHit_returnsFromCache() throws Exception {
+        // given
+        Long companyId = 2L;
+        CompanyMarkerInfo expectedInfo = new CompanyMarkerInfo(
+            companyId, "cached.jpg", BusinessType.PLATFORM, RecruitingStatus.ONGOING,
+            new LocationInfo(37.5, 127.5)
+        );
+
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+
+        String json = "{\"cached\":true}";
+
+        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
+        when(bucket.get()).thenReturn(json);
+        when(objectMapper.readValue(json, CompanyMarkerInfo.class)).thenReturn(expectedInfo);
+
+        // when
+        CompanyMarkerInfo result = companyQueryService.fetchCompanyLocation(companyId);
+
+        // then
+        assertThat(result).isEqualTo(expectedInfo);
+        // 캐시 히트이므로 Repository는 호출되지 않아야 함
+        verify(companyRepository, never()).fetchCompanyMarkerInfo(anyLong());
+        // set 도 호출되지 않음
+        verify(bucket, never()).set(anyString());
     }
 
     @Test
