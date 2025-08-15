@@ -42,7 +42,6 @@ import org.choon.careerbee.domain.company.entity.enums.CompanyType;
 import org.choon.careerbee.domain.company.entity.enums.RecruitingStatus;
 import org.choon.careerbee.domain.company.repository.CompanyRepository;
 import org.choon.careerbee.domain.company.repository.wish.WishCompanyRepository;
-import org.choon.careerbee.domain.company.service.query.CompanyQueryServiceImpl;
 import org.choon.careerbee.domain.company.service.query.internal.CompanyRecentIssueQueryService;
 import org.choon.careerbee.domain.company.service.query.internal.CompanyRecruitmentQueryService;
 import org.choon.careerbee.domain.company.service.query.internal.CompanyStaticDataQueryService;
@@ -181,9 +180,20 @@ class CompanyQueryServiceImplTest {
         @SuppressWarnings("unchecked")
         RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
 
-        String json = "{\"cached\":true}";
+        String json = """
+            {
+              "id": 2,
+              "markerUrl": "cached.jpg",
+              "businessType": "PLATFORM",
+              "recruitingStatus": "ONGOING",
+              "locationInfo": {
+                "latitude": 37.5,
+                "longitude": 127.5
+              }
+            }
+            """;
 
-        when(redissonClient.<String>getBucket(GEO_KEY_PREFIX + companyId)).thenReturn(bucket);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
         when(bucket.get()).thenReturn(json);
         when(objectMapper.readValue(json, CompanyMarkerInfo.class)).thenReturn(expectedInfo);
 
@@ -192,10 +202,12 @@ class CompanyQueryServiceImplTest {
 
         // then
         assertThat(result).isEqualTo(expectedInfo);
-        // 캐시 히트이므로 Repository는 호출되지 않아야 함
+
         verify(companyRepository, never()).fetchCompanyMarkerInfo(anyLong());
-        // set 도 호출되지 않음
         verify(bucket, never()).set(anyString());
+        verify(bucket, never()).set(anyString(), any(java.time.Duration.class));
+        verify(redissonClient, times(1)).getBucket(anyString());
+        verify(bucket, times(1)).get();
     }
 
     @Test

@@ -209,7 +209,7 @@ public class CompanyQueryServiceImpl implements CompanyQueryService {
         }
 
         CompanyMarkerInfo companyMarkerInfo = companyRepository.fetchCompanyMarkerInfo(companyId);
-        markerInfoBucket.set(objectMapper.writeValueAsString(markerInfoBucket));
+        markerInfoBucket.set(objectMapper.writeValueAsString(companyMarkerInfo));
         return companyMarkerInfo;
     }
 
