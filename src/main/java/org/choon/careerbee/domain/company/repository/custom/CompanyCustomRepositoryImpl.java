@@ -253,12 +253,27 @@ public class CompanyCustomRepositoryImpl implements CompanyCustomRepository {
             .fetchOne();
     }
 
-    private BooleanExpression inDistance(String point, Integer radius) {
-        return radius != null
-            ? Expressions.booleanTemplate(
-            "ST_Distance_Sphere(ST_GeomFromText({0}, 4326), {1}) <= {2}",
-            point, company.geoPoint, radius)
-            : null;
+    private BooleanExpression inDistance(String pointWkt, Integer radiusMeters) {
+        if (radiusMeters == null) return null;
+
+        // 1) 공간 인덱스 프루닝: MBRContains(...) = 1  (반환 타입을 Integer로 고정)
+        BooleanExpression inMbr =
+            Expressions.numberTemplate(Integer.class,
+                "MBRContains(" +
+                    "  ST_Buffer(ST_GeomFromText({0}, 4326), {1}), " +
+                    "  {2}" +
+                    ")",
+                pointWkt, radiusMeters, company.geoPoint
+            ).eq(1);
+
+        // 2) 정밀 필터: ST_Distance_Sphere(...) <= radius  (반환 타입을 Double로 고정)
+        BooleanExpression inSphere =
+            Expressions.numberTemplate(Double.class,
+                "ST_Distance_Sphere({0}, ST_GeomFromText({1}, 4326))",
+                company.geoPoint, pointWkt
+            ).loe(radiusMeters.doubleValue());
+
+        return inMbr.and(inSphere);
     }
 
     private BooleanExpression recruitingStatusEq(RecruitingStatus recruitingStatus) {
