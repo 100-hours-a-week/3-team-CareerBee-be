@@ -3,19 +3,25 @@ package org.choon.careerbee.domain.competition.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.choon.careerbee.common.enums.CustomResponseStatus;
 import org.choon.careerbee.common.exception.CustomException;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionIdResp;
+import org.choon.careerbee.domain.competition.dto.response.CompetitionParticipationResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionProblemResp;
 import org.choon.careerbee.domain.competition.dto.response.CompetitionRankingResp;
 import org.choon.careerbee.domain.competition.dto.response.LiveRankingResp;
@@ -34,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,71 +65,158 @@ class CompetitionQueryServiceImplTest {
     private RedissonClient redissonClient;
 
     @Mock
-    private Clock clock;
+    private ObjectMapper objectMapper;
 
-//    @Test
-//    @DisplayName("대회 참여 여부 확인 - 캐시가 존재할 경우(HIT), DB 조회 없이 캐시에서 즉시 반환")
-//    void checkCompetitionParticipation_cacheHit() {
-//        // given
-//        Long competitionId = 1L;
-//        Long memberId = 100L;
-//        RBucket<Boolean> participantBucket = mock(RBucket.class);
-//        String expectedKey = "member:" + memberId + ":participant:20250702";
-//        Instant fixedInstant = Instant.parse("2025-07-02T10:00:00Z");
-//        ZoneId seoulZone = ZoneId.of("Asia/Seoul");
-//
-//        when(clock.instant()).thenReturn(fixedInstant);
-//        when(clock.getZone()).thenReturn(seoulZone);
-//
-//        when(competitionRepository.existsById(competitionId)).thenReturn(true);
-//        when(redissonClient.<Boolean>getBucket(anyString(),
-//            any(TypedJsonJacksonCodec.class))).thenReturn(participantBucket);
-//        when(participantBucket.isExists()).thenReturn(true);
-//        when(participantBucket.get()).thenReturn(true);
-//
-//        // when
-//        CompetitionParticipationResp response =
-//            competitionQueryService.checkCompetitionParticipationById(competitionId, memberId);
-//
-//        // then
-//        assertThat(response.isParticipant()).isTrue();
-//        verify(competitionParticipantRepository, never()).existsByMemberIdAndCompetitionId(
-//            anyLong(), anyLong());
-//        verify(participantBucket, never()).set(anyBoolean(), anyLong(), any(TimeUnit.class));
-//    }
+    @Test
+    @DisplayName("대회 참여 여부 - 캐시 히트 시 캐시에서 바로 반환하고 DB 조회/캐시 저장 없음")
+    void checkCompetitionParticipation_cacheHit_returnsFromCache() throws Exception {
+        // given
+        Long competitionId = 100L;
+        Long memberId = 200L;
 
-//    @Test
-//    @DisplayName("대회 참여 여부 확인 - 캐시가 없을 경우(MISS), DB 조회 후 캐시에 저장하고 결과를 반환")
-//    void checkCompetitionParticipation_cacheMiss() {
-//        // given
-//        Long competitionId = 2L;
-//        Long memberId = 101L;
-//        Instant fixedInstant = Instant.parse("2025-07-02T14:00:00Z");
-//        ZoneId seoulZone = ZoneId.of("Asia/Seoul");
-//        RBucket<Boolean> participantBucket = mock(RBucket.class);
-//
-//        when(clock.instant()).thenReturn(fixedInstant);
-//        when(clock.getZone()).thenReturn(seoulZone);
-//        when(competitionRepository.existsById(competitionId)).thenReturn(true);
-//        when(redissonClient.<Boolean>getBucket(anyString(), any(TypedJsonJacksonCodec.class)))
-//            .thenReturn(participantBucket);
-//        when(participantBucket.isExists()).thenReturn(false);
-//        when(competitionParticipantRepository.existsByMemberIdAndCompetitionId(memberId,
-//            competitionId))
-//            .thenReturn(true);
-//
-//        // when
-//        CompetitionParticipationResp response =
-//            competitionQueryService.checkCompetitionParticipationById(competitionId, memberId);
-//
-//        // then
-//        assertThat(response.isParticipant()).isTrue();
-//
-//        verify(competitionParticipantRepository, times(1))
-//            .existsByMemberIdAndCompetitionId(memberId, competitionId);
-//        verify(participantBucket, times(1))
-//            .set(eq(true), anyLong(), any(TimeUnit.class));
-//    }
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+        String json = "true";
+
+        when(competitionRepository.existsById(competitionId)).thenReturn(true);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(json);
+        when(objectMapper.readValue(json, Boolean.class)).thenReturn(true);
+
+        // when
+        CompetitionParticipationResp resp =
+            competitionQueryService.checkCompetitionParticipationById(competitionId, memberId);
+
+        // then
+        assertThat(resp).isNotNull();
+        assertThat(resp.isParticipant()).isTrue();
+
+        // 캐시 히트이므로 DB 조회/캐시 set 없음
+        verify(competitionParticipantRepository, never())
+            .existsByMemberIdAndCompetitionId(anyLong(), anyLong());
+        verify(bucket, never()).set(anyString(), any(Duration.class));
+    }
+
+    @Test
+    @DisplayName("대회 참여 여부 - 캐시 미스 시 DB 조회 후 캐시에 저장하고 반환 (참여자=true)")
+    void checkCompetitionParticipation_cacheMiss_hitsDb_thenCachesTrue() throws Exception {
+        // given
+        Long competitionId = 100L;
+        Long memberId = 200L;
+
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+        String json = "true";
+
+        when(competitionRepository.existsById(competitionId)).thenReturn(true);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null); // 캐시 미스
+        when(competitionParticipantRepository.existsByMemberIdAndCompetitionId(memberId, competitionId))
+            .thenReturn(true);
+        when(objectMapper.writeValueAsString(true)).thenReturn(json);
+
+        // when
+        CompetitionParticipationResp resp =
+            competitionQueryService.checkCompetitionParticipationById(competitionId, memberId);
+
+        // then
+        assertThat(resp).isNotNull();
+        assertThat(resp.isParticipant()).isTrue();
+
+        verify(competitionParticipantRepository, times(1))
+            .existsByMemberIdAndCompetitionId(memberId, competitionId);
+        verify(bucket, times(1)).set(eq(json), any(Duration.class));
+    }
+
+    @Test
+    @DisplayName("대회 참여 여부 - 캐시 미스 시 DB 조회 후 캐시에 저장하고 반환 (비참여=false)")
+    void checkCompetitionParticipation_cacheMiss_hitsDb_thenCachesFalse() throws Exception {
+        // given
+        Long competitionId = 101L;
+        Long memberId = 201L;
+
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+        String json = "false";
+
+        when(competitionRepository.existsById(competitionId)).thenReturn(true);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null); // 캐시 미스
+        when(competitionParticipantRepository.existsByMemberIdAndCompetitionId(memberId, competitionId))
+            .thenReturn(false);
+        when(objectMapper.writeValueAsString(false)).thenReturn(json);
+
+        // when
+        CompetitionParticipationResp resp =
+            competitionQueryService.checkCompetitionParticipationById(competitionId, memberId);
+
+        // then
+        assertThat(resp).isNotNull();
+        assertThat(resp.isParticipant()).isFalse();
+
+        verify(competitionParticipantRepository, times(1))
+            .existsByMemberIdAndCompetitionId(memberId, competitionId);
+        verify(bucket, times(1)).set(eq(json), any(Duration.class));
+    }
+
+    @Test
+    @DisplayName("대회 참여 여부 - 캐시 히트 JSON 파싱 실패 시 CustomException(JSON_PARSING_ERROR)")
+    void checkCompetitionParticipation_cacheHit_jsonReadError_throwsCustom() throws Exception {
+        // given
+        Long competitionId = 100L;
+        Long memberId = 200L;
+
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+
+        when(competitionRepository.existsById(competitionId)).thenReturn(true);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn("malformed");
+        when(objectMapper.readValue("malformed", Boolean.class))
+            .thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("bad") {});
+
+        // when & then
+        assertThatThrownBy(() ->
+            competitionQueryService.checkCompetitionParticipationById(competitionId, memberId)
+        )
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.JSON_PARSING_ERROR.getMessage());
+
+        // 파싱 단계에서 터졌으므로 DB 조회/캐시 set 없음
+        verify(competitionParticipantRepository, never())
+            .existsByMemberIdAndCompetitionId(anyLong(), anyLong());
+        verify(bucket, never()).set(anyString(), any(Duration.class));
+    }
+
+    @Test
+    @DisplayName("대회 참여 여부 - 캐시 미스 후 JSON 직렬화 실패 시 CustomException(JSON_PARSING_ERROR)")
+    void checkCompetitionParticipation_cacheMiss_jsonWriteError_throwsCustom() throws Exception {
+        // given
+        Long competitionId = 100L;
+        Long memberId = 200L;
+
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+
+        when(competitionRepository.existsById(competitionId)).thenReturn(true);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null); // 캐시 미스
+        when(competitionParticipantRepository.existsByMemberIdAndCompetitionId(memberId, competitionId))
+            .thenReturn(true);
+        when(objectMapper.writeValueAsString(true))
+            .thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("bad") {});
+
+        // when & then
+        assertThatThrownBy(() ->
+            competitionQueryService.checkCompetitionParticipationById(competitionId, memberId)
+        )
+            .isInstanceOf(CustomException.class)
+            .hasMessageContaining(CustomResponseStatus.JSON_PARSING_ERROR.getMessage());
+
+        // 직렬화 단계에서 터졌으므로 버킷 set 호출 안 됨
+        verify(bucket, never()).set(anyString(), any(Duration.class));
+    }
+
 
     @Test
     @DisplayName("대회 참여 여부 확인 - 존재하지 않는 대회일 경우 예외 발생")
@@ -215,38 +309,82 @@ class CompetitionQueryServiceImplTest {
     }
 
     @Test
-    @DisplayName("대회 랭킹 조회 - 정상적으로 반환되는 경우")
-    void fetchRankings_success() {
+    @DisplayName("대회 랭킹 조회 - 캐시 미스 시 DB 조회 후 캐시에 저장하고 반환")
+    void fetchRankings_cacheMiss() throws Exception {
         // given
         LocalDate today = LocalDate.of(2025, 6, 2);
-        CompetitionRankingResp mockResp = new CompetitionRankingResp(
-            List.of(),
-            List.of(),
-            List.of()
-        );
+        CompetitionRankingResp mockResp = new CompetitionRankingResp(List.of(), List.of(), List.of());
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
 
+        String json = "{\"ok\":true}";
+
+        // Redis 버킷 및 캐시 미스 스텁
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null);
+
+        // DB 조회 스텁
         when(competitionSummaryRepository.fetchRankings(today)).thenReturn(mockResp);
+
+        // 직렬화 스텁 (캐시에 저장할 때 사용)
+        when(objectMapper.writeValueAsString(mockResp)).thenReturn(json);
 
         // when
         CompetitionRankingResp result = competitionQueryService.fetchRankings(today);
 
         // then
         assertThat(result).isEqualTo(mockResp);
-        verify(competitionSummaryRepository).fetchRankings(today);
-
-        ArgumentCaptor<LocalDate> captor = ArgumentCaptor.forClass(LocalDate.class);
-        verify(competitionSummaryRepository, times(1)).fetchRankings(captor.capture());
-        assertThat(captor.getValue()).isEqualTo(today);
+        verify(competitionSummaryRepository, times(1)).fetchRankings(today);
+        verify(bucket, times(1)).set(eq(json), any(Duration.class));
     }
 
     @Test
-    @DisplayName("오늘 날짜 기준으로 대회 ID 조회 - 정상 반환")
-    void fetchCompetitionIdBy_success() {
+    @DisplayName("대회 랭킹 조회 - 캐시 히트 시 DB 조회 없이 캐시에서 반환")
+    void fetchRankings_cacheHit() throws Exception {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 2);
+        CompetitionRankingResp expected = new CompetitionRankingResp(List.of(), List.of(), List.of());
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+
+        String json = "{\"ok\":true}";
+
+        // Redis 버킷 및 캐시 히트 스텁
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(json);
+
+        // 역직렬화 스텁
+        when(objectMapper.readValue(json, CompetitionRankingResp.class)).thenReturn(expected);
+
+        // when
+        CompetitionRankingResp result = competitionQueryService.fetchRankings(today);
+
+        // then
+        assertThat(result).isEqualTo(expected);
+        verify(competitionSummaryRepository, never()).fetchRankings(any());
+        verify(bucket, never()).set(anyString(), any(Duration.class));
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준 대회 ID 조회 - 캐시 미스 시 DB 조회 후 캐시에 저장하고 반환")
+    void fetchCompetitionIdBy_cacheMiss_returnsAndCaches() throws Exception {
         // given
         LocalDate today = LocalDate.of(2025, 6, 2);
         CompetitionIdResp mockResp = new CompetitionIdResp(42L);
 
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+        String json = "{\"id\":42}";
+
+        // Redis 버킷/캐시 미스
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null);
+
+        // DB 조회
         when(competitionRepository.fetchCompetitionIdFromToday(today)).thenReturn(mockResp);
+
+        // 직렬화하여 캐시 저장
+        when(objectMapper.writeValueAsString(mockResp)).thenReturn(json);
 
         // when
         CompetitionIdResp result = competitionQueryService.fetchCompetitionIdBy(today);
@@ -256,48 +394,82 @@ class CompetitionQueryServiceImplTest {
         assertThat(result.competitionId()).isEqualTo(42L);
 
         verify(competitionRepository, times(1)).fetchCompetitionIdFromToday(today);
+        verify(bucket, times(1)).set(eq(json), any(Duration.class));
     }
 
     @Test
-    @DisplayName("오늘 날짜 기준으로 대회 ID 조회 - 해당 날짜 대회 없으면 null 반환")
-    void fetchCompetitionIdBy_noneExist_returnsNull() {
+    @DisplayName("오늘 날짜 기준 대회 ID 조회 - 캐시 히트 시 DB 조회 없이 캐시에서 반환")
+    void fetchCompetitionIdBy_cacheHit_returnsFromCache() throws Exception {
+        // given
+        LocalDate today = LocalDate.of(2025, 6, 2);
+        CompetitionIdResp expected = new CompetitionIdResp(42L);
+
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+        String json = "{\"id\":42}";
+
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(json);
+        when(objectMapper.readValue(json, CompetitionIdResp.class)).thenReturn(expected);
+
+        // when
+        CompetitionIdResp result = competitionQueryService.fetchCompetitionIdBy(today);
+
+        // then
+        assertThat(result).isEqualTo(expected);
+        verify(competitionRepository, never()).fetchCompetitionIdFromToday(any());
+        verify(bucket, never()).set(anyString(), any(Duration.class));
+    }
+
+    @Test
+    @DisplayName("오늘 날짜 기준 대회 ID 조회 - 캐시 미스이고 해당 날짜 대회 없으면 null 반환(캐시 저장 안 함)")
+    void fetchCompetitionIdBy_cacheMiss_noneExist_returnsNull() throws Exception {
         // given
         LocalDate today = LocalDate.of(2025, 6, 2);
 
-        when(competitionRepository.fetchCompetitionIdFromToday(today)).thenReturn(null);
+        @SuppressWarnings("unchecked")
+        RBucket<String> bucket = (RBucket<String>) mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null); // 캐시 미스
+        when(competitionRepository.fetchCompetitionIdFromToday(today)).thenReturn(null); // DB에도 없음
 
         // when
         CompetitionIdResp result = competitionQueryService.fetchCompetitionIdBy(today);
 
         // then
         assertThat(result).isNull();
-
-        verify(competitionRepository).fetchCompetitionIdFromToday(today);
+        verify(competitionRepository, times(1)).fetchCompetitionIdFromToday(today);
+        verify(bucket, never()).set(anyString(), any(Duration.class)); // 캐시에 저장하지 않음
     }
 
     @Test
-    @DisplayName("내 랭킹 조회 - 정상적으로 반환되는 경우")
-    void fetchMemberCompetitionRankingById_success() {
+    @DisplayName("내 랭킹 조회 - 캐시 미스 시 DB 조회 후 캐시에 저장하고 반환")
+    void fetchMemberCompetitionRankingById_success_cacheMiss() throws Exception {
         // given
         Long memberId = 123L;
-        MemberRankingResp.MemberDayRankInfo dayRank =
-            new MemberRankingResp.MemberDayRankInfo(5L, 1234L, (short) 3);
+        LocalDate today = LocalDate.of(2025, 6, 2);
 
-        MemberRankingResp.MemberWeekAndMonthRankInfo weekRank =
-            MemberRankingResp.MemberWeekAndMonthRankInfo.from(3L, 7, 0.75);
-
-        MemberRankingResp.MemberWeekAndMonthRankInfo monthRank =
-            MemberRankingResp.MemberWeekAndMonthRankInfo.from(2L, 15, 0.88);
-
+        MemberRankingResp.MemberDayRankInfo dayRank = new MemberRankingResp.MemberDayRankInfo(5L, 1234L, (short) 3);
+        MemberRankingResp.MemberWeekAndMonthRankInfo weekRank = MemberRankingResp.MemberWeekAndMonthRankInfo.from(3L, 7, 0.75);
+        MemberRankingResp.MemberWeekAndMonthRankInfo monthRank = MemberRankingResp.MemberWeekAndMonthRankInfo.from(2L, 15, 0.88);
         MemberRankingResp mockResp = new MemberRankingResp(dayRank, weekRank, monthRank);
 
-        when(competitionSummaryRepository.fetchMemberRankingById(anyLong(),
-            any(LocalDate.class))).thenReturn(mockResp);
+        RBucket<String> bucket = mock(RBucket.class);
+        String json = "{\"dummy\":\"ok\"}"; // 아무 문자열이면 됨
+
+        // 레디스 버킷 호출 스텁
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(null); // 캐시 미스
+        // DB 조회 스텁
+        when(competitionSummaryRepository.fetchMemberRankingById(memberId, today))
+            .thenReturn(mockResp);
+        // 캐시 저장 시 직렬화 스텁
+        when(objectMapper.writeValueAsString(mockResp)).thenReturn(json);
 
         // when
-        MemberRankingResp result = competitionQueryService.fetchMemberCompetitionRankingById(
-            memberId, LocalDate.now()
-        );
+        MemberRankingResp result =
+            competitionQueryService.fetchMemberCompetitionRankingById(memberId, today);
 
         // then
         assertThat(result).isNotNull();
@@ -305,8 +477,36 @@ class CompetitionQueryServiceImplTest {
         assertThat(result.week().rank()).isEqualTo(3L);
         assertThat(result.month().rank()).isEqualTo(2L);
 
-        verify(competitionSummaryRepository, times(1)).fetchMemberRankingById(memberId,
-            LocalDate.now());
+        verify(competitionSummaryRepository, times(1))
+            .fetchMemberRankingById(memberId, today);
+        verify(bucket, times(1))
+            .set(eq(json), any(Duration.class));
+    }
+
+    @Test
+    @DisplayName("내 랭킹 조회 - 캐시 히트 시 DB 조회 없이 반환")
+    void fetchMemberCompetitionRankingById_cacheHit() throws Exception {
+        Long memberId = 123L;
+        LocalDate today = LocalDate.of(2025, 6, 2);
+
+        MemberRankingResp.MemberDayRankInfo dayRank = new MemberRankingResp.MemberDayRankInfo(5L, 1234L, (short) 3);
+        MemberRankingResp.MemberWeekAndMonthRankInfo weekRank = MemberRankingResp.MemberWeekAndMonthRankInfo.from(3L, 7, 0.75);
+        MemberRankingResp.MemberWeekAndMonthRankInfo monthRank = MemberRankingResp.MemberWeekAndMonthRankInfo.from(2L, 15, 0.88);
+        MemberRankingResp expected = new MemberRankingResp(dayRank, weekRank, monthRank);
+        String json = "{\"dummy\":\"ok\"}";
+
+        RBucket<String> bucket = mock(RBucket.class);
+
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
+        when(bucket.get()).thenReturn(json);
+        when(objectMapper.readValue(json, MemberRankingResp.class)).thenReturn(expected);
+
+        MemberRankingResp result =
+            competitionQueryService.fetchMemberCompetitionRankingById(memberId, today);
+
+        assertThat(result).isEqualTo(expected);
+        verify(competitionSummaryRepository, never()).fetchMemberRankingById(anyLong(), any());
+        verify(bucket, never()).set(anyString(), any(Duration.class));
     }
 
     @Test
@@ -323,9 +523,7 @@ class CompetitionQueryServiceImplTest {
         );
 
         when(competitionResultRepository.fetchMemberLiveRankingByDate(memberId, today))
-            .thenReturn(Optional.of(mockResp));
-
-        // when
+            .thenReturn(Optional.of(mockResp));// when
         MemberLiveRankingResp result = competitionQueryService.fetchMemberLiveRanking(
             memberId, today
         );
