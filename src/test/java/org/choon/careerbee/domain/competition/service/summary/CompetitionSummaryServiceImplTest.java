@@ -1,104 +1,107 @@
 package org.choon.careerbee.domain.competition.service.summary;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
+import io.sentry.Sentry;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.choon.careerbee.domain.competition.domain.enums.SummaryType;
+import org.choon.careerbee.config.NoSleepRetryConfig;
+import org.choon.careerbee.domain.competition.dto.event.DailyWinnerCalculated;
 import org.choon.careerbee.domain.competition.dto.response.DailyResultSummaryResp;
 import org.choon.careerbee.domain.competition.repository.CompetitionResultRepository;
 import org.choon.careerbee.domain.competition.repository.CompetitionSummaryRepository;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.service.MemberQueryService;
+import org.choon.careerbee.fixture.MemberFixture;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.dao.TransientDataAccessException;
-import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 @SpringBootTest
-@EnableRetry
 @ActiveProfiles("test")
+@Import(NoSleepRetryConfig.class)
+@RecordApplicationEvents
 class CompetitionSummaryRetryTest {
 
-    @MockitoBean
-    CompetitionResultRepository resultRepository;
-    @MockitoBean
-    CompetitionSummaryRepository summaryRepository;
-    @MockitoBean
-    MemberQueryService memberQueryService;
-    @MockitoBean
-    ApplicationEventPublisher eventPublisher;
+    @Autowired CompetitionSummaryService service;
+    @Autowired ApplicationEvents events;
 
-    @Autowired
-    CompetitionSummaryService service;   // 프록시된 Bean 주입
+    @MockitoBean CompetitionResultRepository resultRepository;
+    @MockitoBean CompetitionSummaryRepository summaryRepository;
+    @MockitoBean MemberQueryService memberQueryService;
+
+    @Spy
+    ApplicationEventMulticaster multicaster;
 
     @Test
-    void dailySummary_예외두번후성공_재시도3회확인() {
-        // given
-        Member member = createMember("testNick", "test@test.com", 1234243L);
-        ReflectionTestUtils.setField(member, "id", 1L);
-
+    @DisplayName("일일_집계로직_실패시_3회_재시도_예외두번후성공")
+    void dailySummary_실패시_재시도_예외두번후성공() {
         LocalDate today = LocalDate.now();
         when(resultRepository.fetchResultSummaryOfDaily(today))
-            .thenReturn(List.of(new DailyResultSummaryResp(1L, (short) 5, 123)));
+            .thenReturn(List.of(new DailyResultSummaryResp(1L, (short)5, 123)));
 
-        when(memberQueryService.findById(1L)).thenReturn(member);
+        Member winner = createMember("testNick", "test@test.com", 1L);
+        when(memberQueryService.findById(1L)).thenReturn(winner);
+        when(memberQueryService.findAllMemberIds()).thenReturn(List.of(1L, 2L));
 
-        // summaryRepository.rewritePeriod()가 처음 두 번은 예외,
-        // 세 번째는 정상 종료하도록 설정
-        AtomicInteger callCnt = new AtomicInteger();
+        AtomicInteger c = new AtomicInteger();
         willAnswer(inv -> {
-            if (callCnt.getAndIncrement() < 2) {
-                throw new TransientDataAccessException("stub") {
-                };
-            }
+            if (c.getAndIncrement() < 2) throw new TransientDataAccessException("stub") {};
             return null;
-        }).given(summaryRepository)
-            .rewritePeriod(eq(SummaryType.DAY), eq(today), eq(today), anyList());
+        }).given(summaryRepository).batchInsert(anyList());
 
         // when
         service.dailySummary(today);
 
         // then
-        then(summaryRepository)
-            .should(times(3))
-            .rewritePeriod(eq(SummaryType.DAY), eq(today), eq(today), anyList());
+        assertThat(events.stream(DailyWinnerCalculated.class).count()).isEqualTo(1);
     }
 
     @Test
-    void dailySummary_3회모두실패_Recover메서드호출() {
+    @DisplayName("일일집계 - 3회 모두 실패 시 @Recover 실행: 예외 미전파, 이벤트 미발행, Sentry 1회")
+    void dailySummary_allFail_triggersRecover_noException_noEvent() {
         // given
-        Member member = createMember("testNick", "test@test.com", 1234243L);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.of(2025, 8, 18);
+        Member winner = MemberFixture.createMember("testNick", "test@test.com", 1L);
+
         when(resultRepository.fetchResultSummaryOfDaily(today))
             .thenReturn(List.of(new DailyResultSummaryResp(1L, (short) 5, 123)));
-        when(memberQueryService.findById(1L)).thenReturn(member);
+        when(memberQueryService.findById(1L)).thenReturn(winner);
+        when(memberQueryService.findAllMemberIds()).thenReturn(List.of(1L, 2L));
 
-        // 3회 모두 예외 발생
-        willThrow(new TransientDataAccessException("always fail") {
-        })
-            .given(summaryRepository)
-            .rewritePeriod(eq(SummaryType.DAY), eq(today), eq(today), anyList());
+        doThrow(new TransientDataAccessException("always fail") {})
+            .when(summaryRepository).batchInsert(anyList());
 
-        // when & then
-        assertThatCode(() -> service.dailySummary(today))
-            .doesNotThrowAnyException();
+        try (var sentry = Mockito.mockStatic(Sentry.class)) {
+            assertThatCode(() -> service.dailySummary(today))
+                .doesNotThrowAnyException();
 
-        then(summaryRepository).should(times(3))
-            .rewritePeriod(eq(SummaryType.DAY), eq(today), eq(today), anyList());
+            then(summaryRepository).should(times(3)).batchInsert(anyList());
+
+            assertThat(events.stream(DailyWinnerCalculated.class).count()).isZero();
+            then(multicaster).should(times(0)).multicastEvent(any());
+
+            sentry.verify(() -> Sentry.captureException(any(Throwable.class)), times(1));
+        }
     }
 }
