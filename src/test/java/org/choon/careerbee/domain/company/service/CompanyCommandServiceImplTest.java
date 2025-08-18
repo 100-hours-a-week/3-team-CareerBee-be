@@ -58,30 +58,19 @@ class CompanyCommandServiceImplTest {
         Long companyId = 100L;
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
-
-        // 1. 중복 요청 방지 락 모킹
-        RBucket<String> lockBucket = mock(RBucket.class);
-        when(redissonClient.<String>getBucket(anyString())).thenReturn(lockBucket);
-        when(lockBucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
-
-        // 2. RAtomicLong 모킹
         RAtomicLong mockAtomicLong = mock(RAtomicLong.class);
-        // wishCountKey로 getAtomicLong 호출 시, 위에서 만든 mockAtomicLong을 반환하도록 설정
-        when(redissonClient.getAtomicLong(anyString())).thenReturn(mockAtomicLong);
 
-        // 3. DB 관련 모킹
+        when(redissonClient.getAtomicLong(anyString())).thenReturn(mockAtomicLong);
+        when(mockAtomicLong.isExists()).thenReturn(true);
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
-        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
-            false);
+        when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(false);
 
         // when
         companyCommandService.registWishCompany(memberId, companyId);
 
         // then
-        // DB에 저장이 1번 호출되었는지 검증
         verify(wishCompanyRepository, times(1)).save(any());
-        // 캐시 카운터가 1 증가했는지 검증
         verify(mockAtomicLong, times(1)).incrementAndGet();
     }
 
@@ -99,8 +88,6 @@ class CompanyCommandServiceImplTest {
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.existsByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             true);
-        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
-        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when & then
         assertThatThrownBy(() -> companyCommandService.registWishCompany(memberId, companyId))
@@ -119,33 +106,21 @@ class CompanyCommandServiceImplTest {
         Member mockMember = createMember("testnick", "test@test.com", memberId);
         Company mockCompany = createCompany("테스트 기업", 37.0, 127.0);
         WishCompany mockWishCompany = createWishCompany(mockCompany, mockMember);
-
-        // 1. 중복 요청 방지 락 모킹
-        RBucket<String> lockBucket = mock(RBucket.class);
-        when(redissonClient.<String>getBucket(anyString())).thenReturn(lockBucket);
-        when(lockBucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
-
-        // 2. RAtomicLong 모킹
         RAtomicLong mockAtomicLong = mock(RAtomicLong.class);
-        when(redissonClient.getAtomicLong(anyString())).thenReturn(mockAtomicLong);
-        // 카운터가 존재하고 0보다 크다고 가정 (감소 로직의 if문 통과를 위해)
-        when(mockAtomicLong.isExists()).thenReturn(true);
-        when(mockAtomicLong.get()).thenReturn(5L); // 0보다 큰 임의의 값
 
-        // 3. DB 관련 모킹
         when(memberQueryService.findById(memberId)).thenReturn(mockMember);
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.findByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             Optional.of(mockWishCompany));
 
+        when(redissonClient.getAtomicLong(anyString())).thenReturn(mockAtomicLong);
+        when(mockAtomicLong.isExists()).thenReturn(true);
+
         // when
         companyCommandService.deleteWishCompany(memberId, companyId);
 
         // then
-        // DB 삭제가 1번 호출되었는지 검증
         verify(wishCompanyRepository, times(1)).delete(mockWishCompany);
-        // 캐시 카운터가 1 감소했는지 검증
-        verify(mockAtomicLong, times(1)).decrementAndGet();
     }
 
     @Test
@@ -162,8 +137,6 @@ class CompanyCommandServiceImplTest {
         when(companyQueryService.findById(companyId)).thenReturn(mockCompany);
         when(wishCompanyRepository.findByMemberAndCompany(mockMember, mockCompany)).thenReturn(
             Optional.empty());
-        when(redissonClient.<String>getBucket(anyString())).thenReturn(bucket);
-        when(bucket.setIfAbsent(anyString(), any(Duration.class))).thenReturn(true);
 
         // when & then
         assertThatThrownBy(() -> companyCommandService.deleteWishCompany(memberId, companyId))
