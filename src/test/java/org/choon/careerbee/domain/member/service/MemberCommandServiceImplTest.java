@@ -3,6 +3,7 @@ package org.choon.careerbee.domain.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.choon.careerbee.fixture.MemberFixture.createMember;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -11,6 +12,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import org.choon.careerbee.domain.auth.entity.enums.OAuthProvider;
+import org.choon.careerbee.domain.auth.service.oauth.OAuthInfoResponse;
 import org.choon.careerbee.domain.image.dto.response.ObjectUrlResp;
 import org.choon.careerbee.domain.image.service.ImageService;
 import org.choon.careerbee.domain.member.dto.request.UpdateProfileInfoReq;
@@ -19,13 +22,16 @@ import org.choon.careerbee.domain.member.dto.request.WithdrawalReq;
 import org.choon.careerbee.domain.member.entity.Member;
 import org.choon.careerbee.domain.member.entity.enums.MajorType;
 import org.choon.careerbee.domain.member.entity.enums.PreferredJob;
+import org.choon.careerbee.domain.member.repository.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class MemberCommandServiceImplTest {
@@ -34,10 +40,42 @@ class MemberCommandServiceImplTest {
     private MemberQueryService memberQueryService;
 
     @Mock
+    private MemberRepository memberRepository;
+
+    @Mock
     private ImageService imageService;
 
     @InjectMocks
     private MemberCommandServiceImpl memberCommandService;
+
+    @Test
+    @DisplayName("forceJoin - OAuth 정보로 Member 저장 후 반환")
+    void forceJoin_success_savesAndReturns() {
+        // given
+        OAuthInfoResponse oAuth = mock(OAuthInfoResponse.class);
+        when(oAuth.getNickname()).thenReturn("kakao-user");
+        when(oAuth.getEmail()).thenReturn("kakao@ex.com");
+        when(oAuth.getProviderId()).thenReturn(12345L);
+
+        Member persisted = createMember("kakao-user", "kakao@ex.com", 12345L);
+        ReflectionTestUtils.setField(persisted, "id", 99L);
+
+        when(memberRepository.save(any(Member.class))).thenReturn(persisted);
+
+        // when
+        Member result = memberCommandService.forceJoin(oAuth);
+
+        // then
+        ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
+        verify(memberRepository, times(1)).save(captor.capture());
+
+        Member toSave = captor.getValue();
+        assertThat(toSave.getNickname()).isEqualTo("kakao-user");
+        assertThat(toSave.getEmail()).isEqualTo("kakao@ex.com");
+        assertThat(toSave.getProviderId()).isEqualTo(12345L);
+        assertThat(result).isSameAs(persisted);
+        assertThat(result.getId()).isEqualTo(99L);
+    }
 
     @Test
     @DisplayName("이력 정보 업데이트 → 필드 반영 확인")
